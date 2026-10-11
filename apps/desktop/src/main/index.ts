@@ -4,6 +4,9 @@ import { app, BrowserWindow, ipcMain, session, shell } from 'electron';
 import { registerWindowControls } from 'atrium-ui/electron';
 import type { AppInfo } from '@tessera/protocol';
 import { handle, send } from './ipc';
+import { handleCoverProtocol, registerCoverScheme } from './projects/cover-protocol';
+import { registerProjectHandlers } from './projects/handlers';
+import { ProjectService } from './projects/service';
 import { applySecurityPolicy } from './security';
 import { SettingsStore } from './settings';
 import { createMainWindow } from './window';
@@ -16,6 +19,8 @@ function isTrusted(url: string): boolean {
   if (rendererUrl) return new URL(url).origin === new URL(rendererUrl).origin;
   return url.split(/[?#]/)[0] === rendererFile;
 }
+
+registerCoverScheme();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -32,6 +37,11 @@ async function start() {
 
   const settings = new SettingsStore(app.getPath('userData'));
   await settings.load();
+
+  const projects = new ProjectService(join(app.getPath('userData'), 'projects.json'), join(app.getPath('documents'), 'Tessera'));
+  await projects.load();
+  handleCoverProtocol(projects);
+  registerProjectHandlers(projects, isTrusted);
 
   handle(
     'app:info',

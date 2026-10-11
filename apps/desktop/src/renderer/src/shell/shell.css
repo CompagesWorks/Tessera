@@ -1,4 +1,38 @@
-.tessera-page {
+[hidden] {
+  display: none !important;
+}
+
+.tessera-page > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.tessera-centered {
+  display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.tessera-crumb {
+  font-size: 13px;
+  color: var(--atrium-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40vw;
+}
+
+.tessera-crumb:not(:empty)::before {
+  content: '/';
+  margin-right: 10px;
+  opacity: 0.6;
+}
+
+.atrium-sidebar .tessera-home-btn,
+body.is-project .atrium-sidebar [data-atrium-tab] {
+  display: none;
+}
+
+body.is-project .atrium-sidebar .tessera-home-btn {
+  display: flex;
 }

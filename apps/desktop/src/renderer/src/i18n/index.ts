@@ -33,6 +33,10 @@ export function applyTranslations(root: ParentNode = document) {
     const key = el.dataset['i18n'];
     if (key && isMessageKey(key)) el.textContent = t(key);
   });
+  root.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.dataset['i18nPlaceholder'];
+    if (key && isMessageKey(key)) el.placeholder = t(key);
+  });
   root.querySelectorAll<HTMLElement>('[data-i18n-label]').forEach((el) => {
     const key = el.dataset['i18nLabel'];
     if (key && isMessageKey(key)) el.setAttribute('aria-label', t(key));

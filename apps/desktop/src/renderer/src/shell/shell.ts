@@ -7,6 +7,8 @@ import './shell.css';
 
 export interface Shell {
   sidebar: HTMLElement;
+  crumb: HTMLElement;
+  homeButton: HTMLButtonElement;
   stage: HTMLElement;
   statusbar: HTMLElement;
   panels: Map<string, HTMLElement>;
@@ -32,6 +34,8 @@ export function mountShell(pages: Page[]): Shell {
 
   const sidebar = document.querySelector<HTMLElement>('[data-sidebar]')!;
   const stage = document.querySelector<HTMLElement>('[data-stage]')!;
+  const crumb = document.querySelector<HTMLElement>('[data-crumb]')!;
+  const homeButton = document.querySelector<HTMLButtonElement>('[data-home]')!;
   const statusbar = document.querySelector<HTMLElement>('.atrium-statusbar')!;
   const panels = new Map<string, HTMLElement>();
 
@@ -51,5 +55,5 @@ export function mountShell(pages: Page[]): Shell {
     panels.set(page.id, panel);
   }
 
-  return { sidebar, stage, statusbar, panels };
+  return { sidebar, crumb, homeButton, stage, statusbar, panels };
 }

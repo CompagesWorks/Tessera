@@ -1,0 +1,121 @@
+.tessera-home {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tessera-home-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 24px 12px;
+}
+
+.tessera-home-toolbar h1 {
+  margin: 0 auto 0 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.tessera-home-search {
+  width: 260px;
+}
+
+.tessera-home-search .atrium-input {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.tessera-home-toolbar .atrium-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tessera-home-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 24px 14px;
+  border-bottom: 1px solid var(--atrium-border-color);
+}
+
+.tessera-home-chips .atrium-chip-btn {
+  gap: 7px;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.tessera-home-chips .tessera-chip-count {
+  color: var(--atrium-text-muted);
+  font-weight: 500;
+}
+
+.tessera-home-chips .tessera-chip-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--atrium-border-hover);
+}
+
+.tessera-home-chips .tessera-chip-add {
+  border-style: dashed;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-home-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 24px 28px;
+}
+
+.tessera-home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-auto-rows: max-content;
+  gap: 16px;
+}
+
+.tessera-home-grid.is-list {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.tessera-new-card {
+  display: grid;
+  place-items: center;
+  min-height: 230px;
+  border: 1.5px dashed var(--atrium-border-hover);
+  border-radius: 12px;
+  background: none;
+  color: var(--atrium-text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.tessera-new-card:hover {
+  border-color: var(--atrium-accent-color);
+  color: var(--atrium-accent-color);
+}
+
+.tessera-new-card i {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 28px;
+}
+
+.tessera-home-grid.is-list .tessera-new-card {
+  min-height: 60px;
+}
+
+.tessera-home-grid.is-list .tessera-new-card i {
+  display: inline;
+  margin: 0 8px 0 0;
+  font-size: 16px;
+}

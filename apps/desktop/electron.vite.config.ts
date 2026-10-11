@@ -14,7 +14,7 @@ function contentSecurityPolicy(): Plugin {
           "script-src 'self'",
           "style-src 'self' 'unsafe-inline'",
           "font-src 'self' data:",
-          "img-src 'self' data: blob:",
+          "img-src 'self' data: blob: tessera-cover:",
           dev ? "connect-src 'self' ws://localhost:*" : "connect-src 'none'",
           "base-uri 'none'",
           "form-action 'none'",

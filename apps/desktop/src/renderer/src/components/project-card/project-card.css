@@ -1,0 +1,146 @@
+.tessera-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--atrium-bg-card);
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  transition:
+    transform 0.3s var(--atrium-ease-out-expo),
+    border-color 0.2s,
+    box-shadow 0.3s;
+}
+
+.tessera-card:hover,
+.tessera-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: rgba(var(--atrium-accent-rgb), 0.5);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.tessera-card-cover {
+  position: relative;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, hsl(var(--_hue) 55% 42%), hsl(var(--_hue) 60% 14%));
+}
+
+.tessera-card-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tessera-card-kind {
+  font-size: 42px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.tessera-card-cover.has-image .tessera-card-kind {
+  display: none;
+}
+
+.tessera-card-status {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.tessera-card-fav {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  font-size: 15px;
+  color: #ffd166;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.tessera-card-body {
+  padding: 12px 14px 14px;
+  min-width: 0;
+}
+
+.tessera-card-title {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tessera-card-meta {
+  display: flex;
+  gap: 10px;
+  margin: 3px 0 10px;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 20px;
+}
+
+.tessera-card.is-missing .tessera-card-cover {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.tessera-card.is-missing .tessera-card-title {
+  color: var(--atrium-text-muted);
+}
+
+.tessera-card.is-list {
+  flex-direction: row;
+  align-items: center;
+}
+
+.tessera-card.is-list:hover,
+.tessera-card.is-list:focus-visible {
+  transform: translateX(3px);
+}
+
+.tessera-card.is-list .tessera-card-cover {
+  width: 96px;
+  height: 58px;
+  flex-shrink: 0;
+}
+
+.tessera-card.is-list .tessera-card-kind {
+  font-size: 24px;
+}
+
+.tessera-card.is-list .tessera-card-status,
+.tessera-card.is-list .tessera-card-fav {
+  display: none;
+}
+
+.tessera-card.is-list .tessera-card-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+}
+
+.tessera-card.is-list .tessera-card-title {
+  flex: 0 1 260px;
+}
+
+.tessera-card.is-list .tessera-card-meta {
+  margin: 0;
+}
+
+.tessera-card.is-list .tessera-card-tags {
+  margin-left: auto;
+  min-height: 0;
+}

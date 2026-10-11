@@ -1,5 +1,26 @@
-<div class="atrium-empty">
-  <i class="bi bi-collection"></i>
-  <h3 data-i18n="projects.emptyTitle"></h3>
-  <p data-i18n="projects.emptyText"></p>
+<div class="tessera-home">
+  <header class="tessera-home-toolbar">
+    <h1 data-i18n="projects.title"></h1>
+    <label class="atrium-input-icon tessera-home-search">
+      <i class="bi bi-search"></i>
+      <input class="atrium-input" data-search data-i18n-placeholder="projects.search" />
+    </label>
+    <div data-view></div>
+    <select data-sort>
+      <option value="recent" data-icon="clock-history" data-i18n="projects.sort.recent"></option>
+      <option value="updated" data-icon="pencil" data-i18n="projects.sort.updated"></option>
+      <option value="name" data-icon="sort-alpha-down" data-i18n="projects.sort.name"></option>
+    </select>
+    <button type="button" class="atrium-btn atrium-btn-secondary" data-import><i class="bi bi-folder-plus"></i> <span data-i18n="projects.import"></span></button>
+    <button type="button" class="atrium-btn atrium-btn-primary" data-new><i class="bi bi-plus-lg"></i> <span data-i18n="projects.new"></span></button>
+  </header>
+  <nav class="tessera-home-chips" data-chips></nav>
+  <div class="tessera-home-body">
+    <div class="tessera-home-grid" data-grid></div>
+    <div class="atrium-empty" data-empty hidden>
+      <i class="bi bi-collection"></i>
+      <h3 data-empty-title></h3>
+      <p data-empty-text></p>
+    </div>
+  </div>
 </div>
