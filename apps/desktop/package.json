@@ -1,0 +1,27 @@
+{
+  "name": "@tessera/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tessera desktop app (Electron)",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "@tessera/protocol": "0.1.0",
+    "atrium-ui": "github:CompagesWorks/Atrium-UI",
+    "bootstrap-icons": "^1.11.3",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "electron": "^44.7.0",
+    "electron-vite": "^5.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.0"
+  }
+}

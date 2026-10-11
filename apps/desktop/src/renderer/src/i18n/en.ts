@@ -1,0 +1,27 @@
+import type { fr } from './fr';
+
+export const en: Record<keyof typeof fr, string> = {
+  'window.minimize': 'Minimize',
+  'window.maximize': 'Maximize',
+  'window.close': 'Close',
+  'nav.projects': 'Projects',
+  'nav.settings': 'Settings',
+  'projects.emptyTitle': 'No projects',
+  'projects.emptyText': 'Your mod projects will show up here.',
+  'settings.title': 'Settings',
+  'settings.comingSoon': 'The settings page is coming soon.',
+  'status.ready': 'Ready',
+  'status.safeMode': 'Safe mode',
+  'commands.section.app': 'Tessera',
+  'commands.section.goTo': 'Go to',
+  'commands.toggleTheme': 'Toggle light / dark theme',
+  'commands.language': 'Change language (Français)',
+  'commands.about': 'About Tessera',
+  'commands.projects': 'Go to projects',
+  'commands.settings': 'Settings',
+  'about.title': 'About',
+  'about.version': 'Version {{version}} · Electron {{electron}}',
+  'about.credit': 'UI by Atrium-UI',
+  'about.close': 'Close',
+  'toast.language': 'Language: English',
+};

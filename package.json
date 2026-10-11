@@ -1,0 +1,20 @@
+{
+  "name": "tessera",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tessera: a fully customizable, plugin-based tool to create Super Smash Bros. Ultimate mods",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @tessera/desktop",
+    "build": "npm run build -w @tessera/desktop",
+    "start": "npm run start -w @tessera/desktop",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
