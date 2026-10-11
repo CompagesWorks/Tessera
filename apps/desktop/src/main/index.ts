@@ -14,6 +14,8 @@ import { createMainWindow } from './window';
 const rendererUrl = !app.isPackaged ? process.env['ELECTRON_RENDERER_URL'] : undefined;
 const rendererFile = pathToFileURL(join(import.meta.dirname, '../renderer/index.html')).href;
 const safeMode = process.argv.includes('--safe-mode');
+const profile = process.argv.find((arg) => arg.startsWith('--tessera-profile='))?.split('=')[1];
+if (profile && !app.isPackaged) app.setPath('userData', profile);
 
 function isTrusted(url: string): boolean {
   if (rendererUrl) return new URL(url).origin === new URL(rendererUrl).origin;

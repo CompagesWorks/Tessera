@@ -9,6 +9,8 @@ export interface Shell {
   sidebar: HTMLElement;
   crumb: HTMLElement;
   homeButton: HTMLButtonElement;
+  workspaces: HTMLElement;
+  editButton: HTMLButtonElement;
   stage: HTMLElement;
   statusbar: HTMLElement;
   panels: Map<string, HTMLElement>;
@@ -36,12 +38,15 @@ export function mountShell(pages: Page[]): Shell {
   const stage = document.querySelector<HTMLElement>('[data-stage]')!;
   const crumb = document.querySelector<HTMLElement>('[data-crumb]')!;
   const homeButton = document.querySelector<HTMLButtonElement>('[data-home]')!;
+  const workspaces = document.querySelector<HTMLElement>('[data-workspaces]')!;
+  const editButton = document.querySelector<HTMLButtonElement>('[data-edit-layout]')!;
   const statusbar = document.querySelector<HTMLElement>('.atrium-statusbar')!;
   const panels = new Map<string, HTMLElement>();
 
   for (const page of pages) {
     const button = document.createElement('button');
     button.className = 'atrium-sidebar-btn';
+    button.classList.toggle('is-bottom', page.bottom === true);
     button.dataset['atriumTab'] = page.id;
     button.dataset['i18nTooltip'] = page.label;
     button.innerHTML = `<i class="bi bi-${page.icon}"></i>`;
@@ -55,5 +60,5 @@ export function mountShell(pages: Page[]): Shell {
     panels.set(page.id, panel);
   }
 
-  return { sidebar, crumb, homeButton, stage, statusbar, panels };
+  return { sidebar, crumb, homeButton, workspaces, editButton, stage, statusbar, panels };
 }

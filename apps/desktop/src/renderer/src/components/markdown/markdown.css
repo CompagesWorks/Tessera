@@ -1,0 +1,129 @@
+.tessera-markdown {
+  color: var(--atrium-text-secondary);
+  font: 14px/1.65 var(--atrium-font-family);
+  overflow-wrap: anywhere;
+}
+
+.tessera-markdown > :first-child {
+  margin-top: 0;
+}
+
+.tessera-markdown h1,
+.tessera-markdown h2,
+.tessera-markdown h3,
+.tessera-markdown h4 {
+  margin: 1.2em 0 0.5em;
+  line-height: 1.3;
+  color: var(--atrium-text-primary);
+}
+
+.tessera-markdown h1 {
+  padding-bottom: 0.3em;
+  font-size: 1.7em;
+  border-bottom: 1px solid var(--atrium-border-color);
+}
+
+.tessera-markdown h2 {
+  padding-bottom: 0.25em;
+  font-size: 1.35em;
+  border-bottom: 1px solid var(--atrium-border-color);
+}
+
+.tessera-markdown h3 {
+  font-size: 1.15em;
+}
+
+.tessera-markdown p,
+.tessera-markdown ul,
+.tessera-markdown ol,
+.tessera-markdown blockquote,
+.tessera-markdown pre,
+.tessera-markdown table {
+  margin: 0 0 0.9em;
+}
+
+.tessera-markdown ul,
+.tessera-markdown ol {
+  padding-left: 1.6em;
+}
+
+.tessera-markdown li + li {
+  margin-top: 0.2em;
+}
+
+.tessera-markdown li:has(> input[type='checkbox']) {
+  list-style: none;
+  margin-left: -1.3em;
+}
+
+.tessera-markdown input[type='checkbox'] {
+  margin-right: 6px;
+  accent-color: var(--atrium-accent-color);
+}
+
+.tessera-markdown a {
+  color: var(--atrium-accent-color);
+  text-decoration: none;
+}
+
+.tessera-markdown a:hover {
+  text-decoration: underline;
+}
+
+.tessera-markdown strong {
+  color: var(--atrium-text-primary);
+}
+
+.tessera-markdown code {
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+  background: var(--atrium-bg-transparent-08);
+  font: 0.9em Consolas, 'Cascadia Mono', monospace;
+}
+
+.tessera-markdown pre {
+  padding: 12px 14px;
+  overflow: auto;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 8px;
+  background: var(--atrium-bg-secondary);
+}
+
+.tessera-markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.tessera-markdown blockquote {
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid rgba(var(--atrium-accent-rgb), 0.6);
+  color: var(--atrium-text-muted);
+}
+
+.tessera-markdown hr {
+  margin: 1.4em 0;
+  border: 0;
+  border-top: 1px solid var(--atrium-border-color);
+}
+
+.tessera-markdown table {
+  border-collapse: collapse;
+  display: block;
+  overflow: auto;
+}
+
+.tessera-markdown th,
+.tessera-markdown td {
+  padding: 6px 12px;
+  border: 1px solid var(--atrium-border-color);
+}
+
+.tessera-markdown th {
+  background: var(--atrium-bg-transparent-05);
+  color: var(--atrium-text-primary);
+}
+
+.tessera-markdown img {
+  max-width: 100%;
+  border-radius: 8px;
+}

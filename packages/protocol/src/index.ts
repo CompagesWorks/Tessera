@@ -12,9 +12,20 @@ import {
   type ProjectSummary,
   type Tag,
 } from './projects';
+import {
+  CreateNoteSchema,
+  ListDirSchema,
+  NoteRefSchema,
+  SaveLayoutSchema,
+  WriteNoteSchema,
+  type DirEntry,
+  type NoteInfo,
+  type ProjectLayout,
+} from './layout';
 
 export * from './channels';
 export * from './projects';
+export * from './layout';
 
 export const LanguageSchema = z.enum(['fr', 'en']);
 export const ThemeSchema = z.enum(['dark', 'light']);
@@ -68,6 +79,14 @@ export const requestSchemas = {
   'tags:delete': z.object({ id: IdSchema }).strict(),
   'collections:upsert': UpsertCollectionSchema,
   'collections:delete': z.object({ id: IdSchema }).strict(),
+  'layout:get': ProjectRefSchema,
+  'layout:save': SaveLayoutSchema,
+  'files:list': ListDirSchema,
+  'notes:list': ProjectRefSchema,
+  'notes:read': NoteRefSchema,
+  'notes:write': WriteNoteSchema,
+  'notes:create': CreateNoteSchema,
+  'notes:delete': NoteRefSchema,
 } satisfies Record<InvokeChannel, z.ZodType>;
 
 export interface InvokeResponses {
@@ -89,6 +108,14 @@ export interface InvokeResponses {
   'tags:delete': void;
   'collections:upsert': Collection;
   'collections:delete': void;
+  'layout:get': ProjectLayout;
+  'layout:save': void;
+  'files:list': DirEntry[];
+  'notes:list': NoteInfo[];
+  'notes:read': string;
+  'notes:write': void;
+  'notes:create': string;
+  'notes:delete': void;
 }
 
 export type InvokeRequest<C extends InvokeChannel> = z.input<(typeof requestSchemas)[C]>;

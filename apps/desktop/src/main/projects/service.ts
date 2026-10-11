@@ -187,6 +187,12 @@ export class ProjectService {
     return this.entry(id).path;
   }
 
+  async rootOf(id: string): Promise<string> {
+    const entry = this.entry(id);
+    await this.readFiles(entry);
+    return entry.path;
+  }
+
   async upsertTag(input: Omit<Tag, 'id'> & { id?: string | undefined }): Promise<Tag> {
     const tag: Tag = { id: input.id ?? randomUUID(), name: input.name, color: input.color.toLowerCase() };
     upsert(this.registry.tags, tag);

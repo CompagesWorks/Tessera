@@ -36,7 +36,13 @@ async function boot() {
     info,
     store,
     status,
-    navigation: createProjectView(shell.stage, () => ctx),
+    navigation: createProjectView({
+      host: shell.stage,
+      workspaces: shell.workspaces,
+      editButton: shell.editButton,
+      ui,
+      getContext: () => ctx,
+    }),
   };
 
   const tabs = atrium.tabs({ root: shell.stage, nav: shell.sidebar, transition: 'slide', initial: pages[0]!.id });
@@ -57,6 +63,8 @@ async function boot() {
     if (next.language === getLanguage()) return;
     setLanguage(next.language);
     for (const page of pages) page.onLanguageChange?.(shell.panels.get(page.id)!);
+    applyTranslations();
+    ctx.navigation.workspace.relabel();
     registerCoreCommands(ctx, tabs);
     void store.refresh();
     status.set(readyText());

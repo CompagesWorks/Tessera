@@ -6,6 +6,7 @@ export interface Page {
   icon: string;
   label: MessageKey;
   template: string;
+  bottom?: boolean;
   mount?(root: HTMLElement, ctx: AppContext): void;
   onLanguageChange?(root: HTMLElement): void;
 }

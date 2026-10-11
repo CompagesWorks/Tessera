@@ -19,6 +19,12 @@ npm run typecheck
 
 The Electron binary is downloaded on the first launch.
 
+To run a second, isolated instance next to your own (separate settings and projects list), pass a profile folder. It is ignored in packaged builds:
+
+```bash
+npx electron apps/desktop --tessera-profile=C:/temp/tessera-test
+```
+
 ## Layout
 
 ```

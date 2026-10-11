@@ -17,6 +17,14 @@ export const INVOKE_CHANNELS = [
   'tags:delete',
   'collections:upsert',
   'collections:delete',
+  'layout:get',
+  'layout:save',
+  'files:list',
+  'notes:list',
+  'notes:read',
+  'notes:write',
+  'notes:create',
+  'notes:delete',
 ] as const;
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number];
 

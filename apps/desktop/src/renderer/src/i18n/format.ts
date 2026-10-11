@@ -4,7 +4,9 @@ export function errorMessage(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);
   const code = /project:[a-z-]+/.exec(text)?.[0];
   const key = code ? `error.${code}` : '';
-  return isMessageKey(key) ? t(key) : t('error.unknown');
+  if (isMessageKey(key)) return t(key);
+  console.error(error);
+  return t('error.unknown');
 }
 
 export function relativeTime(iso: string | null): string {

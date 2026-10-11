@@ -1,0 +1,109 @@
+.tessera-workspace-area {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tessera-drawer {
+  width: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-left: 1px solid transparent;
+  transition:
+    width 0.4s var(--atrium-ease-out-expo),
+    border-color 0.4s;
+}
+
+.tessera-workspace-area.is-editing .tessera-drawer {
+  width: 260px;
+  border-left-color: var(--atrium-border-color);
+}
+
+.tessera-drawer-inner {
+  width: 260px;
+  height: 100%;
+  overflow: auto;
+  padding: 14px 12px;
+}
+
+.tessera-drawer h3 {
+  margin: 2px 2px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tessera-drawer-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 10px;
+  background: var(--atrium-bg-tertiary);
+  color: var(--atrium-text-primary);
+  font: 13px var(--atrium-font-family);
+  text-align: left;
+  cursor: grab;
+  transition:
+    transform 0.2s var(--atrium-ease-out-expo),
+    border-color 0.2s;
+}
+
+.tessera-drawer-card:hover {
+  border-color: var(--atrium-accent-color);
+  transform: translateX(-2px);
+}
+
+.tessera-drawer-card > i {
+  width: 22px;
+  font-size: 18px;
+  text-align: center;
+  color: var(--atrium-accent-color);
+}
+
+.tessera-drawer-card small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-drawer-hint {
+  margin: 14px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--atrium-bg-transparent-05);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-widget-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  text-align: center;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-widget-missing code {
+  font-size: 12px;
+  color: var(--atrium-warning-color);
+}
+
+.tessera-workspace-btn.is-dragging {
+  opacity: 0.4;
+}

@@ -1,0 +1,31 @@
+.tessera-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+
+.tessera-icon-grid button {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 8px;
+  background: var(--atrium-bg-tertiary);
+  color: var(--atrium-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    transform 0.2s var(--atrium-ease-back),
+    border-color 0.2s;
+}
+
+.tessera-icon-grid button:hover {
+  border-color: var(--atrium-border-hover);
+}
+
+.tessera-icon-grid button.is-active {
+  border-color: var(--atrium-accent-color);
+  background: rgba(var(--atrium-accent-rgb), 0.15);
+  color: var(--atrium-accent-color);
+  transform: scale(1.05);
+}
