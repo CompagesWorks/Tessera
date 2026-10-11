@@ -4,7 +4,9 @@ import { app, BrowserWindow, ipcMain, session, shell } from 'electron';
 import { registerWindowControls } from 'atrium-ui/electron';
 import type { AppInfo } from '@tessera/protocol';
 import { handle, send } from './ipc';
-import { handleCoverProtocol, registerCoverScheme } from './projects/cover-protocol';
+import { handleProtocols, registerSchemes } from './protocols';
+import { registerPluginHandlers } from './plugins/handlers';
+import { PluginService } from './plugins/service';
 import { registerProjectHandlers } from './projects/handlers';
 import { ProjectService } from './projects/service';
 import { applySecurityPolicy } from './security';
@@ -22,7 +24,7 @@ function isTrusted(url: string): boolean {
   return url.split(/[?#]/)[0] === rendererFile;
 }
 
-registerCoverScheme();
+registerSchemes();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -34,7 +36,7 @@ async function start() {
   app.setAppUserModelId('com.compagesworks.tessera');
   await app.whenReady();
 
-  applySecurityPolicy(isTrusted);
+  applySecurityPolicy(isTrusted, rendererUrl);
   registerWindowControls({ ipcMain, BrowserWindow, session });
 
   const settings = new SettingsStore(app.getPath('userData'));
@@ -42,8 +44,12 @@ async function start() {
 
   const projects = new ProjectService(join(app.getPath('userData'), 'projects.json'), join(app.getPath('documents'), 'Tessera'));
   await projects.load();
-  handleCoverProtocol(projects);
   registerProjectHandlers(projects, isTrusted);
+
+  const plugins = new PluginService(join(app.getPath('userData'), 'plugins.json'));
+  await plugins.load();
+  registerPluginHandlers(plugins, isTrusted);
+  handleProtocols(projects, plugins);
 
   handle(
     'app:info',

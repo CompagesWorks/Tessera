@@ -22,10 +22,20 @@ import {
   type NoteInfo,
   type ProjectLayout,
 } from './layout';
+import {
+  InstallLocalSchema,
+  PluginRefSchema,
+  ReadTextSchema,
+  SetPluginEnabledSchema,
+  SetPluginGrantsSchema,
+  type InstalledPlugin,
+  type PluginManifest,
+} from './plugins';
 
 export * from './channels';
 export * from './projects';
 export * from './layout';
+export * from './plugins';
 
 export const LanguageSchema = z.enum(['fr', 'en']);
 export const ThemeSchema = z.enum(['dark', 'light']);
@@ -87,6 +97,13 @@ export const requestSchemas = {
   'notes:write': WriteNoteSchema,
   'notes:create': CreateNoteSchema,
   'notes:delete': NoteRefSchema,
+  'files:read-text': ReadTextSchema,
+  'plugins:list': z.undefined(),
+  'plugins:inspect-local': z.undefined(),
+  'plugins:install-local': InstallLocalSchema,
+  'plugins:set-enabled': SetPluginEnabledSchema,
+  'plugins:set-grants': SetPluginGrantsSchema,
+  'plugins:remove': PluginRefSchema,
 } satisfies Record<InvokeChannel, z.ZodType>;
 
 export interface InvokeResponses {
@@ -116,6 +133,13 @@ export interface InvokeResponses {
   'notes:write': void;
   'notes:create': string;
   'notes:delete': void;
+  'files:read-text': string;
+  'plugins:list': InstalledPlugin[];
+  'plugins:inspect-local': { path: string; manifest: PluginManifest } | { path: string; error: string } | null;
+  'plugins:install-local': InstalledPlugin;
+  'plugins:set-enabled': InstalledPlugin;
+  'plugins:set-grants': InstalledPlugin;
+  'plugins:remove': void;
 }
 
 export type InvokeRequest<C extends InvokeChannel> = z.input<(typeof requestSchemas)[C]>;

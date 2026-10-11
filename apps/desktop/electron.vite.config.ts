@@ -18,7 +18,7 @@ function contentSecurityPolicy(): Plugin {
           dev ? "connect-src 'self' ws://localhost:*" : "connect-src 'none'",
           "base-uri 'none'",
           "form-action 'none'",
-          "frame-src 'none'",
+          "frame-src tessera-plugin:",
           "object-src 'none'",
         ].join('; ');
         return [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: policy }, injectTo: 'head-prepend' }];

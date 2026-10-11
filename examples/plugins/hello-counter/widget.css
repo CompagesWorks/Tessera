@@ -1,0 +1,48 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  color: var(--atrium-text-primary);
+  font-family: var(--atrium-font-family);
+}
+
+.counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.project {
+  margin: 0;
+  color: var(--atrium-text-muted);
+  font-size: 13px;
+}
+
+.value {
+  font-size: 54px;
+  font-weight: 700;
+  color: var(--atrium-accent-color);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.files {
+  width: 100%;
+  max-width: 320px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--atrium-text-secondary);
+}
+
+.files li {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--atrium-border-color);
+}

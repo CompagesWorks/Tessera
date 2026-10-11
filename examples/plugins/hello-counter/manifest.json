@@ -1,0 +1,22 @@
+{
+  "id": "examples.hello-counter",
+  "name": "Hello Counter",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "Plugin d'exemple : un compteur sauvegardé dans le layout, et la liste des sources du projet.",
+  "icon": "123",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": ["fs.project.read"],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "counter",
+        "title": "Compteur",
+        "description": "Exemple de widget plugin",
+        "icon": "123",
+        "category": "tools",
+        "entry": "widget.html"
+      }
+    ]
+  }
+}

@@ -1,8 +1,8 @@
-import type { ProjectSummary } from '@tessera/protocol';
-import type { MessageKey } from '../i18n';
+import type { ProjectSummary, WidgetCategory } from '@tessera/protocol';
 import type { UiProvider } from '../ui/provider';
 
 export interface WidgetContext {
+  widgetId: string;
   project: ProjectSummary;
   ui: UiProvider;
   state: Record<string, unknown>;
@@ -16,9 +16,11 @@ export interface WidgetHandle {
 
 export interface WidgetDefinition {
   type: string;
-  title: MessageKey;
-  description: MessageKey;
+  title(): string;
+  description(): string;
   icon: string;
+  category: WidgetCategory;
   source: string;
+  trust: 'builtin' | 'plugin';
   create(ctx: WidgetContext): WidgetHandle;
 }

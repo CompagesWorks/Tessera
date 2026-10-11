@@ -25,6 +25,13 @@ export const INVOKE_CHANNELS = [
   'notes:write',
   'notes:create',
   'notes:delete',
+  'files:read-text',
+  'plugins:list',
+  'plugins:inspect-local',
+  'plugins:install-local',
+  'plugins:set-enabled',
+  'plugins:set-grants',
+  'plugins:remove',
 ] as const;
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number];
 

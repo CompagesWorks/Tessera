@@ -1,0 +1,241 @@
+.tessera-plugins {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.tessera-plugins-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--atrium-border-color);
+}
+
+.tessera-plugins-toolbar h1 {
+  margin: 0 auto 0 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.tessera-plugins-toolbar .atrium-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tessera-plugins-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.tessera-plugins-list {
+  width: 360px;
+  flex-shrink: 0;
+  overflow: auto;
+  padding: 10px;
+  border-right: 1px solid var(--atrium-border-color);
+}
+
+.tessera-plugin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--atrium-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.tessera-plugin-row:hover {
+  background: var(--atrium-bg-hover);
+}
+
+.tessera-plugin-row.is-selected {
+  background: rgba(var(--atrium-accent-rgb), 0.1);
+  border-color: rgba(var(--atrium-accent-rgb), 0.35);
+}
+
+.tessera-plugin-row.is-off .tessera-plugin-icon,
+.tessera-plugin-row.is-off .tessera-plugin-name {
+  opacity: 0.45;
+}
+
+.tessera-plugin-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 18px;
+  color: #fff;
+  background: linear-gradient(135deg, hsl(var(--_hue) 55% 48%), hsl(var(--_hue) 60% 26%));
+}
+
+.tessera-plugin-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.tessera-plugin-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-plugin-row .atrium-switch {
+  margin-left: auto;
+}
+
+.tessera-plugins-detail {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 22px 28px;
+}
+
+.tessera-plugin-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tessera-plugin-head .tessera-plugin-icon {
+  width: 56px;
+  height: 56px;
+  font-size: 26px;
+  border-radius: 14px;
+}
+
+.tessera-plugin-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.tessera-plugin-head .atrium-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tessera-plugin-desc {
+  max-width: 640px;
+  margin: 16px 0 4px;
+  line-height: 1.6;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-plugins-detail h3 {
+  margin: 24px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-plugin-widgets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tessera-permission {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 640px;
+  margin-bottom: 8px;
+  padding: 12px;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 10px;
+  background: var(--atrium-bg-card);
+}
+
+.tessera-permission-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(var(--_rgb), 0.14);
+  color: rgb(var(--_rgb));
+}
+
+.tessera-permission.is-low {
+  --_rgb: var(--atrium-success-rgb);
+}
+
+.tessera-permission.is-medium {
+  --_rgb: var(--atrium-warning-rgb);
+}
+
+.tessera-permission.is-high {
+  --_rgb: var(--atrium-danger-rgb);
+  border-color: rgba(var(--atrium-danger-rgb), 0.35);
+}
+
+.tessera-permission small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-permission code {
+  font-size: 11.5px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-permission .atrium-switch {
+  margin-left: auto;
+}
+
+.tessera-plugin-info {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 7px 12px;
+  max-width: 640px;
+  font-size: 13px;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-plugin-info span:nth-child(odd) {
+  color: var(--atrium-text-muted);
+}
+
+.tessera-plugin-info code {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.tessera-plugin-warning {
+  display: flex;
+  gap: 10px;
+  max-width: 640px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--atrium-warning-rgb), 0.35);
+  border-radius: 9px;
+  background: rgba(var(--atrium-warning-rgb), 0.08);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-plugin-warning > i {
+  color: var(--atrium-warning-color);
+  font-size: 16px;
+}

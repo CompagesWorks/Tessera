@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog, shell, type IpcMainInvokeEvent } from 'electron';
 import { handle } from '../ipc';
 import { COVER_EXTENSIONS } from './files';
-import { listDir } from './files-list';
+import { listDir, readText } from './files-list';
 import { readLayout, writeLayout } from './layout';
 import { createNote, deleteNote, listNotes, readNote, writeNote } from './notes';
 import { ProjectError, type ProjectService } from './service';
@@ -64,6 +64,7 @@ export function registerProjectHandlers(projects: ProjectService, isTrusted: (ur
   handle('layout:get', ({ id }) => guard(async () => readLayout(await projects.rootOf(id))), isTrusted);
   handle('layout:save', ({ id, layout }) => guard(async () => writeLayout(await projects.rootOf(id), layout)), isTrusted);
   handle('files:list', ({ id, path }) => guard(async () => listDir(await projects.rootOf(id), path)), isTrusted);
+  handle('files:read-text', ({ id, path }) => guard(async () => readText(await projects.rootOf(id), path)), isTrusted);
   handle('notes:list', ({ id }) => guard(async () => listNotes(await projects.rootOf(id))), isTrusted);
   handle('notes:read', ({ id, name }) => guard(async () => readNote(await projects.rootOf(id), name)), isTrusted);
   handle('notes:write', ({ id, name, content }) => guard(async () => writeNote(await projects.rootOf(id), name, content)), isTrusted);

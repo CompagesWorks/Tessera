@@ -24,7 +24,7 @@ function missingWidget(type: string): WidgetHandle {
   return { element };
 }
 
-export function createWidgetHost(options: Options): DockWidgets & { prune(alive: Set<string>): void; dispose(): void } {
+export function createWidgetHost(options: Options): DockWidgets & { prune(alive: Set<string>): void; reset(widgetId: string): void; dispose(): void } {
   const mounted = new Map<string, WidgetHandle>();
 
   const dispose = (widgetId: string) => {
@@ -51,6 +51,7 @@ export function createWidgetHost(options: Options): DockWidgets & { prune(alive:
       } else {
         try {
           handle = definition.create({
+            widgetId,
             project: options.project,
             ui: options.ui,
             state: structuredClone(instance.state),
@@ -68,7 +69,11 @@ export function createWidgetHost(options: Options): DockWidgets & { prune(alive:
     label(widgetId) {
       const instance = options.instance(widgetId);
       const definition = instance && widgetDefinition(instance.type);
-      return definition ? { title: t(definition.title), icon: definition.icon } : { title: t('dock.missingWidget'), icon: 'puzzle' };
+      return definition ? { title: definition.title(), icon: definition.icon } : { title: t('dock.missingWidget'), icon: 'puzzle' };
+    },
+
+    reset(widgetId: string) {
+      dispose(widgetId);
     },
 
     prune(alive) {

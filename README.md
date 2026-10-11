@@ -4,6 +4,7 @@ A fully customizable, plugin-based tool to create Super Smash Bros. Ultimate mod
 
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - UI mockup: [mockups/layout-mockup.html](mockups/layout-mockup.html)
+- Writing a plugin: [docs/PLUGINS.md](docs/PLUGINS.md), example in [examples/plugins/hello-counter](examples/plugins/hello-counter)
 
 ## Development
 

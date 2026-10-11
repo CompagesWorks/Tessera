@@ -9,10 +9,12 @@ const date = (iso: string) => new Date(iso).toLocaleString();
 
 export const projectInfoWidget: WidgetDefinition = {
   type: 'core/project-info',
-  title: 'widget.info.title',
-  description: 'widget.info.description',
+  title: () => t('widget.info.title'),
+  description: () => t('widget.info.description'),
   icon: 'info-square',
+  category: 'project',
   source: 'Tessera',
+  trust: 'builtin',
   create({ project }) {
     const element = fromTemplate(template);
     required(element, '[data-kind]').classList.add(`bi-${KIND_ICONS[project.kind]}`);

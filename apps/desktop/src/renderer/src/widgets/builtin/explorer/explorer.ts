@@ -34,10 +34,12 @@ function formatSize(bytes: number) {
 
 export const explorerWidget: WidgetDefinition = {
   type: 'core/explorer',
-  title: 'widget.explorer.title',
-  description: 'widget.explorer.description',
+  title: () => t('widget.explorer.title'),
+  description: () => t('widget.explorer.description'),
   icon: 'folder2-open',
+  category: 'files',
   source: 'Tessera',
+  trust: 'builtin',
   create({ project, state, setState }) {
     const element = document.createElement('div');
     element.className = 'tessera-explorer';

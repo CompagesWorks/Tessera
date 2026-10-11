@@ -1,6 +1,6 @@
-import { readdir, realpath, stat } from 'node:fs/promises';
+import { readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
-import type { DirEntry } from '@tessera/protocol';
+import { MAX_TEXT_READ, type DirEntry } from '@tessera/protocol';
 import { TESSERA_DIR } from './files';
 
 const MAX_ENTRIES = 2000;
@@ -32,4 +32,15 @@ export async function listDir(projectRoot: string, path: string): Promise<DirEnt
     });
   }
   return result.sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, undefined, { numeric: true }) : a.kind === 'dir' ? -1 : 1));
+}
+
+export async function readText(projectRoot: string, path: string): Promise<string> {
+  const root = await realpath(projectRoot);
+  const target = resolve(root, path);
+  if (!inside(root, target)) throw new Error('outside project');
+  const real = await realpath(target);
+  if (!inside(root, real) || relative(root, real).split(sep)[0] === TESSERA_DIR) throw new Error('outside project');
+  const info = await stat(real);
+  if (!info.isFile() || info.size > MAX_TEXT_READ) throw new Error('file too large');
+  return readFile(real, 'utf8');
 }

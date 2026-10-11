@@ -14,10 +14,12 @@ const VIEWS: View[] = ['edit', 'split', 'preview'];
 
 export const notesWidget: WidgetDefinition = {
   type: 'core/notes',
-  title: 'widget.notes.title',
-  description: 'widget.notes.description',
+  title: () => t('widget.notes.title'),
+  description: () => t('widget.notes.description'),
   icon: 'journal-text',
+  category: 'project',
   source: 'Tessera',
+  trust: 'builtin',
   create({ project, ui, state, setState }) {
     const element = fromTemplate(template);
     const select = required<HTMLSelectElement>(element, '[data-select]');

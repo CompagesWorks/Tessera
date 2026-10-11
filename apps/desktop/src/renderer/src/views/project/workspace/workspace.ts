@@ -1,4 +1,4 @@
-import type { ProjectLayout, ProjectSummary } from '@tessera/protocol';
+import { WIDGET_CATEGORIES, type ProjectLayout, type ProjectSummary, type WidgetCategory } from '@tessera/protocol';
 import { endWidgetDrag, renderDock, startWidgetDrag, WIDGET_MIME, type DockActions } from '../../../components/dock/dock';
 import { fromTemplate, required } from '../../../components/dom';
 import { t } from '../../../i18n';
@@ -17,7 +17,9 @@ import {
   workspaceOf,
 } from '../../../layout/tree';
 import type { UiProvider } from '../../../ui/provider';
-import { allWidgets } from '../../../widgets/registry';
+import { CATEGORY_ICONS, categoryLabel, searchWidgets } from '../../../widgets/categories';
+import { allWidgets, onWidgetsChange } from '../../../widgets/registry';
+import type { WidgetDefinition } from '../../../widgets/types';
 import { workspaceDialog } from '../workspace-dialog/workspace-dialog';
 import { createWidgetHost } from './widget-host';
 import './workspace.css';
@@ -37,6 +39,15 @@ export function createWorkspaceController({ host, sidebar, ui, onEditingChange }
   const area = fromTemplate(template);
   const dockEl = required<HTMLElement>(area, '[data-dock]');
   const widgetList = required<HTMLElement>(area, '[data-widgets]');
+  const categoryList = required<HTMLElement>(area, '[data-categories]');
+  const drawerSearch = required<HTMLInputElement>(area, '[data-search]');
+  let drawerCategory: WidgetCategory | 'all' = 'all';
+  drawerSearch.addEventListener('input', () => renderDrawer());
+  onWidgetsChange(() => {
+    widgetHost?.dispose();
+    renderDrawer();
+    render();
+  });
   host.append(area);
 
   let project: ProjectSummary | null = null;
@@ -124,31 +135,77 @@ export function createWorkspaceController({ host, sidebar, ui, onEditingChange }
     sidebar.append(add);
   }
 
+  function drawerCard(definition: WidgetDefinition) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'tessera-drawer-card';
+    card.draggable = true;
+    card.innerHTML = `<i class="bi bi-${definition.icon}"></i>`;
+    const text = document.createElement('span');
+    text.textContent = definition.title();
+    const small = document.createElement('small');
+    const source = document.createElement('span');
+    source.className = 'tessera-drawer-source';
+    source.innerHTML = definition.trust === 'plugin' ? '<i class="bi bi-puzzle"></i>' : '';
+    source.append(definition.trust === 'plugin' ? definition.source : t('drawer.builtin'));
+    small.append(definition.description() ? `${definition.description()} · ` : '', source);
+    text.append(small);
+    card.append(text);
+    card.addEventListener('dragstart', (event) => {
+      event.dataTransfer?.setData(WIDGET_MIME, definition.type);
+      startWidgetDrag();
+    });
+    card.addEventListener('dragend', endWidgetDrag);
+    card.addEventListener('click', () => {
+      if (!layout) return;
+      const target = panelsOf(workspaceOf(layout).root).find((p) => p.tabs.length === 0) ?? panelsOf(workspaceOf(layout).root)[0]!;
+      commit(addWidget(layout, layout.active, target.id, 'center', definition.type).layout);
+    });
+    return card;
+  }
+
   function renderDrawer() {
+    const widgets = allWidgets();
+    const present = WIDGET_CATEGORIES.filter((cat) => widgets.some((w) => w.category === cat));
+    if (drawerCategory !== 'all' && !present.includes(drawerCategory)) drawerCategory = 'all';
+
+    const chip = (value: WidgetCategory | 'all', label: string, icon: string, count: number) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'atrium-chip-btn';
+      button.classList.toggle('is-active', value === drawerCategory);
+      button.innerHTML = `<i class="bi bi-${icon}"></i>`;
+      button.append(label);
+      const badge = document.createElement('span');
+      badge.className = 'tessera-chip-count';
+      badge.textContent = String(count);
+      button.append(badge);
+      button.addEventListener('click', () => {
+        drawerCategory = value;
+        renderDrawer();
+      });
+      return button;
+    };
+    categoryList.replaceChildren(
+      chip('all', t('drawer.all'), 'grid-3x3-gap', widgets.length),
+      ...present.map((cat) => chip(cat, categoryLabel(cat), CATEGORY_ICONS[cat], widgets.filter((w) => w.category === cat).length)),
+    );
+
+    const groups = searchWidgets(widgets, drawerSearch.value, drawerCategory);
+    if (groups.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'tessera-drawer-empty';
+      empty.textContent = t('drawer.noMatch');
+      widgetList.replaceChildren(empty);
+      return;
+    }
     widgetList.replaceChildren(
-      ...allWidgets().map((definition) => {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = 'tessera-drawer-card';
-        card.draggable = true;
-        card.innerHTML = `<i class="bi bi-${definition.icon}"></i>`;
-        const text = document.createElement('span');
-        text.textContent = t(definition.title);
-        const small = document.createElement('small');
-        small.textContent = `${t(definition.description)} · ${definition.source}`;
-        text.append(small);
-        card.append(text);
-        card.addEventListener('dragstart', (event) => {
-          event.dataTransfer?.setData(WIDGET_MIME, definition.type);
-          startWidgetDrag();
-        });
-        card.addEventListener('dragend', endWidgetDrag);
-        card.addEventListener('click', () => {
-          if (!layout) return;
-          const target = panelsOf(workspaceOf(layout).root).find((p) => p.tabs.length === 0) ?? panelsOf(workspaceOf(layout).root)[0]!;
-          commit(addWidget(layout, layout.active, target.id, 'center', definition.type).layout);
-        });
-        return card;
+      ...groups.flatMap(({ category, widgets: list }) => {
+        const header = document.createElement('div');
+        header.className = 'tessera-drawer-group';
+        header.innerHTML = `<i class="bi bi-${CATEGORY_ICONS[category]}"></i>`;
+        header.append(categoryLabel(category));
+        return [header, ...list.map(drawerCard)];
       }),
     );
   }
