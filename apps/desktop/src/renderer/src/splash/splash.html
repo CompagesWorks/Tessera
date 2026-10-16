@@ -1,20 +1,43 @@
 <div class="tessera-splash" role="status" aria-live="polite">
   <div class="tessera-splash-card" data-card>
-    <div class="tessera-splash-art" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span><span></span>
+    <svg class="tessera-splash-art" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="tessera-splash-top" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1266" y2="0">
+          <stop offset="0" stop-color="#ef1207" />
+          <stop offset="1" stop-color="#dfdc2b" />
+        </linearGradient>
+        <linearGradient id="tessera-splash-bottom" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1266" y2="0">
+          <stop offset="0" stop-color="#4dd265" />
+          <stop offset="1" stop-color="#6b52ce" />
+        </linearGradient>
+        <linearGradient id="tessera-splash-fade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1410">
+          <stop offset="0" stop-color="#000" />
+          <stop offset="1" stop-color="#fff" />
+        </linearGradient>
+        <mask id="tessera-splash-down" maskUnits="userSpaceOnUse" x="0" y="0" width="1266" height="1410">
+          <rect width="1266" height="1410" fill="url(#tessera-splash-fade)" />
+        </mask>
+        <clipPath id="tessera-splash-shape">
+          <path transform="translate(487 -395)" d="M401.642 199.489L0 972.881L1152.19 1405.26L1190 1172.86L896.852 667.257L842.831 0Z" />
+        </clipPath>
+      </defs>
+      <g clip-path="url(#tessera-splash-shape)">
+        <g transform="translate(1116.2 310.1) rotate(-81.93) translate(-633 -705)">
+          <rect width="1266" height="1410" fill="url(#tessera-splash-top)" />
+          <rect width="1266" height="1410" fill="url(#tessera-splash-bottom)" mask="url(#tessera-splash-down)" />
+        </g>
+      </g>
+    </svg>
+    <div class="tessera-splash-brand">
+      <span data-logo></span>
+      <h1>Tessera</h1>
     </div>
-    <div class="tessera-splash-info">
-      <div class="tessera-splash-brand">
-        <span data-logo></span>
-        <h1>Tessera</h1>
-      </div>
-      <div class="tessera-splash-version" data-version></div>
-      <div class="tessera-splash-foot">
-        <div class="tessera-splash-plugins" data-plugins></div>
-        <div class="tessera-splash-step" data-step></div>
-        <div class="tessera-splash-hint" data-hint></div>
-      </div>
+    <div class="tessera-splash-version" data-version></div>
+    <div class="tessera-splash-status">
+      <span data-loading></span>
+      <span class="tessera-splash-step" data-step></span>
     </div>
+    <div class="tessera-splash-hint" data-hint></div>
     <div class="tessera-splash-bar"><i data-bar></i></div>
   </div>
 </div>

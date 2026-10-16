@@ -11,7 +11,6 @@ const SHIFT_EVENTS = ['keydown', 'keyup', 'pointermove', 'pointerdown'] as const
 export interface Splash {
   readonly visible: boolean;
   step(text: string, percent: number): void;
-  plugin(icon: string, hue: number, name: string, ok: boolean): void;
   replace(content: HTMLElement): void;
   onShift(listener: () => void): void;
   close(): Promise<void>;
@@ -22,9 +21,9 @@ export function createSplash(version: string, visible: boolean): Splash {
   const card = required<HTMLElement>(root, '[data-card]');
   const bar = required<HTMLElement>(root, '[data-bar]');
   const stepText = required<HTMLElement>(root, '[data-step]');
-  const plugins = required<HTMLElement>(root, '[data-plugins]');
   required(root, '[data-logo]').replaceWith(logoImage('tessera-splash-logo'));
   required(root, '[data-version]').textContent = t('splash.version', { version });
+  required(root, '[data-loading]').textContent = t('splash.loading');
   required(root, '[data-hint]').innerHTML = t('splash.hint', { key: '<kbd class="atrium-kbd">Shift</kbd>' });
   root.hidden = !visible;
   if (!visible) document.documentElement.classList.remove('is-booting');
@@ -54,14 +53,6 @@ export function createSplash(version: string, visible: boolean): Splash {
       if (restarting) return;
       stepText.textContent = text;
       bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
-    },
-    plugin(icon, hue, name, ok) {
-      const chip = document.createElement('span');
-      chip.className = ok ? '' : 'is-error';
-      chip.style.setProperty('--_hue', String(hue));
-      chip.title = name;
-      chip.innerHTML = `<i class="bi bi-${icon}"></i>`;
-      plugins.append(chip);
     },
     replace(content) {
       stop();

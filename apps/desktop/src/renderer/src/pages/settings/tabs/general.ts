@@ -32,6 +32,7 @@ export const generalTab: SettingsTab = {
       section(
         row(t('settings.reopenLast'), t('settings.reopenLastHint'), toggle(settings.reopenLastProject, (on) => void update({ reopenLastProject: on }))),
         row(t('settings.showSplash'), t('settings.showSplashHint'), toggle(settings.showSplash, (on) => void update({ showSplash: on }))),
+        row(t('settings.splashDelay'), t('settings.splashDelayHint'), toggle(settings.splashDelay, (on) => void update({ splashDelay: on }))),
         row(
           t('settings.projectsFolder'),
           t('settings.projectsFolderHint'),

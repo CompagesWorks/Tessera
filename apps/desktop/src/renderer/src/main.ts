@@ -10,7 +10,6 @@ import { startFileCommands } from './app/file-commands';
 import { checkUpdatesQuietly } from './app/updates';
 import type { AppContext } from './app/context';
 import { registerCoreCommands } from './commands/core';
-import { hueOf } from './components/project-card/project-card';
 import { applyTranslations, getLanguage, isMessageKey, setLanguage, t } from './i18n';
 import { translateAtrium } from './i18n/atrium';
 import { pages } from './pages';
@@ -46,7 +45,7 @@ async function boot() {
   setLabEnabled(settings.developerMode);
   if (info.safeMode) suspendPlugins();
   setThemeChoice(settings.pluginTheme, theme(), settings.accent);
-  if (splash.visible && !info.safeMode) {
+  if (splash.visible && !info.safeMode && settings.splashDelay) {
     for (let n = SHIFT_DELAY_S; n > 0; n--) {
       splash.step(t('splash.waitShift', { n }), 12);
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -55,11 +54,10 @@ async function boot() {
   splash.step(t('splash.plugins'), 20);
   const listed = await window.tessera.invoke('plugins:list').catch(() => []);
   for (const [i, plugin] of listed.entries()) {
-    const { name, icon, id } = plugin.manifest;
+    const { name, id } = plugin.manifest;
     splash.step(t('splash.plugin', { n: i + 1, total: listed.length, name }), 20 + Math.round((i / Math.max(1, listed.length)) * 45));
     const result = await window.tessera.invoke('plugins:verify', { id }).catch((error: unknown) => ({ ok: false, error: String(error) }));
     if (!result.ok) console.warn(`[plugins] ${id}: ${result.error}`);
-    if (plugin.enabled) splash.plugin(icon, hueOf(id), name, result.ok);
   }
   splash.step(t('splash.pluginsReady'), 66);
   await loadPlugins().catch((error) => console.error('[plugins] load failed', error));

@@ -105,6 +105,8 @@ pub struct Settings {
     pub ui_scale: i64,
     #[serde(default = "yes")]
     pub show_splash: bool,
+    #[serde(default = "yes")]
+    pub splash_delay: bool,
     #[serde(default)]
     pub reopen_last_project: bool,
     #[serde(default)]
@@ -158,6 +160,7 @@ pub const PATCH_FIELDS: &[&str] = &[
     "accent",
     "uiScale",
     "showSplash",
+    "splashDelay",
     "reopenLastProject",
     "projectsFolder",
     "execPolicy",
@@ -181,6 +184,7 @@ impl Default for Settings {
             accent: None,
             ui_scale: 100,
             show_splash: true,
+            splash_delay: true,
             reopen_last_project: false,
             projects_folder: None,
             exec_policy: ExecPolicy::Session,
