@@ -1,0 +1,26 @@
+{
+  "id": "compagesworks.deploy",
+  "name": "Deploy",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "Exports the project and copies the mod into the mods folder of an emulator or the SD card.",
+  "icon": "rocket-takeoff",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": ["fs.project.read", "fs.external", { "id": "exec.system", "programs": ["emulator"] }],
+  "contributes": {
+    "host": "host.html",
+    "titlebar": [{ "id": "deploy", "title": "Deploy", "icon": "rocket-takeoff" }],
+    "settings": [
+      {
+        "id": "game",
+        "type": "string",
+        "title": "Game file",
+        "description": "Smash Ultimate .nsp or .xci. When set, the emulator starts the game directly.",
+        "default": "",
+        "maxLength": 500,
+        "placeholder": "D:\\Games\\Smash Ultimate.nsp",
+        "browse": ["nsp", "xci"]
+      }
+    ]
+  }
+}

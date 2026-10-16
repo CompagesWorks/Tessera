@@ -108,6 +108,11 @@ export const PluginWidgetSchema = z.object({
 });
 export type PluginWidget = z.infer<typeof PluginWidgetSchema>;
 
+export const PluginTitlebarButtonSchema = z
+  .object({ id: z.string().regex(/^[a-z0-9-]{1,40}$/), title: z.string().trim().min(1).max(24), icon: IconSchema.default('puzzle') })
+  .strict();
+export type PluginTitlebarButton = z.infer<typeof PluginTitlebarButtonSchema>;
+
 const SettingKeySchema = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,39}$/);
 const SettingTextSchema = z.string().trim().min(1).max(60);
 const settingBase = {
@@ -126,6 +131,7 @@ export const PluginSettingSchema = z.discriminatedUnion('type', [
       default: z.string().max(500),
       maxLength: z.number().int().min(1).max(500).default(200),
       placeholder: z.string().max(80).default(''),
+      browse: z.array(z.string().regex(/^[a-z0-9-]{1,40}$/)).max(8).optional(),
     })
     .strict(),
   z
@@ -181,8 +187,10 @@ export const PluginManifestSchema = z
         themes: z.array(PluginThemeSchema).max(16).default([]),
         uiProvider: z.object({ entry: RelativePathSchema }).strict().nullable().default(null),
         settings: z.array(PluginSettingSchema).max(40).default([]),
+        host: RelativePathSchema.nullable().default(null),
+        titlebar: z.array(PluginTitlebarButtonSchema).max(4).default([]),
       })
-      .default({ widgets: [], themes: [], uiProvider: null, settings: [] }),
+      .default({ widgets: [], themes: [], uiProvider: null, settings: [], host: null, titlebar: [] }),
   })
   .superRefine((manifest, ctx) => {
     const ids = manifest.permissions.map((entry) => (typeof entry === 'string' ? entry : entry.id));
@@ -206,6 +214,9 @@ export const PluginManifestSchema = z
         ctx.addIssue({ code: 'custom', path: ['contributes', 'settings', index], message: 'min is above max' });
       }
     });
+    if (manifest.contributes.titlebar.length && !manifest.contributes.host) {
+      ctx.addIssue({ code: 'custom', path: ['contributes', 'titlebar'], message: 'titlebar buttons need contributes.host' });
+    }
     if (manifest.contributes.uiProvider && !ids.includes('ui.provider')) {
       ctx.addIssue({ code: 'custom', path: ['contributes', 'uiProvider'], message: 'uiProvider needs the ui.provider permission' });
     }
@@ -257,8 +268,8 @@ export interface InstalledPlugin {
   enabled: boolean;
   granted: Permission[];
   pending: Permission[];
-  mode: PluginMode;
-  integrity: 'ok' | 'dev' | 'tampered';
+  mode: PluginMode | 'builtin';
+  integrity: 'ok' | 'dev' | 'tampered' | 'builtin';
   integrityError: string | null;
   path: string;
   source: string;
@@ -314,6 +325,19 @@ export type PluginCall = z.infer<typeof PluginCallSchema>;
 
 export const PluginWatchSchema = z.object({ pluginId: PluginIdSchema, projectId: z.uuid(), watching: z.boolean() }).strict();
 export const SetExternalFolderSchema = z.object({ id: PluginIdSchema, pick: z.boolean() }).strict();
+export const ConfirmAnswerSchema = z.object({ id: z.number().int().nonnegative(), decision: z.enum(['once', 'session', 'deny']) }).strict();
+
+export interface ConfirmRequest {
+  id: number;
+  pluginId: string;
+  title: string;
+  message: string;
+  detail: string;
+  deny: string;
+  once: string;
+  session: string | null;
+}
+
 export const PickProgramSchema = z.object({ id: PluginIdSchema, name: ProgramNameSchema, pick: z.boolean() }).strict();
 
 export interface NetResponse {

@@ -39,6 +39,8 @@ pub struct ExecParams {
     pub timeout: u64,
     #[serde(default)]
     pub program: Option<String>,
+    #[serde(default)]
+    pub detach: bool,
 }
 
 fn default_timeout() -> u64 {
@@ -137,6 +139,17 @@ fn capped(mut reader: impl Read + Send + 'static) -> thread::JoinHandle<Vec<u8>>
         kept.truncate(MAX_OUTPUT);
         kept
     })
+}
+
+pub fn spawn_program(file: &Path, args: &[String]) -> Result<()> {
+    let mut command = Command::new(file);
+    command.args(args).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    if let Some(dir) = file.parent() {
+        command.current_dir(dir);
+    }
+    safe_env(&mut command);
+    command.spawn().map_err(|e| exec_error(&e.to_string()))?;
+    Ok(())
 }
 
 pub fn run_program(file: &Path, args: &[String], cwd: &Path, timeout_ms: u64) -> Result<ExecResult> {

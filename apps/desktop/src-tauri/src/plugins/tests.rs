@@ -60,6 +60,41 @@ impl Fixture {
 }
 
 #[test]
+fn builtin_plugins_are_registered_and_cannot_be_removed() {
+    let f = Fixture::new();
+    f.write(manifest(json!({})));
+    let builtin = f.dir.path().join("builtin");
+    fs::create_dir(&builtin).unwrap();
+    fs::rename(&f.plugin_dir, builtin.join("plugin")).unwrap();
+    let service = f.service();
+    service.sync_builtin(&builtin);
+    service.load();
+    let plugin = service.get("test.plugin").unwrap();
+    assert_eq!((plugin.mode, plugin.integrity, plugin.enabled), (PluginMode::Builtin, "builtin", true));
+    assert!(plugin.pending.is_empty());
+    assert!(service.has_grant("test.plugin", Permission::FsProjectRead));
+    assert_eq!(service.remove("test.plugin").unwrap_err().code, "builtin");
+    service.set_enabled("test.plugin", false).unwrap();
+    service.sync_builtin(&builtin);
+    service.load();
+    assert!(!service.get("test.plugin").unwrap().enabled);
+    fs::write(f.dir.path().join("plugins.json"), "{ broken").unwrap();
+    service.sync_builtin(&builtin);
+    assert_eq!(fs::read_to_string(f.dir.path().join("plugins.json")).unwrap(), "{ broken");
+}
+
+#[test]
+fn builtin_plugins_have_valid_manifests() {
+    let folder = Path::new(env!("CARGO_MANIFEST_DIR")).join("../plugins");
+    for item in fs::read_dir(folder).unwrap() {
+        let path = item.unwrap().path();
+        if let Err(error) = read_manifest(&path) {
+            panic!("{}: {}", path.display(), error.message);
+        }
+    }
+}
+
+#[test]
 fn reads_manifest_and_refuses_bad_ones() {
     let f = Fixture::new();
     f.write(manifest(json!({})));
@@ -73,6 +108,12 @@ fn reads_manifest_and_refuses_bad_ones() {
     assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
     f.write(manifest(json!({ "contributes": { "widgets": [{ "id": "main", "title": "Main", "entry": "missing.html" }] } })));
     assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "missing-entry");
+    f.write(manifest(json!({ "contributes": { "widgets": [], "titlebar": [{ "id": "go", "title": "Go" }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
+    f.write(manifest(json!({ "contributes": { "widgets": [], "host": "host.html", "titlebar": [{ "id": "go", "title": "Go" }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "missing-entry");
+    fs::write(f.plugin_dir.join("host.html"), "<p>host</p>").unwrap();
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap().contributes.titlebar[0].icon, "puzzle");
     f.write(manifest(json!({ "icon": "icon.png" })));
     assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "missing-icon");
     fs::write(f.plugin_dir.join("icon.png"), [137, 80, 78, 71]).unwrap();
@@ -287,11 +328,11 @@ impl Host for FakeHost {
     fn pick_program(&self, _plugin_name: &str, program: &str) -> Option<PathBuf> {
         self.picks.lock().unwrap().get(program).cloned()
     }
-    fn confirm_exec(&self, _plugin_name: &str, command: &str) -> Decision {
+    fn confirm_exec(&self, _plugin_id: &str, _plugin_name: &str, command: &str) -> Decision {
         self.asked.lock().unwrap().push(command.to_string());
         self.decision()
     }
-    fn confirm_open(&self, _plugin_name: &str, url: &str) -> Decision {
+    fn confirm_open(&self, _plugin_id: &str, _plugin_name: &str, url: &str) -> Decision {
         self.asked.lock().unwrap().push(url.to_string());
         self.decision()
     }

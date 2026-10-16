@@ -2,6 +2,7 @@ import { PACKAGE_EXTENSION, PERMISSION_RISK, type AuditEntry, type InstalledPlug
 import type { AppContext } from '../../app/context';
 import { required } from '../../components/dom';
 import { iconElement, pluginIcon } from '../../components/icon';
+import { openPluginSettings, pluginSettingsCount } from '../settings/tabs/plugin-settings';
 import { hueOf } from '../../components/project-card/project-card';
 import { applyTranslations, t } from '../../i18n';
 import { errorMessage } from '../../i18n/format';
@@ -95,6 +96,7 @@ export const pluginsPage: Page = {
     }
 
     function statusBadge(plugin: InstalledPlugin) {
+      if (plugin.integrity === 'builtin') return badge(t('plugins.trustBuiltin'), 'atrium-badge-neutral');
       if (plugin.integrity === 'tampered') return badge(t('plugins.statusTampered'), 'atrium-badge-danger');
       if (plugin.integrity === 'dev') return badge(t('plugins.statusDev'), 'atrium-badge-warning');
       return badge(t('plugins.statusInstalled'), 'atrium-badge-success');
@@ -244,7 +246,9 @@ export const pluginsPage: Page = {
         selected = CORE;
         await attempt(() => window.tessera.invoke('plugins:remove', { id: manifest.id }));
       });
-      head.append(icon(manifest.icon, manifest.id), title, remove);
+      head.append(icon(manifest.icon, manifest.id), title);
+      if (plugin.enabled && pluginSettingsCount(plugin)) head.append(actionButton(t('settings.pluginSettings.open'), 'sliders', false, () => void openPluginSettings(ui, plugin)));
+      if (plugin.mode !== 'builtin') head.append(remove);
 
       const desc = document.createElement('p');
       desc.className = 'tessera-plugin-desc';

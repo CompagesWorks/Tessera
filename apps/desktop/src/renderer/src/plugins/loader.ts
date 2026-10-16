@@ -12,9 +12,18 @@ import './plugin-frame.css';
 let installed: InstalledPlugin[] = [];
 let themeChoice: { key: string | null; mode: 'dark' | 'light'; accent: string | null } = { key: null, mode: 'dark', accent: null };
 let suspended = false;
+const loadedListeners = new Set<() => void>();
+
+export function onPluginsLoaded(listener: () => void) {
+  loadedListeners.add(listener);
+}
 
 export function suspendPlugins() {
   suspended = true;
+}
+
+export function activePlugins(): InstalledPlugin[] {
+  return suspended ? [] : installed.filter((plugin) => plugin.enabled);
 }
 
 export function installedPlugins(): InstalledPlugin[] {
@@ -82,6 +91,7 @@ export async function loadPlugins() {
   for (const plugin of installed) setPluginGrants(plugin.manifest.id, plugin.enabled && !suspended ? plugin.granted : []);
   replacePluginWidgets(suspended ? [] : installed.filter((p) => p.enabled).flatMap(widgetsOf));
   refreshPluginTheme();
+  loadedListeners.forEach((listener) => listener());
 }
 
 export function setThemeChoice(key: string | null, mode: 'dark' | 'light', accent: string | null) {

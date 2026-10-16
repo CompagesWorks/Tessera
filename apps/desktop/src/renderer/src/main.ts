@@ -16,6 +16,8 @@ import { pages } from './pages';
 import { initPluginBridge, setLabEnabled, whenFramesReady } from './plugins/bridge';
 import { installedPlugins, loadPlugins, setThemeChoice, suspendPlugins } from './plugins/loader';
 import { loadUiProvider } from './plugins/provider';
+import { startPluginConfirm } from './plugins/confirm';
+import { startPluginTitlebar } from './plugins/titlebar';
 import { mountShell } from './shell/shell';
 import { safeScreen } from './splash/safe-screen';
 import { createSplash } from './splash/splash';
@@ -67,6 +69,7 @@ async function boot() {
   const ui = provider.ui;
   const { atrium } = ui;
   initPluginBridge(ui, theme());
+  startPluginConfirm(ui);
 
   const shell = mountShell(pages);
   atrium.windowControls();
@@ -96,6 +99,7 @@ async function boot() {
 
   shell.homeButton.addEventListener('click', () => ctx.navigation.closeProject());
   shell.exportButton.addEventListener('click', () => void exportProject(ctx));
+  startPluginTitlebar(shell.exportButton.parentElement!, (listener) => ctx.navigation.onChange(listener));
   ctx.navigation.onChange((project) => {
     shell.crumb.textContent = project?.name ?? '';
     if (!project) void store.refresh();

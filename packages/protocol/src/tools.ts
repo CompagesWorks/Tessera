@@ -13,6 +13,7 @@ import {
   UpdateSettingsSchema,
 } from './settings';
 
+export const PickFileSchema = z.object({ extensions: z.array(z.string().regex(/^[a-z0-9-]{1,40}$/)).min(1).max(8) }).strict();
 export const PickFolderSchema = z.object({ title: z.string().max(120).optional() }).strict();
 
 export const AccountServiceSchema = z.enum(['github', 'gamebanana']);

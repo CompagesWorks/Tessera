@@ -7,6 +7,7 @@ use serde_json::{json, Map, Value};
 use tauri::{Manager, Runtime, Webview};
 
 use crate::backups::service::BackupReason;
+use crate::plugins::api::Decision;
 use crate::plugins::archive::{unpack, PACKAGE_EXTENSION};
 use crate::plugins::exec::describe_program;
 use crate::plugins::service::inspect_package;
@@ -480,6 +481,17 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
             s.audit.record(&r.id, "external.set", folder.as_deref().unwrap_or("-"), true);
             value(s.plugins.set_external(&r.id, folder)?)
         }
+        "plugins:confirm-answer" => {
+            let r: ConfirmAnswer = parse(request)?;
+            let decision = match r.decision.as_str() {
+                "once" => Decision::Once,
+                "session" => Decision::Session,
+                "deny" => Decision::Deny,
+                _ => return Err(Error::new("invalid decision")),
+            };
+            s.host.answer(r.id, decision);
+            Ok(Value::Null)
+        }
         "plugins:pick-program" => {
             let r: PickProgram = parse(request)?;
             check::plugin_id("id", &r.id)?;
@@ -541,6 +553,18 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
                 check::text("title", title, 0, 120)?;
             }
             Ok(path_string(s.host.pick_folder(r.title.as_deref(), true)))
+        }
+        "app:pick-file" => {
+            let r: PickFile = parse(request)?;
+            if r.extensions.is_empty() || r.extensions.len() > 8 {
+                return Err(Error::new("extensions: 1 to 8"));
+            }
+            for extension in &r.extensions {
+                check::matches("extensions", &check::ICON, extension)?;
+            }
+            let extensions: Vec<&str> = r.extensions.iter().map(String::as_str).collect();
+            let file = s.host.files().add_filter(r.extensions.join(", "), &extensions).blocking_pick_file();
+            Ok(path_string(file.and_then(|p| p.into_path().ok())))
         }
         "accounts:connect" => {
             let r: ConnectAccount = parse(request)?;

@@ -1,0 +1,28 @@
+.tessera-confirm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tessera-confirm-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--atrium-bg-tertiary);
+  font-size: 18px;
+}
+
+.tessera-confirm-icon .tessera-icon-img {
+  width: 24px;
+  height: 24px;
+}
+
+.tessera-confirm-detail {
+  margin: 12px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--atrium-text-secondary);
+}

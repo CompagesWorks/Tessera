@@ -11,6 +11,7 @@ Two ways to install:
 | --- | --- | --- |
 | **Verified copy** (default) | The folder is copied into Tessera's data, with the sha256 hash of every file. | plugins written by others |
 | **Development link** | The folder is used in place, with no verification. | your own plugins, while you work on them |
+| **Built-in** | Shipped with Tessera and registered on first launch, with its permissions granted. | plugins made by Tessera (Deploy…) |
 
 ### Verified copy
 
@@ -48,6 +49,7 @@ When a development link's manifest gains a permission, the plugin shows "Needs r
 ## Disable and remove
 
 - **Disable**: widgets disappear from the drawer and the plugin loses all its permissions. Saved states stay in the layouts.
+- Built-in plugins can be disabled but not removed. They stay disabled across updates.
 - **Remove**: unregisters the plugin, removes its widgets from layouts and deletes its verified copy. A development link folder is never deleted.
 
 ## Where things live

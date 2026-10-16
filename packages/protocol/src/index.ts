@@ -36,6 +36,8 @@ import {
   ReadTextSchema,
   SetExternalFolderSchema,
   PickProgramSchema,
+  ConfirmAnswerSchema,
+  type ConfirmRequest,
   SetPluginEnabledSchema,
   SetPluginGrantsSchema,
   type AuditEntry,
@@ -62,6 +64,7 @@ import {
   ExportProfileSchema,
   HistoryRefSchema,
   PickFolderSchema,
+  PickFileSchema,
   SearchSchema,
   type AuditList,
   type FileIndex,
@@ -148,12 +151,14 @@ export const requestSchemas = {
   'plugins:verify': PluginRefSchema,
   'plugins:set-external': SetExternalFolderSchema,
   'plugins:pick-program': PickProgramSchema,
+  'plugins:confirm-answer': ConfirmAnswerSchema,
   'plugins:settings-get': PluginSettingsRefSchema,
   'plugins:settings-set': SetPluginSettingSchema,
   'plugins:settings-reset': ResetPluginSettingsSchema,
   'plugin:call': PluginCallSchema,
   'plugin:watch': PluginWatchSchema,
   'app:pick-folder': PickFolderSchema,
+  'app:pick-file': PickFileSchema,
   'accounts:connect': ConnectAccountSchema,
   'accounts:disconnect': DisconnectAccountSchema,
   'updates:check': z.undefined(),
@@ -225,12 +230,14 @@ export interface InvokeResponses {
   'plugins:verify': { id: string; ok: boolean; error: string | null };
   'plugins:set-external': InstalledPlugin;
   'plugins:pick-program': InstalledPlugin;
+  'plugins:confirm-answer': void;
   'plugins:settings-get': Record<string, PluginSettingValue>;
   'plugins:settings-set': Record<string, PluginSettingValue>;
   'plugins:settings-reset': Record<string, PluginSettingValue>;
   'plugin:call': unknown;
   'plugin:watch': void;
   'app:pick-folder': string | null;
+  'app:pick-file': string | null;
   'accounts:connect': Settings;
   'accounts:disconnect': Settings;
   'updates:check': UpdateInfo;
@@ -267,6 +274,7 @@ export interface EventPayloads {
   'audit:changed': undefined;
   'history:changed': { projectId: string };
   'plugins:settings-changed': { id: string; values: Record<string, PluginSettingValue> };
+  'plugins:confirm': ConfirmRequest;
 }
 
 type InvokeArgs<C extends InvokeChannel> = InvokeRequest<C> extends undefined ? [] : [request: InvokeRequest<C>];

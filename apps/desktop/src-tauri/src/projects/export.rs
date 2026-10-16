@@ -13,6 +13,7 @@ use crate::util::time::mtime_ms;
 use crate::util::{json, Error, Result};
 
 pub const BUILD_DIR: &str = "build";
+const DEPLOY_MARKER: &str = ".tessera-deploy";
 static WORK_FILES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\.(blend\d*|psd|kra|xcf|spp|aseprite)$").unwrap());
 
 fn category(kind: ProjectKind) -> &'static str {
@@ -79,6 +80,21 @@ pub fn export_project(root: &Path, zip: bool) -> Result<PathBuf> {
     Ok(archive)
 }
 
+pub fn deploy_project(root: &Path, mods: &Path) -> Result<PathBuf> {
+    let built = export_project(root, false)?;
+    let name = built.file_name().map(|n| n.to_string_lossy().into_owned()).ok_or_else(|| Error::new("invalid build"))?;
+    let target = mods.join(&name);
+    if fs::symlink_metadata(&target).is_ok() {
+        if !target.join(DEPLOY_MARKER).is_file() {
+            return Err(Error::new(format!("{name} already exists in the mods folder and was not deployed by Tessera")));
+        }
+        fs::remove_dir_all(&target)?;
+    }
+    copy_tree(&built, &target, &name, &mut vec![])?;
+    fs::write(target.join(DEPLOY_MARKER), "")?;
+    Ok(target)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,6 +137,22 @@ mod tests {
         let mut paths: Vec<String> = read_zip_entries(&archive).unwrap().into_iter().map(|e| e.path).collect();
         paths.sort();
         assert_eq!(paths, vec!["mario-classic/fighter/mario/model/body/c00/def_mario_001_col.nutexb", "mario-classic/info.toml"]);
+    }
+
+    #[test]
+    fn deploys_and_replaces_only_its_own_folder() {
+        let dir = project();
+        let mods = dir.path().join("sd/ultimate/mods");
+        fs::create_dir_all(&mods).unwrap();
+        let target = deploy_project(dir.path(), &mods).unwrap();
+        assert_eq!(target, mods.join("mario-classic"));
+        assert!(target.join("info.toml").is_file());
+        fs::write(target.join("old.txt"), "old").unwrap();
+        deploy_project(dir.path(), &mods).unwrap();
+        assert!(!target.join("old.txt").exists());
+        fs::remove_file(target.join(DEPLOY_MARKER)).unwrap();
+        assert!(deploy_project(dir.path(), &mods).unwrap_err().0.contains("already exists"));
+        assert!(target.join("info.toml").is_file());
     }
 
     #[test]

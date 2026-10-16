@@ -222,6 +222,9 @@ pub struct InstallLocal {
 impl InstallLocal {
     pub fn validate(&self) -> Result<()> {
         check::text("path", &self.path, 1, 500)?;
+        if self.mode == PluginMode::Builtin {
+            return fail("mode", "invalid mode");
+        }
         if self.granted.len() > 16 {
             return fail("granted", "too many");
         }
@@ -248,6 +251,13 @@ pub struct SetGrants {
 pub struct SetExternal {
     pub id: String,
     pub pick: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConfirmAnswer {
+    pub id: u64,
+    pub decision: String,
 }
 
 #[derive(Deserialize)]
@@ -322,6 +332,12 @@ pub struct PluginWatch {
 #[serde(deny_unknown_fields)]
 pub struct PickFolder {
     pub title: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PickFile {
+    pub extensions: Vec<String>,
 }
 
 #[derive(Deserialize)]

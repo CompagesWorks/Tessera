@@ -44,6 +44,8 @@
 | `contributes.widgets` | no | list of widgets, 32 max | `[]` |
 | `contributes.themes` | no | list of [themes](#themes), 16 max. Needs `ui.theme`. | `[]` |
 | `contributes.uiProvider` | no | the [UI provider](#ui-provider) module. Needs `ui.provider`, and `ui.provider` needs it. | `null` |
+| `contributes.host` | no | a hidden page that runs while a project is open, for logic that is not in a widget (titlebar buttons) | `null` |
+| `contributes.titlebar` | no | [titlebar buttons](#titlebar-buttons), 4 max. Needs `contributes.host`. | `[]` |
 
 Unknown fields are ignored.
 
@@ -154,6 +156,32 @@ export default function createProvider({ base }) {
 
 Anything you don't return keeps Atrium-UI's version. If the module throws or doesn't export a function, Tessera falls back to Atrium-UI. The module can import other files of the plugin with relative paths; those files go through the same integrity checks.
 
+## Titlebar buttons
+
+Buttons shown in the project titlebar, next to Export. A click sends the `titlebar` event to the plugin's `host` page, which does the work.
+
+```json
+"contributes": {
+  "host": "host.html",
+  "titlebar": [{ "id": "deploy", "title": "Deploy", "icon": "rocket-takeoff" }]
+}
+```
+
+```js
+// host.js, loaded by host.html
+tessera.on('titlebar', ({ id }) => {
+  if (id === 'deploy') runDeploy();
+});
+```
+
+| Field | Rule |
+| --- | --- |
+| `id` | `a-z`, `0-9`, `-`, 40 max |
+| `title` | 1 to 24 characters |
+| `icon` | Bootstrap Icons name or image path, like the plugin `icon`. Default `puzzle` |
+
+The host page has the same SDK and permissions as a widget. It has no visible area: report results with [`tessera.ui.toast`](sdk.md#tesserauitoastkind-message).
+
 ## Settings
 
 `contributes.settings` declares options the user can change in **Settings > Plugin settings**. No permission is needed. Tessera stores the values, checks them against your definition and gives them to your widget through [`tessera.settings`](sdk.md#settings).
@@ -175,7 +203,8 @@ Anything you don't return keeps Atrium-UI's version. If the module throws or doe
 | `type` | `boolean`, `string`, `number` or `select` |
 | `title` / `description` | shown in the settings page (60 / 200 characters) |
 | `default` | required, must fit the type (inside `min`/`max`, one of the `options`, within `maxLength`) |
-| `group` | optional heading used to group rows |
+| `group` | optional tab name: with two groups or more, each group gets its own tab, and settings without a group go in **General** |
+| `browse` | `string` only, optional list of file extensions (`["nsp", "xci"]`): adds a **Browse…** button that fills the field with the path of the picked file |
 
 At most 40 settings per plugin. A stored value that no longer fits the definition (you narrowed `max`, removed an option) is ignored and the default is used. The example plugin `examples/plugins/settings-demo` uses all four types.
 

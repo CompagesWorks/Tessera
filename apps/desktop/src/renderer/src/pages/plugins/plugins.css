@@ -141,6 +141,10 @@
   gap: 8px;
 }
 
+.tessera-plugin-head .atrium-btn ~ .atrium-btn {
+  margin-left: 0;
+}
+
 .tessera-plugin-desc {
   max-width: 640px;
   margin: 16px 0 4px;

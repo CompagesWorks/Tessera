@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -122,6 +122,7 @@ pub fn build(app: &AppHandle, args: &[String], arg_safe_reason: Option<SafeReaso
         emit(&handle, "plugins:tampered", json!({ "id": id, "reason": reason }));
     }));
     plugins.set_suspended(safe_reason.is_some());
+    plugins.sync_builtin(&builtin_plugins_dir(app));
     plugins.load();
 
     let defs = plugins.clone();
@@ -174,4 +175,11 @@ pub fn build(app: &AppHandle, args: &[String], arg_safe_reason: Option<SafeReaso
         pending_package: Mutex::new(None),
         packages_dir,
     })
+}
+
+fn builtin_plugins_dir(app: &AppHandle) -> PathBuf {
+    if cfg!(debug_assertions) {
+        return Path::new(env!("CARGO_MANIFEST_DIR")).join("../plugins");
+    }
+    app.path().resource_dir().unwrap_or_default().join("plugins")
 }

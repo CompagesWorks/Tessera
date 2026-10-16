@@ -34,46 +34,11 @@ function actions(...children: Array<HTMLElement | string>) {
   return row;
 }
 
-function code(text: string) {
-  const el = document.createElement('code');
-  el.textContent = text;
-  return el;
-}
-
 function hint(key: MessageKey) {
   const p = document.createElement('p');
   p.className = 'tessera-form-hint';
   p.textContent = t(key);
   return p;
-}
-
-function externalSection(plugin: InstalledPlugin, { attempt }: ExtrasDeps): HTMLElement[] {
-  const id = plugin.manifest.id;
-  const granted = plugin.granted.includes('fs.external');
-  return [
-    heading('plugins.externalFolder'),
-    actions(
-      plugin.externalFolder ? code(plugin.externalFolder) : t('plugins.externalNone'),
-      button(t('plugins.externalPick'), 'folder2-open', !plugin.externalFolder, () => void attempt(() => window.tessera.invoke('plugins:set-external', { id, pick: true })), !granted),
-      ...(plugin.externalFolder ? [button(t('plugins.externalForget'), 'x-lg', false, () => void attempt(() => window.tessera.invoke('plugins:set-external', { id, pick: false })))] : []),
-    ),
-    ...(granted ? [] : [hint('plugins.needsGrant')]),
-  ];
-}
-
-function programsSection(plugin: InstalledPlugin, { attempt }: ExtrasDeps): HTMLElement[] {
-  const id = plugin.manifest.id;
-  const granted = plugin.granted.includes('exec.system');
-  const rows = plugin.manifest.systemPrograms.map((name) => {
-    const picked = plugin.systemPrograms[name];
-    return actions(
-      code(name),
-      picked ? code(picked.path) : t('plugins.programNone'),
-      button(t('plugins.programPick'), 'file-earmark-binary', !picked, () => void attempt(() => window.tessera.invoke('plugins:pick-program', { id, name, pick: true })), !granted),
-      ...(picked ? [button(t('plugins.externalForget'), 'x-lg', false, () => void attempt(() => window.tessera.invoke('plugins:pick-program', { id, name, pick: false })))] : []),
-    );
-  });
-  return [heading('plugins.programs'), ...rows, hint(granted ? 'plugins.programHint' : 'plugins.needsGrant')];
 }
 
 function themesSection(plugin: InstalledPlugin, { settings, attempt }: ExtrasDeps): HTMLElement[] {
@@ -141,8 +106,6 @@ function providerSection(plugin: InstalledPlugin, { ui, settings, attempt }: Ext
 export function pluginExtras(plugin: InstalledPlugin, deps: ExtrasDeps): HTMLElement[] {
   const { manifest } = plugin;
   return [
-    ...(manifest.permissions.includes('fs.external') ? externalSection(plugin, deps) : []),
-    ...(manifest.systemPrograms.length ? programsSection(plugin, deps) : []),
     ...(manifest.contributes.themes.length ? themesSection(plugin, deps) : []),
     ...(manifest.contributes.uiProvider ? providerSection(plugin, deps) : []),
   ];

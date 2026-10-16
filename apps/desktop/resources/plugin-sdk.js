@@ -187,6 +187,9 @@
       info: () => call('external.info'),
       ...fileApi('external'),
     }),
+    export: Object.freeze({
+      deploy: () => call('export.deploy'),
+    }),
     net: Object.freeze({
       fetch: (url, options = {}) =>
         call('net.fetch', {
@@ -205,7 +208,7 @@
     }),
     exec: Object.freeze({
       run: (args = [], options = {}) => call('exec.run', { args, timeout: options.timeout }),
-      runSystem: (program, args = [], options = {}) => call('exec.runSystem', { program, args, timeout: options.timeout }),
+      runSystem: (program, args = [], options = {}) => call('exec.runSystem', { program, args, timeout: options.timeout, detach: options.detach }),
       pickSystem: (program) => call('exec.pickSystem', { program }),
       systemInfo: () => call('exec.systemInfo'),
     }),

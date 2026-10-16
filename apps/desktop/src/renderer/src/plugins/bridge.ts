@@ -192,6 +192,7 @@ const methods: Record<string, Method> = {
   'fs.rename': forward('fs.rename', fsWrite),
   'external.pick': forward('external.pick', () => 'fs.external'),
   'external.info': forward('external.info', () => 'fs.external'),
+  'export.deploy': forward('export.deploy', () => 'fs.external'),
   'net.fetch': forward('net.fetch', () => 'net'),
   'secrets.get': forward('secrets.get', () => 'secrets'),
   'secrets.set': forward('secrets.set', () => 'secrets'),

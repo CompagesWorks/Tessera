@@ -359,14 +359,6 @@
   width: 110px;
 }
 
-.tessera-set-subgroup {
-  margin: 12px 2px 6px;
-  color: var(--atrium-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 
 .tessera-set-badge {
   display: inline-grid;
@@ -475,4 +467,14 @@
 
 .tessera-set-text .tessera-set-badge.is-gamebanana {
   color: #1d1d1d;
+}
+
+.tessera-set-browse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tessera-set-tabs {
+  margin-bottom: 12px;
 }

@@ -8,6 +8,7 @@ use base64::Engine;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
+use crate::projects::export::deploy_project;
 use crate::projects::files::TESSERA_DIR;
 use crate::projects::history::{HistoryService, Meta};
 use crate::projects::service::ProjectService;
@@ -20,7 +21,7 @@ use crate::util::{Error, Result};
 
 use super::audit::AuditLog;
 use super::discord::{DiscordPresence, SetActivity};
-use super::exec::{check_system_program, command_line, describe_program, resolve_program, run_program, ExecParams};
+use super::exec::{check_system_program, command_line, describe_program, resolve_program, run_program, spawn_program, ExecParams};
 use super::net::{check_url, plugin_fetch, FetchParams};
 use super::scoped_fs::{self, Scope, Trash};
 use super::secrets::SecretStore;
@@ -38,8 +39,8 @@ pub enum Decision {
 pub trait Host: Send + Sync {
     fn pick_external(&self, plugin_name: &str) -> Option<PathBuf>;
     fn pick_program(&self, plugin_name: &str, program: &str) -> Option<PathBuf>;
-    fn confirm_exec(&self, plugin_name: &str, command: &str) -> Decision;
-    fn confirm_open(&self, plugin_name: &str, url: &str) -> Decision;
+    fn confirm_exec(&self, plugin_id: &str, plugin_name: &str, command: &str) -> Decision;
+    fn confirm_open(&self, plugin_id: &str, plugin_name: &str, url: &str) -> Decision;
     fn open_url(&self, url: &str) -> Result<()>;
     fn reveal(&self, path: &Path);
     fn trash(&self, path: &Path) -> Result<()>;
@@ -295,7 +296,7 @@ impl PluginApi {
         if self.session_exec.lock().unwrap().contains(&key) {
             return Ok(());
         }
-        match self.host.confirm_exec(name, command) {
+        match self.host.confirm_exec(plugin_id, name, command) {
             Decision::Deny => {
                 self.audit.record(plugin_id, "exec.confirm", "refused by user", false);
                 Err(Error::new("refused by user"))
@@ -421,6 +422,24 @@ impl PluginApi {
                     }),
                 )
             }
+            "export.deploy" => {
+                nothing(params)?;
+                prepared(
+                    Permission::FsExternal,
+                    "export.deploy",
+                    "-".into(),
+                    Box::new(move || {
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsProjectRead) {
+                            return Err(Error::new("permission denied: fs.project.read"));
+                        }
+                        let project = ctx.project_id.as_ref().ok_or_else(|| Error::new("no project open"))?;
+                        let root = self.projects.root_of(project)?;
+                        let mods = self.scope_of(ctx, FsScope::External)?.root;
+                        let target = deploy_project(&root, &mods)?;
+                        Ok(json!(target.file_name().map(|n| n.to_string_lossy().into_owned())))
+                    }),
+                )
+            }
             "net.fetch" => {
                 let p = FetchParams::parse(params.clone().ok_or_else(invalid)?).map_err(|_| invalid())?;
                 let target = format!("{} {}", p.method, p.url);
@@ -494,6 +513,10 @@ impl PluginApi {
                         self.confirm_run(&ctx.plugin_id, &manifest.name, key, &command_line(&file.to_string_lossy(), &p.args))?;
                         if !self.plugins.has_grant(&ctx.plugin_id, Permission::ExecSystem) {
                             return Err(Error::new("permission denied: exec.system"));
+                        }
+                        if p.detach {
+                            spawn_program(&file, &p.args)?;
+                            return Ok(Value::Null);
                         }
                         to_value(run_program(&file, &p.args, &cwd, p.timeout)?)
                     }),
@@ -609,7 +632,7 @@ impl PluginApi {
                         let host = parsed.host_str().unwrap_or_default().to_string();
                         let key = format!("{}@{}", ctx.plugin_id, host);
                         if !self.session_open.lock().unwrap().contains(&key) {
-                            match self.host.confirm_open(&self.plugins.name_of(&ctx.plugin_id), &p.url) {
+                            match self.host.confirm_open(&ctx.plugin_id, &self.plugins.name_of(&ctx.plugin_id), &p.url) {
                                 Decision::Deny => return Err(Error::new("refused by user")),
                                 Decision::Session => {
                                     self.session_open.lock().unwrap().insert(key);

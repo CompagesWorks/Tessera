@@ -60,7 +60,7 @@ interface Tessera {
   };
   exec: {
     run(args?: string[], options?: { timeout?: number }): Promise<ExecResult>;
-    runSystem(program: string, args?: string[], options?: { timeout?: number }): Promise<ExecResult>;
+    runSystem(program: string, args?: string[], options?: { timeout?: number; detach?: boolean }): Promise<ExecResult | null>;
     pickSystem(program: string): Promise<boolean>;
     systemInfo(): Promise<Record<string, boolean>>;
   };
@@ -186,6 +186,7 @@ Subscribes `listener` to an event. Returns a function that unsubscribes it.
 | `init` | `InitPayload` | once, when the widget starts |
 | `theme` | `{ theme, tokens }` | the user switches theme, or applies a plugin theme |
 | `files.changed` | `{ paths }` | a project file changed, while [`tessera.files.watch`](#tesserafileswatchlistener) is active |
+| `titlebar` | `{ id }` | the user clicked one of your [titlebar buttons](manifest.md#titlebar-buttons) (host page only) |
 
 ```js
 const off = tessera.on('theme', ({ theme }) => {
@@ -371,6 +372,12 @@ if (!picked && !(await tessera.external.pick())) return;
 await tessera.external.writeText('mods/my-skin/config.json', config);
 ```
 
+#### `tessera.export.deploy()`
+
+Needs `fs.external` **and** `fs.project.read`. Exports the open project (like the Export button) and copies the mod folder into the picked folder, as `<picked folder>/<mod name>`. Resolves the mod folder name.
+
+A previous copy is replaced only if Tessera deployed it (it leaves a `.tessera-deploy` file inside). Any other folder with the same name is left alone and the call fails with `… already exists in the mods folder and was not deployed by Tessera`.
+
 ## Network
 
 Needs [`net`](permissions.md#net).
@@ -440,6 +447,8 @@ const { git } = await tessera.exec.systemInfo();
 if (!git && !(await tessera.exec.pickSystem('git'))) return;
 const result = await tessera.exec.runSystem('git', ['add', '-A']);
 ```
+
+`{ detach: true }` starts the program and returns `null` right away, without waiting or killing it at the timeout. Use it to launch an app such as an emulator.
 
 `program not picked` and `program changed since it was picked, pick it again in Plugins` mean the user has to (re)pick the file.
 

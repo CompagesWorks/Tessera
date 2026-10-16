@@ -127,7 +127,14 @@ pub fn read_manifest(folder: &Path) -> PResult<PluginManifest> {
             return Err(PluginError::new("missing-entry", format!("Widget \"{}\": {} not found", widget.id, widget.entry)));
         }
     }
-    for icon in std::iter::once(&manifest.icon).chain(manifest.contributes.widgets.iter().map(|w| &w.icon)) {
+    if let Some(host) = &manifest.contributes.host {
+        if !exists(host) {
+            return Err(PluginError::new("missing-entry", format!("Host: {host} not found")));
+        }
+    }
+    let widget_icons = manifest.contributes.widgets.iter().map(|w| &w.icon);
+    let button_icons = manifest.contributes.titlebar.iter().map(|b| &b.icon);
+    for icon in std::iter::once(&manifest.icon).chain(widget_icons).chain(button_icons) {
         if check::ICON_IMAGE.is_match(icon) && !exists(icon) {
             return Err(PluginError::new("missing-icon", format!("Icon {icon} not found")));
         }
@@ -196,7 +203,7 @@ impl PluginService {
         for entry in &registry.plugins {
             match read_manifest(Path::new(&entry.path)) {
                 Ok(manifest) if manifest.id == entry.id => {
-                    loaded.insert(entry.id.clone(), Loaded { manifest, integrity_error: None, checked: entry.mode == PluginMode::Dev });
+                    loaded.insert(entry.id.clone(), Loaded { manifest, integrity_error: None, checked: entry.mode != PluginMode::Installed });
                 }
                 Ok(_) => {}
                 Err(error) => eprintln!("[plugins] {} skipped: {}", entry.id, error.message),
@@ -206,6 +213,44 @@ impl PluginService {
         state.registry = registry;
         state.loaded = loaded;
         state.verified.clear();
+    }
+
+    pub fn sync_builtin(&self, folder: &Path) {
+        let existing = json::read(&self.registry_file, Registry::parse);
+        if existing.is_none() && self.registry_file.exists() {
+            return;
+        }
+        let mut registry = existing.unwrap_or_else(Registry::empty);
+        let mut changed = false;
+        for item in fs::read_dir(folder).into_iter().flatten().flatten() {
+            let Ok(manifest) = read_manifest(&item.path()) else { continue };
+            let path = realpath(&item.path()).unwrap_or_else(|_| item.path()).to_string_lossy().into_owned();
+            match registry.plugins.iter_mut().find(|p| p.id == manifest.id) {
+                Some(entry) if entry.mode == PluginMode::Builtin && entry.path != path => {
+                    entry.path = path;
+                    changed = true;
+                }
+                Some(_) => {}
+                None => {
+                    registry.plugins.push(Entry {
+                        id: manifest.id.clone(),
+                        mode: PluginMode::Builtin,
+                        path,
+                        source: None,
+                        enabled: true,
+                        granted: manifest.permissions.clone(),
+                        decided: keys_of(&manifest),
+                        external: None,
+                        programs: BTreeMap::new(),
+                        hashes: BTreeMap::new(),
+                    });
+                    changed = true;
+                }
+            }
+        }
+        if changed {
+            let _ = json::write(&self.registry_file, &registry);
+        }
     }
 
     pub fn list(&self) -> Vec<InstalledPlugin> {
@@ -357,6 +402,9 @@ impl PluginService {
     pub fn remove(&self, id: &str) -> PResult<()> {
         let mut state = self.state.lock().unwrap();
         let index = entry_index(&state, id)?;
+        if state.registry.plugins[index].mode == PluginMode::Builtin {
+            return Err(PluginError::new("builtin", "Built-in plugins can only be disabled"));
+        }
         let entry = state.registry.plugins.remove(index);
         state.loaded.remove(id);
         if entry.mode == PluginMode::Installed && inside(&self.plugins_dir, Path::new(&entry.path)) {
@@ -515,6 +563,8 @@ fn list_of(state: &State) -> Vec<InstalledPlugin> {
                 mode: entry.mode,
                 integrity: if entry.mode == PluginMode::Dev {
                     "dev"
+                } else if entry.mode == PluginMode::Builtin {
+                    "builtin"
                 } else if loaded.integrity_error.is_some() {
                     "tampered"
                 } else {

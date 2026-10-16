@@ -1,11 +1,16 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{mpsc, Arc, Mutex};
+use std::time::Duration;
 
 use tauri::{AppHandle, Manager, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
-use tauri_plugin_dialog::{DialogExt, FileDialogBuilder, MessageDialogButtons, MessageDialogKind, MessageDialogResult};
+use serde_json::json;
+use tauri_plugin_dialog::{DialogExt, FileDialogBuilder};
 use tauri_plugin_notification::NotificationExt;
 
+use crate::events::emit;
 use crate::plugins::api::{Decision, Host};
 use crate::schema::settings::{ExecPolicy, Language};
 use crate::settings::SettingsStore;
@@ -49,14 +54,18 @@ fn format(template: &str, values: &[(&str, &str)]) -> String {
     out
 }
 
+const CONFIRM_TIMEOUT: Duration = Duration::from_secs(120);
+
 pub struct TauriHost {
     app: AppHandle,
     settings: Arc<SettingsStore>,
+    next: AtomicU64,
+    pending: Mutex<HashMap<u64, mpsc::Sender<Decision>>>,
 }
 
 impl TauriHost {
     pub fn new(app: AppHandle, settings: Arc<SettingsStore>) -> Self {
-        TauriHost { app, settings }
+        TauriHost { app, settings, next: AtomicU64::new(0), pending: Mutex::new(HashMap::new()) }
     }
 
     fn t(&self, key: &str, values: &[(&str, &str)]) -> String {
@@ -87,28 +96,23 @@ impl TauriHost {
         self.t("externalTitle", &[("name", name)])
     }
 
-    fn ask(&self, title: &str, message: &str, detail: &str, deny: &str, once: &str, session: Option<&str>) -> Decision {
-        #[cfg(windows)]
-        if let Some(window) = self.window() {
-            if let Ok(hwnd) = window.hwnd() {
-                return task_dialog::ask(hwnd, title, message, detail, deny, once, session);
-            }
+    pub fn answer(&self, id: u64, decision: Decision) {
+        if let Some(sender) = self.pending.lock().unwrap().remove(&id) {
+            let _ = sender.send(decision);
         }
-        let mut builder = self.app.dialog().message(format!("{message}\n\n{detail}")).title(title).kind(MessageDialogKind::Warning);
-        if let Some(window) = self.window() {
-            builder = builder.parent(&window);
-        }
-        let result = match session {
-            Some(session) => builder.buttons(MessageDialogButtons::YesNoCancelCustom(once.into(), session.into(), deny.into())).blocking_show_with_result(),
-            None => builder.buttons(MessageDialogButtons::OkCancelCustom(once.into(), deny.into())).blocking_show_with_result(),
-        };
-        match result {
-            MessageDialogResult::Custom(label) if label == once => Decision::Once,
-            MessageDialogResult::Custom(label) if session == Some(label.as_str()) => Decision::Session,
-            MessageDialogResult::Yes | MessageDialogResult::Ok => Decision::Once,
-            MessageDialogResult::No if session.is_some() => Decision::Session,
-            _ => Decision::Deny,
-        }
+    }
+
+    fn ask(&self, plugin_id: &str, title: &str, message: &str, detail: &str, deny: &str, once: &str, session: Option<&str>) -> Decision {
+        let id = self.next.fetch_add(1, Ordering::Relaxed);
+        let (sender, receiver) = mpsc::channel();
+        self.pending.lock().unwrap().insert(id, sender);
+        emit(&self.app, "plugins:confirm", json!({
+            "id": id, "pluginId": plugin_id, "title": title, "message": message, "detail": detail,
+            "deny": deny, "once": once, "session": session,
+        }));
+        let decision = receiver.recv_timeout(CONFIRM_TIMEOUT).unwrap_or(Decision::Deny);
+        self.pending.lock().unwrap().remove(&id);
+        decision
     }
 }
 
@@ -126,9 +130,10 @@ impl Host for TauriHost {
         builder.blocking_pick_file().and_then(|p| p.into_path().ok())
     }
 
-    fn confirm_exec(&self, plugin_name: &str, command: &str) -> Decision {
+    fn confirm_exec(&self, plugin_id: &str, plugin_name: &str, command: &str) -> Decision {
         let session = (self.settings.current().exec_policy == ExecPolicy::Session).then(|| self.t("execSession", &[]));
         self.ask(
+            plugin_id,
             &self.t("execTitle", &[]),
             &self.t("execMessage", &[("name", plugin_name)]),
             &self.t("execDetail", &[("command", command)]),
@@ -138,8 +143,9 @@ impl Host for TauriHost {
         )
     }
 
-    fn confirm_open(&self, plugin_name: &str, url: &str) -> Decision {
+    fn confirm_open(&self, plugin_id: &str, plugin_name: &str, url: &str) -> Decision {
         self.ask(
+            plugin_id,
             &self.t("openTitle", &[]),
             &self.t("openMessage", &[("name", plugin_name)]),
             url,
@@ -167,52 +173,5 @@ impl Host for TauriHost {
 
     fn notify(&self, title: &str, body: &str) {
         let _ = self.app.notification().builder().title(title).body(body).show();
-    }
-}
-
-#[cfg(windows)]
-mod task_dialog {
-    use windows::core::{HSTRING, PCWSTR};
-    use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::Controls::{TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOGCONFIG_0, TASKDIALOG_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION, TDF_POSITION_RELATIVE_TO_WINDOW, TD_WARNING_ICON};
-
-    use crate::plugins::api::Decision;
-
-    const DENY: i32 = 100;
-    const ONCE: i32 = 101;
-    const SESSION: i32 = 102;
-
-    pub fn ask(parent: HWND, title: &str, message: &str, detail: &str, deny: &str, once: &str, session: Option<&str>) -> Decision {
-        let title = HSTRING::from(title);
-        let message = HSTRING::from(message);
-        let detail = HSTRING::from(detail);
-        let labels = [HSTRING::from(deny), HSTRING::from(once), HSTRING::from(session.unwrap_or_default())];
-        let mut buttons = vec![
-            TASKDIALOG_BUTTON { nButtonID: DENY, pszButtonText: PCWSTR(labels[0].as_ptr()) },
-            TASKDIALOG_BUTTON { nButtonID: ONCE, pszButtonText: PCWSTR(labels[1].as_ptr()) },
-        ];
-        if session.is_some() {
-            buttons.push(TASKDIALOG_BUTTON { nButtonID: SESSION, pszButtonText: PCWSTR(labels[2].as_ptr()) });
-        }
-        let config = TASKDIALOGCONFIG {
-            cbSize: std::mem::size_of::<TASKDIALOGCONFIG>() as u32,
-            hwndParent: parent,
-            dwFlags: TDF_ALLOW_DIALOG_CANCELLATION | TDF_POSITION_RELATIVE_TO_WINDOW,
-            pszWindowTitle: PCWSTR(title.as_ptr()),
-            pszMainInstruction: PCWSTR(message.as_ptr()),
-            pszContent: PCWSTR(detail.as_ptr()),
-            cButtons: buttons.len() as u32,
-            pButtons: buttons.as_ptr(),
-            nDefaultButton: DENY,
-            Anonymous1: TASKDIALOGCONFIG_0 { pszMainIcon: TD_WARNING_ICON },
-            ..Default::default()
-        };
-        let mut pressed = 0i32;
-        let ok = unsafe { TaskDialogIndirect(&config, Some(&mut pressed), None, None) }.is_ok();
-        match (ok, pressed) {
-            (true, ONCE) => Decision::Once,
-            (true, SESSION) => Decision::Session,
-            _ => Decision::Deny,
-        }
     }
 }

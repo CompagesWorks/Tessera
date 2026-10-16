@@ -116,6 +116,14 @@ pub struct PluginWidget {
     pub entry: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TitlebarButton {
+    pub id: String,
+    pub title: String,
+    #[serde(default = "puzzle")]
+    pub icon: String,
+}
+
 fn puzzle() -> String {
     "puzzle".into()
 }
@@ -175,6 +183,8 @@ pub enum PluginSetting {
         max_length: i64,
         #[serde(default)]
         placeholder: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        browse: Vec<String>,
     },
     Number {
         id: String,
@@ -256,8 +266,14 @@ impl PluginSetting {
         }
         match self {
             PluginSetting::Boolean { .. } => {}
-            PluginSetting::String { default, max_length, placeholder, .. } => {
+            PluginSetting::String { default, max_length, placeholder, browse, .. } => {
                 check::text(&format!("{path}.default"), default, 0, 500)?;
+                if browse.len() > 8 {
+                    return fail(&format!("{path}.browse"), "too many extensions");
+                }
+                for extension in browse.iter() {
+                    matches(&format!("{path}.browse"), &check::ICON, extension)?;
+                }
                 if !(1..=500).contains(max_length) {
                     return fail(&format!("{path}.maxLength"), "out of range");
                 }
@@ -308,6 +324,10 @@ pub struct Contributes {
     pub ui_provider: Option<UiProviderEntry>,
     #[serde(default)]
     pub settings: Vec<PluginSetting>,
+    #[serde(default)]
+    pub host: Option<String>,
+    #[serde(default)]
+    pub titlebar: Vec<TitlebarButton>,
 }
 
 
@@ -467,6 +487,21 @@ pub fn parse_manifest(value: Value) -> Result<PluginManifest> {
         check::icon(&format!("{path}.icon"), &widget.icon)?;
         check::relative_path(&format!("{path}.entry"), &widget.entry)?;
     }
+    if let Some(host) = &contributes.host {
+        check::relative_path("contributes.host", host)?;
+    }
+    if contributes.titlebar.len() > 4 {
+        return fail("contributes.titlebar", "too many buttons");
+    }
+    if !contributes.titlebar.is_empty() && contributes.host.is_none() {
+        return fail("contributes.titlebar", "titlebar buttons need contributes.host");
+    }
+    for (index, button) in contributes.titlebar.iter_mut().enumerate() {
+        let path = format!("contributes.titlebar.{index}");
+        matches(&format!("{path}.id"), &check::ICON, &button.id)?;
+        check::trimmed(&format!("{path}.title"), &mut button.title, 1, 24)?;
+        check::icon(&format!("{path}.icon"), &button.icon)?;
+    }
     if contributes.themes.len() > 16 {
         return fail("contributes.themes", "too many themes");
     }
@@ -597,6 +632,7 @@ pub fn domain_allowed(domains: &[String], hostname: &str) -> bool {
 pub enum PluginMode {
     Installed,
     Dev,
+    Builtin,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
