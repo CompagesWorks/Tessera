@@ -1,50 +1,28 @@
-# Tessera
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo.svg">
+    <img src="docs/logo-light.svg" alt="Tessera" width="420">
+  </picture>
+</p>
 
-A fully customizable, plugin-based tool to create Super Smash Bros. Ultimate mods.
-
-- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- UI mockup: [mockups/layout-mockup.html](mockups/layout-mockup.html)
-- Writing a plugin: [docs/PLUGINS.md](docs/PLUGINS.md), example in [examples/plugins/hello-counter](examples/plugins/hello-counter)
+<p align="center">A plugin-based tool to create Super Smash Bros. Ultimate mods.</p>
 
 ## Development
 
-Requires Node 22.12+.
+Requires Node 22.12+ and Rust 1.90+.
 
 ```bash
 npm install
-npm run dev        # Electron + Vite with hot reload
-npm run build      # production build in apps/desktop/out
-npm start          # run the production build
-npm run typecheck
+npm run dev
 ```
 
-The Electron binary is downloaded on the first launch.
+Tests: `npm test` and `cargo test` in `apps/desktop/src-tauri`.
 
-To run a second, isolated instance next to your own (separate settings and projects list), pass a profile folder. It is ignored in packaged builds:
+## Docs
 
-```bash
-npx electron apps/desktop --tessera-profile=C:/temp/tessera-test
-```
-
-## Layout
-
-```
-apps/desktop/        Electron app
-  src/main/          main process: windows, IPC handlers, settings, security policy
-  src/preload/       sandboxed preload, exposes window.tessera
-  src/renderer/      UI (Atrium-UI, vanilla TypeScript)
-    index.html       empty shell, everything is mounted from src/
-    src/shell/       titlebar, sidebar, statusbar
-    src/pages/<id>/  one folder per page: <id>.html, index.ts, <id>.css
-    src/about/       About screen (Atrium-UI credit)
-    src/commands/    Ctrl+K commands
-    src/i18n/        FR / EN
-    src/ui/          UiProvider (Atrium-UI by default)
-packages/protocol/   IPC contract (channels, zod schemas, types) shared by all three
-docs/                architecture and decisions
-mockups/             HTML mockups
-```
+- [Architecture](docs/ARCHITECTURE.md)
+- [Writing a plugin](docs/plugins/README.md)
 
 ## Credits
 
-UI by [Atrium-UI](https://github.com/CompagesWorks/Atrium-UI). Icons by [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT).
+UI by [Atrium-UI](https://github.com/CompagesWorks/Atrium-UI). Icons by [Bootstrap Icons](https://icons.getbootstrap.com/).
