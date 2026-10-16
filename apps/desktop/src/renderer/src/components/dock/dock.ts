@@ -1,5 +1,6 @@
 import type { LayoutNode, PanelNode, SplitNode } from '@tessera/protocol';
 import { t } from '../../i18n';
+import { iconElement } from '../icon';
 import type { DropZone } from '../../layout/tree';
 import './dock.css';
 
@@ -73,8 +74,7 @@ function renderPanel(node: PanelNode, widgets: DockWidgets, actions: DockActions
     tab.type = 'button';
     tab.className = 'tessera-dock-tab';
     tab.classList.toggle('is-active', index === node.active);
-    tab.innerHTML = `<i class="bi bi-${icon}"></i>`;
-    tab.append(title);
+    tab.append(iconElement(icon), title);
     const close = document.createElement('i');
     close.className = 'bi bi-x tessera-dock-tab-close';
     close.dataset['atriumTooltip'] = t('dock.closeWidget');
@@ -96,7 +96,10 @@ function renderPanel(node: PanelNode, widgets: DockWidgets, actions: DockActions
   body.className = 'tessera-dock-body';
   const activeId = node.tabs[node.active];
   if (activeId) {
-    body.append(widgets.element(activeId));
+    const slot = document.createElement('div');
+    slot.className = 'tessera-dock-slot';
+    slot.dataset['widget'] = activeId;
+    body.append(slot);
   } else {
     const empty = document.createElement('div');
     empty.className = 'tessera-dock-empty';
@@ -192,8 +195,37 @@ function renderNode(node: LayoutNode, widgets: DockWidgets, actions: DockActions
   return split;
 }
 
+const observers = new WeakMap<HTMLElement, ResizeObserver>();
+
 export function renderDock(container: HTMLElement, root: LayoutNode, widgets: DockWidgets, actions: DockActions, editing: boolean) {
   container.classList.add('tessera-dock');
   container.classList.toggle('is-editing', editing);
-  container.replaceChildren(renderNode(root, widgets, actions, editing));
+  let layer = container.querySelector<HTMLElement>(':scope > .tessera-dock-layer');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.className = 'tessera-dock-layer';
+    container.append(layer);
+  }
+  for (const old of [...container.children]) if (old !== layer) old.remove();
+  container.insertBefore(renderNode(root, widgets, actions, editing), layer);
+
+  const slots = [...container.querySelectorAll<HTMLElement>('.tessera-dock-slot')].map((slot) => ({ slot, element: widgets.element(slot.dataset['widget']!) }));
+  const visible = new Set(slots.map((s) => s.element));
+  for (const { element } of slots) if (element.parentElement !== layer) layer.append(element);
+  for (const child of layer.children) if (!visible.has(child as HTMLElement)) (child as HTMLElement).style.display = 'none';
+
+  const sync = () => {
+    const box = container.getBoundingClientRect();
+    for (const { slot, element } of slots) {
+      const r = slot.getBoundingClientRect();
+      Object.assign(element.style, { display: '', left: `${r.left - box.left}px`, top: `${r.top - box.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    }
+  };
+  sync();
+  observers.get(container)?.disconnect();
+  if (typeof ResizeObserver === 'undefined') return;
+  const observer = new ResizeObserver(sync);
+  observer.observe(container);
+  for (const { slot } of slots) observer.observe(slot);
+  observers.set(container, observer);
 }

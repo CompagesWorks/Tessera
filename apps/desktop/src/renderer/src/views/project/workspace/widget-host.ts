@@ -18,9 +18,11 @@ function missingWidget(type: string): WidgetHandle {
   element.innerHTML = '<i class="bi bi-puzzle"></i>';
   const title = document.createElement('b');
   title.textContent = t('dock.missingWidget');
+  const hint = document.createElement('span');
+  hint.textContent = t('dock.missingWidgetHint');
   const code = document.createElement('code');
   code.textContent = type;
-  element.append(title, code);
+  element.append(title, hint, code);
   return { element };
 }
 

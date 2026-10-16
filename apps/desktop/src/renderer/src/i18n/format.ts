@@ -2,7 +2,7 @@ import { isMessageKey, t } from '.';
 
 export function errorMessage(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);
-  const code = /project:[a-z-]+/.exec(text)?.[0];
+  const code = /(?:project|account|history|plugin-settings|profile):[a-z-]+/.exec(text)?.[0];
   const key = code ? `error.${code}` : '';
   if (isMessageKey(key)) return t(key);
   console.error(error);

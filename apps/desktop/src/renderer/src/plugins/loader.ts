@@ -1,10 +1,21 @@
-import { PLUGIN_SCHEME, type InstalledPlugin } from '@tessera/protocol';
+import type { InstalledPlugin } from '@tessera/protocol';
+import { pluginUrl } from '../bridge/schemes';
+import { pluginIcon } from '../components/icon';
+import { t } from '../i18n';
 import { replacePluginWidgets } from '../widgets/registry';
 import type { WidgetDefinition } from '../widgets/types';
-import { attachFrame, setPluginGrants } from './bridge';
+import { attachFrame, broadcastTheme, setPluginGrants } from './bridge';
+import { applyThemeTokens, findTheme } from './theme';
+import { accentTokens } from '../app/appearance';
 import './plugin-frame.css';
 
 let installed: InstalledPlugin[] = [];
+let themeChoice: { key: string | null; mode: 'dark' | 'light'; accent: string | null } = { key: null, mode: 'dark', accent: null };
+let suspended = false;
+
+export function suspendPlugins() {
+  suspended = true;
+}
 
 export function installedPlugins(): InstalledPlugin[] {
   return installed;
@@ -16,7 +27,7 @@ function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
     type: `${manifest.id}/${widget.id}`,
     title: () => widget.title,
     description: () => widget.description,
-    icon: widget.icon,
+    icon: pluginIcon(manifest.id, widget.icon),
     category: widget.category,
     source: manifest.name,
     trust: 'plugin',
@@ -28,8 +39,23 @@ function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
       iframe.referrerPolicy = 'no-referrer';
       iframe.allow = '';
       iframe.title = widget.title;
-      iframe.src = `${PLUGIN_SCHEME}://${manifest.id}/${widget.entry}`;
-      element.append(iframe);
+      iframe.src = pluginUrl(manifest.id, widget.entry);
+      const hung = document.createElement('div');
+      hung.className = 'tessera-plugin-hung';
+      hung.hidden = true;
+      hung.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+      const message = document.createElement('b');
+      message.textContent = t('plugins.unresponsive', { name: manifest.name });
+      const reload = document.createElement('button');
+      reload.type = 'button';
+      reload.className = 'atrium-btn atrium-btn-secondary';
+      reload.textContent = t('plugins.reload');
+      reload.addEventListener('click', () => {
+        hung.hidden = true;
+        iframe.src = iframe.src;
+      });
+      hung.append(message, reload);
+      element.append(iframe, hung);
 
       let current = state;
       const detach = attachFrame({
@@ -37,6 +63,9 @@ function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
         pluginId: manifest.id,
         widgetId,
         project,
+        onResponsive: (responsive) => {
+          hung.hidden = responsive;
+        },
         getState: () => current,
         setState: (next) => {
           current = next;
@@ -50,6 +79,18 @@ function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
 
 export async function loadPlugins() {
   installed = await window.tessera.invoke('plugins:list');
-  for (const plugin of installed) setPluginGrants(plugin.manifest.id, plugin.enabled ? plugin.granted : []);
-  replacePluginWidgets(installed.filter((p) => p.enabled).flatMap(widgetsOf));
+  for (const plugin of installed) setPluginGrants(plugin.manifest.id, plugin.enabled && !suspended ? plugin.granted : []);
+  replacePluginWidgets(suspended ? [] : installed.filter((p) => p.enabled).flatMap(widgetsOf));
+  refreshPluginTheme();
+}
+
+export function setThemeChoice(key: string | null, mode: 'dark' | 'light', accent: string | null) {
+  themeChoice = { key, mode, accent };
+  refreshPluginTheme();
+}
+
+export function refreshPluginTheme() {
+  const tokens = { ...(suspended ? {} : (findTheme(installed, themeChoice.key)?.tokens ?? {})), ...accentTokens(themeChoice.accent) };
+  applyThemeTokens(tokens);
+  broadcastTheme(themeChoice.mode, tokens);
 }

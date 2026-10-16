@@ -1,7 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
-  <rect width="22" height="22" rx="5" fill="#252525" />
-  <rect x="3" y="3" width="7" height="7" rx="1.5" fill="#7a9bff" />
-  <rect x="12" y="3" width="7" height="7" rx="1.5" fill="#7a9bff" opacity=".6" />
-  <rect x="3" y="12" width="7" height="7" rx="1.5" fill="#7a9bff" opacity=".35" />
-  <rect x="12" y="12" width="7" height="7" rx="1.5" fill="#7a9bff" opacity=".8" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="13 0 205 205">
+  <defs>
+    <linearGradient id="top" gradientUnits="userSpaceOnUse" x1="17.68" y1="0" x2="222.68" y2="0">
+      <stop offset="0" stop-color="#f00505" />
+      <stop offset="1" stop-color="#dce62c" />
+    </linearGradient>
+    <linearGradient id="bottom" gradientUnits="userSpaceOnUse" x1="17.68" y1="0" x2="222.68" y2="0">
+      <stop offset="0" stop-color="#4cdc60" />
+      <stop offset="1" stop-color="#6750d5" />
+    </linearGradient>
+    <linearGradient id="fade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="205">
+      <stop offset="0" stop-color="#000" />
+      <stop offset="1" stop-color="#fff" />
+    </linearGradient>
+    <mask id="down" maskUnits="userSpaceOnUse" x="0" y="0" width="232" height="205">
+      <rect width="232" height="205" fill="url(#fade)" />
+    </mask>
+    <path id="shard" d="M88.71 29L33.18 141.43L192.49 204.28L197.71 170.5L157.18 97L149.71 0Z" />
+  </defs>
+  <use href="#shard" fill="url(#top)" />
+  <use href="#shard" fill="url(#bottom)" mask="url(#down)" />
+  <path d="M106.68 88.5L33.18 141.43L192.49 204.28L168.18 160L157.18 97L149.71 0Z" fill="#fff" fill-opacity="0.2" />
+  <path d="M157.18 97L168.18 160L192.49 204.28L197.71 170.5Z" fill="#000" fill-opacity="0.34" />
 </svg>

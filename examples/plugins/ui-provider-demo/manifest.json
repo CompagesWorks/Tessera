@@ -1,0 +1,13 @@
+{
+  "id": "examples.ui-provider-demo",
+  "name": "UI Provider Demo",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "Plugin d'exemple qui remplace le moteur d'interface : il garde Atrium-UI mais préfixe chaque notification. Montre le risque de ui.provider.",
+  "icon": "window-stack",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": ["ui.provider"],
+  "contributes": {
+    "uiProvider": { "entry": "provider.js" }
+  }
+}

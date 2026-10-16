@@ -1,0 +1,22 @@
+{
+  "id": "examples.hello-rust",
+  "name": "Hello Rust",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "Plugin d'exemple écrit en Rust (WebAssembly) : un compteur et une analyse des sources du projet.",
+  "icon": "cpu",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": ["fs.project.read"],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "counter",
+        "title": "Compteur Rust",
+        "description": "Exemple de widget écrit en Rust",
+        "icon": "cpu",
+        "category": "tools",
+        "entry": "widget.html"
+      }
+    ]
+  }
+}

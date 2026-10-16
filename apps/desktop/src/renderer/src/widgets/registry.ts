@@ -1,4 +1,5 @@
 import { explorerWidget } from './builtin/explorer/explorer';
+import { backupsWidget } from './builtin/backups/backups';
 import { notesWidget } from './builtin/notes/notes';
 import { projectInfoWidget } from './builtin/project-info/project-info';
 import type { WidgetDefinition } from './types';
@@ -29,4 +30,4 @@ export function allWidgets(): WidgetDefinition[] {
   return [...definitions.values()];
 }
 
-[explorerWidget, notesWidget, projectInfoWidget].forEach(registerWidget);
+[explorerWidget, notesWidget, projectInfoWidget, backupsWidget].forEach(registerWidget);

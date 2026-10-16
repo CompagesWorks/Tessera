@@ -1,3 +1,478 @@
-.tessera-settings-about {
-  margin-top: 16px;
+.tessera-settings {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  min-height: 0;
+}
+
+.tessera-set-nav {
+  width: 230px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 10px;
+  border-right: 1px solid var(--atrium-border-color);
+  background: var(--atrium-bg-secondary);
+}
+
+.tessera-set-search {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.tessera-set-search i {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--atrium-text-muted);
+  pointer-events: none;
+}
+
+.tessera-set-search .atrium-input {
+  width: 100%;
+  padding-left: 32px;
+}
+
+.tessera-set-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tessera-set-grow {
+  flex: 1;
+}
+
+.tessera-set-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--atrium-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.tessera-set-tab:hover {
+  background: var(--atrium-bg-transparent-05);
+  color: var(--atrium-text-primary);
+}
+
+.tessera-set-tab.is-on {
+  background: rgba(var(--atrium-accent-rgb), 0.14);
+  color: var(--atrium-accent-color);
+}
+
+.tessera-set-tab i {
+  width: 16px;
+  text-align: center;
+}
+
+.tessera-set-body {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 24px 36px 40px;
+}
+
+.tessera-set-page {
+  max-width: 760px;
+}
+
+.tessera-set-page + .tessera-set-page {
+  margin-top: 32px;
+}
+
+.tessera-set-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.tessera-set-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-set-section {
+  padding: 0 16px;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 12px;
+  background: var(--atrium-bg-card);
+}
+
+.tessera-set-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--atrium-border-color);
+}
+
+.tessera-set-row:last-child {
+  border-bottom: 0;
+}
+
+.tessera-set-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tessera-set-text b {
+  display: block;
+  font-weight: 500;
+  color: var(--atrium-text-primary);
+}
+
+.tessera-set-text span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-set-text .tessera-set-warning {
+  color: var(--atrium-warning-color);
+}
+
+.tessera-set-icon {
+  width: 22px;
+  display: inline-block;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-set-control {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  max-width: 60%;
+}
+
+.tessera-set-select {
+  min-width: 190px;
+}
+
+.tessera-set-path {
+  max-width: 290px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 10px;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 8px;
+  background: var(--atrium-bg-input);
+  font: 12px ui-monospace, Consolas, monospace;
+  color: var(--atrium-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tessera-set-path.is-muted {
+  color: var(--atrium-text-muted);
+}
+
+.tessera-set-danger {
+  color: var(--atrium-danger-color);
+  border-color: rgba(var(--atrium-danger-rgb), 0.4);
+}
+
+.tessera-set-muted {
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-set-swatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tessera-set-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.tessera-set-swatch.is-default {
+  background: conic-gradient(#7a9bff, #c77dff, #ff6b9a, #ff9f43, #4ade80, #2dd4bf, #7a9bff);
+}
+
+.tessera-set-swatch.is-on {
+  border-color: var(--atrium-text-primary);
+  box-shadow: inset 0 0 0 2px var(--atrium-bg-secondary);
+}
+
+.tessera-set-color {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.tessera-set-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tessera-set-range input {
+  width: 160px;
+  accent-color: var(--atrium-accent-color);
+}
+
+.tessera-set-range span {
+  min-width: 44px;
+  font-variant-numeric: tabular-nums;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-set-control .is-recording {
+  border-color: var(--atrium-accent-color);
+  color: var(--atrium-accent-color);
+}
+
+.tessera-set-after {
+  margin-top: 12px;
+}
+
+.tessera-set-about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 0 6px;
+  text-align: center;
+}
+
+.tessera-set-about h2 {
+  margin: 6px 0 0;
+}
+
+.tessera-set-about p {
+  margin: 0;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-set-about small {
+  color: var(--atrium-text-muted);
+}
+
+.tessera-set-credit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(var(--atrium-accent-rgb), 0.4);
+  border-radius: 12px;
+  background: rgba(var(--atrium-accent-rgb), 0.08);
+  color: var(--atrium-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tessera-set-credit > i {
+  font-size: 22px;
+  color: var(--atrium-accent-color);
+}
+
+.tessera-set-credit span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--atrium-accent-color);
+}
+
+.tessera-set-journal {
+  max-height: 60vh;
+  overflow: auto;
+  display: grid;
+  gap: 2px;
+}
+
+.tessera-set-journal-row {
+  display: grid;
+  grid-template-columns: 18px minmax(80px, 140px) minmax(90px, 140px) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  font-size: 12.5px;
+}
+
+.tessera-set-journal-row > i {
+  color: var(--atrium-success-color);
+}
+
+.tessera-set-journal-row.is-denied > i {
+  color: var(--atrium-danger-color);
+}
+
+.tessera-set-journal-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-set-journal-row small {
+  color: var(--atrium-text-muted);
+}
+
+.tessera-about-logo {
+  width: 72px;
+  height: 72px;
+}
+
+.tessera-set-field {
+  width: 200px;
+}
+
+.tessera-set-field.is-number {
+  width: 110px;
+}
+
+.tessera-set-subgroup {
+  margin: 12px 2px 6px;
+  color: var(--atrium-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tessera-set-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  border-radius: 6px;
+  background: var(--atrium-bg-transparent-10, rgba(128, 128, 128, 0.2));
+  font-size: 9px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.tessera-set-badge.is-github {
+  background: #24292f;
+  color: #fff;
+}
+
+.tessera-set-badge.is-gamebanana {
+  background: #f5c542;
+  color: #1d1d1d;
+}
+
+.tessera-set-badge.is-discord {
+  background: #5865f2;
+  color: #fff;
+}
+
+.tessera-set-journal-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tessera-set-journal-bar .atrium-input {
+  flex: 1;
+}
+
+.tessera-set-journal-count {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-set-journal.is-page {
+  max-height: none;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: var(--atrium-bg-secondary);
+}
+
+.tessera-set-journal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tessera-profile {
+  display: grid;
+  gap: 12px;
+  min-width: min(520px, 80vw);
+}
+
+.tessera-profile p,
+.tessera-profile small {
+  margin: 0;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-profile label {
+  color: var(--atrium-text-secondary);
+  font-size: 12px;
+}
+
+.tessera-profile-plugins {
+  max-height: 200px;
+  overflow: auto;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 10px;
+}
+
+.tessera-profile .tessera-set-row.is-muted {
+  opacity: 0.6;
+}
+
+.tessera-set-note {
+  margin: 10px 2px 0;
+  color: var(--atrium-text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.tessera-set-text .tessera-set-badge {
+  display: inline-grid;
+  margin-top: 0;
+  color: inherit;
+}
+
+.tessera-set-text .tessera-set-badge.is-github,
+.tessera-set-text .tessera-set-badge.is-discord {
+  color: #fff;
+}
+
+.tessera-set-text .tessera-set-badge.is-gamebanana {
+  color: #1d1d1d;
 }

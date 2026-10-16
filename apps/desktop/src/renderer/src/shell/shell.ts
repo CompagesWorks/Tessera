@@ -11,6 +11,7 @@ export interface Shell {
   homeButton: HTMLButtonElement;
   workspaces: HTMLElement;
   editButton: HTMLButtonElement;
+  exportButton: HTMLButtonElement;
   stage: HTMLElement;
   statusbar: HTMLElement;
   panels: Map<string, HTMLElement>;
@@ -40,6 +41,7 @@ export function mountShell(pages: Page[]): Shell {
   const homeButton = document.querySelector<HTMLButtonElement>('[data-home]')!;
   const workspaces = document.querySelector<HTMLElement>('[data-workspaces]')!;
   const editButton = document.querySelector<HTMLButtonElement>('[data-edit-layout]')!;
+  const exportButton = document.querySelector<HTMLButtonElement>('[data-export]')!;
   const statusbar = document.querySelector<HTMLElement>('.atrium-statusbar')!;
   const panels = new Map<string, HTMLElement>();
 
@@ -60,5 +62,5 @@ export function mountShell(pages: Page[]): Shell {
     panels.set(page.id, panel);
   }
 
-  return { sidebar, crumb, homeButton, workspaces, editButton, stage, statusbar, panels };
+  return { sidebar, crumb, homeButton, workspaces, editButton, exportButton, stage, statusbar, panels };
 }

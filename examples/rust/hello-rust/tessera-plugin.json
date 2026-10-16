@@ -1,0 +1,4 @@
+{
+  "plugin": "../../plugins/hello-rust",
+  "rust": "."
+}

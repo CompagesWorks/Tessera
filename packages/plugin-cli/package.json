@@ -1,0 +1,29 @@
+{
+  "name": "tessera-plugin",
+  "version": "0.1.0",
+  "description": "Create, build, check and pack Tessera plugins (JavaScript or Rust)",
+  "type": "module",
+  "bin": {
+    "tessera-plugin": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@tessera/protocol": "0.1.0",
+    "@types/node": "^24.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

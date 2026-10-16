@@ -10,9 +10,9 @@
   "scripts": {
     "dev": "npm run dev -w @tessera/desktop",
     "build": "npm run build -w @tessera/desktop",
-    "start": "npm run start -w @tessera/desktop",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "vitest run"
+    "test": "vitest run",
+    "plugin": "npm run build -w tessera-plugin --silent && node packages/plugin-cli/dist/cli.mjs"
   },
   "engines": {
     "node": ">=22"

@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  background: var(--atrium-bg-primary);
+  color: var(--atrium-text-primary);
+  font-family: system-ui, sans-serif;
+}
+
+.demo {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+pre {
+  margin: 0;
+  color: var(--atrium-text-secondary);
+  white-space: pre-wrap;
+}

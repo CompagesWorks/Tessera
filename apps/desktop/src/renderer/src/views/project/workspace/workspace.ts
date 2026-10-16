@@ -1,4 +1,5 @@
 import { WIDGET_CATEGORIES, type ProjectLayout, type ProjectSummary, type WidgetCategory } from '@tessera/protocol';
+import { iconElement } from '../../../components/icon';
 import { endWidgetDrag, renderDock, startWidgetDrag, WIDGET_MIME, type DockActions } from '../../../components/dock/dock';
 import { fromTemplate, required } from '../../../components/dom';
 import { t } from '../../../i18n';
@@ -140,7 +141,7 @@ export function createWorkspaceController({ host, sidebar, ui, onEditingChange }
     card.type = 'button';
     card.className = 'tessera-drawer-card';
     card.draggable = true;
-    card.innerHTML = `<i class="bi bi-${definition.icon}"></i>`;
+    card.append(iconElement(definition.icon));
     const text = document.createElement('span');
     text.textContent = definition.title();
     const small = document.createElement('small');

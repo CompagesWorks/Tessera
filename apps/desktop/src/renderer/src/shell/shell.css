@@ -90,14 +90,6 @@ body.is-project .tessera-title-actions {
   color: var(--atrium-accent-color);
 }
 
-.tessera-sidebar-sep {
-  display: none;
-  flex-shrink: 0;
-  width: 30px;
-  height: 1px;
-  background: var(--atrium-border-color);
-}
-
 .atrium-sidebar {
   justify-content: flex-start;
   gap: 10px;
@@ -106,10 +98,6 @@ body.is-project .tessera-title-actions {
 
 .atrium-sidebar .is-bottom {
   margin-top: auto;
-}
-
-body.is-project .tessera-sidebar-sep {
-  display: block;
 }
 
 body.is-project .tessera-workspaces {

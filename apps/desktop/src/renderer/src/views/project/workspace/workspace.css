@@ -64,7 +64,8 @@
   transform: translateX(-2px);
 }
 
-.tessera-drawer-card > i {
+.tessera-drawer-card > i,
+.tessera-drawer-card > .tessera-icon-img {
   width: 22px;
   font-size: 18px;
   text-align: center;

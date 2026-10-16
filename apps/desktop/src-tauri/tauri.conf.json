@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Tessera",
+  "version": "0.1.0",
+  "identifier": "com.compagesworks.tessera",
+  "build": {
+    "beforeDevCommand": "npm run dev:web",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build:web",
+    "frontendDist": "../out/renderer"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [],
+    "security": {
+      "csp": null,
+      "freezePrototype": false,
+      "capabilities": ["main"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "resources": {
+      "../resources/plugin-sdk.js": "resources/plugin-sdk.js",
+      "../../../node_modules/atrium-ui/dist/atrium-ui.css": "resources/atrium.css",
+      "../../../node_modules/bootstrap-icons/font/bootstrap-icons.min.css": "resources/bootstrap-icons.css",
+      "../../../node_modules/bootstrap-icons/font/fonts/": "resources/fonts/"
+    }
+  }
+}

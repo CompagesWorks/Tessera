@@ -1,0 +1,51 @@
+{
+  "id": "examples.toolbox",
+  "name": "Toolbox",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "Plugin d'exemple qui utilise les permissions : écrire dans le projet, un dossier externe, le réseau (api.github.com), des secrets, un thème, git, le presse-papiers, les notifications, les liens et la liste des projets.",
+  "icon": "tools",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write",
+    "fs.external",
+    { "id": "net", "domains": ["api.github.com"] },
+    "secrets",
+    "ui.theme",
+    { "id": "exec.system", "programs": ["git"] },
+    "clipboard.write",
+    "notify.system",
+    "open.external",
+    "projects.list"
+  ],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "toolbox",
+        "title": "Toolbox",
+        "description": "Teste les permissions des plugins",
+        "icon": "tools",
+        "category": "tools",
+        "entry": "widget.html"
+      }
+    ],
+    "themes": [
+      {
+        "id": "ember",
+        "name": "Ember",
+        "base": "dark",
+        "tokens": {
+          "--atrium-accent-color": "#ff7a45",
+          "--atrium-accent-hover": "#ff9466",
+          "--atrium-accent-rgb": "255, 122, 69",
+          "--atrium-accent-gradient-start": "#ff7a45",
+          "--atrium-accent-gradient-end": "#ffb347",
+          "--atrium-bg-primary": "#1b1512",
+          "--atrium-bg-secondary": "#221a16",
+          "--atrium-bg-tertiary": "#2b211c"
+        }
+      }
+    ]
+  }
+}

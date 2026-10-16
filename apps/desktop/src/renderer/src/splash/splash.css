@@ -1,0 +1,321 @@
+.tessera-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+  transition: opacity 0.45s ease;
+}
+
+html.is-booting,
+html.is-booting body {
+  background: transparent;
+}
+
+html.is-booting body > :not(.tessera-splash) {
+  visibility: hidden;
+}
+
+.tessera-splash[hidden] {
+  display: none;
+}
+
+.tessera-splash.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tessera-splash-card {
+  position: relative;
+  width: min(640px, 100%);
+  height: 360px;
+  overflow: hidden;
+  border: 1px solid var(--atrium-border-hover);
+  border-radius: 8px;
+  background: var(--atrium-bg-secondary);
+  box-shadow: var(--atrium-shadow-lg);
+  animation: tessera-splash-pop 0.5s var(--atrium-ease-standard) both;
+}
+
+.tessera-splash-card.is-wide {
+  width: min(560px, 100%);
+  height: auto;
+  padding: 28px 32px;
+}
+
+@keyframes tessera-splash-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.tessera-splash-art {
+  position: absolute;
+  inset: 0 0 0 30%;
+  background: #0d0d12;
+}
+
+.tessera-splash-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--atrium-bg-secondary) 0%, transparent 45%);
+}
+
+.tessera-splash-art span {
+  position: absolute;
+  mix-blend-mode: screen;
+  animation:
+    tessera-shard-in 1s var(--atrium-ease-out-expo) both,
+    tessera-shard-drift 9s ease-in-out 1s infinite alternate;
+}
+
+.tessera-splash-art span:nth-child(1) {
+  left: 18%; top: -10%; width: 62%; height: 75%;
+  clip-path: polygon(34% 18%, 0 82%, 100% 100%, 76% 0);
+  background: linear-gradient(135deg, #f00505, #e67619 60%, #dce62c);
+  animation-delay: 0.05s, 1s;
+}
+
+.tessera-splash-art span:nth-child(2) {
+  left: 52%; top: 30%; width: 52%; height: 80%;
+  clip-path: polygon(0 30%, 70% 0, 100% 70%, 30% 100%);
+  background: linear-gradient(160deg, #6750d5, #4cdc60);
+  opacity: 0.85;
+  animation-delay: 0.15s, 1.2s;
+}
+
+.tessera-splash-art span:nth-child(3) {
+  left: 8%; top: 52%; width: 44%; height: 58%;
+  clip-path: polygon(20% 0, 100% 35%, 60% 100%, 0 70%);
+  background: linear-gradient(200deg, #dce62c, #4cdc60);
+  opacity: 0.7;
+  animation-delay: 0.25s, 1.4s;
+}
+
+.tessera-splash-art span:nth-child(4) {
+  left: 72%; top: -6%; width: 34%; height: 40%;
+  clip-path: polygon(0 0, 100% 20%, 60% 100%);
+  background: linear-gradient(120deg, #e67619, #6750d5);
+  opacity: 0.75;
+  animation-delay: 0.35s, 1.6s;
+}
+
+.tessera-splash-art span:nth-child(5) {
+  left: 40%; top: 40%; width: 22%; height: 26%;
+  clip-path: polygon(50% 0, 100% 100%, 0 80%);
+  background: #fff;
+  opacity: 0.18;
+  animation-delay: 0.45s, 1.8s;
+}
+
+.tessera-splash-art span:nth-child(6) {
+  left: 30%; top: 8%; width: 18%; height: 20%;
+  clip-path: polygon(0 40%, 100% 0, 70% 100%);
+  background: linear-gradient(90deg, #f00505, #6750d5);
+  opacity: 0.6;
+  animation-delay: 0.55s, 2s;
+}
+
+@keyframes tessera-shard-in {
+  from {
+    opacity: 0;
+    transform: translate(40px, 20px) rotate(12deg) scale(0.85);
+  }
+}
+
+@keyframes tessera-shard-drift {
+  to {
+    transform: translate(-10px, 6px) rotate(-3deg);
+  }
+}
+
+.tessera-splash-info {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 58%;
+  padding: 36px 36px 26px;
+}
+
+.tessera-splash-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tessera-splash-logo {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  animation: tessera-logo-in 0.8s var(--atrium-ease-back) 0.2s both;
+}
+
+@keyframes tessera-logo-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) rotate(-24deg) scale(0.55);
+  }
+}
+
+.tessera-splash-card h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.tessera-splash-version {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-splash-foot {
+  margin-top: auto;
+}
+
+.tessera-splash-step {
+  min-height: 18px;
+  font-size: 12.5px;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-splash-plugins {
+  min-height: 22px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tessera-splash-plugins span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #fff;
+  background: linear-gradient(135deg, hsl(var(--_hue) 55% 48%), hsl(var(--_hue) 60% 26%));
+  animation: tessera-splash-pop 0.35s var(--atrium-ease-back) both;
+}
+
+.tessera-splash-plugins span.is-error {
+  outline: 2px solid var(--atrium-danger-color);
+}
+
+.tessera-splash-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-splash-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: transparent;
+}
+
+.tessera-splash-bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #f00505, #dce62c, #4cdc60, #6750d5);
+  transition: width 0.3s var(--atrium-ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tessera-splash-logo,
+  .tessera-splash-art span {
+    animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .tessera-splash-art {
+    inset: 0;
+    opacity: 0.35;
+  }
+
+  .tessera-splash-info {
+    max-width: none;
+  }
+}
+
+.tessera-safe-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.tessera-safe-head i {
+  font-size: 26px;
+  color: var(--atrium-warning-color);
+}
+
+.tessera-safe-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.tessera-safe-reason {
+  margin: 0 0 14px;
+  color: var(--atrium-text-secondary);
+  line-height: 1.5;
+}
+
+.tessera-safe-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--atrium-border-color);
+}
+
+.tessera-safe-option small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-safe-plugins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 8px;
+}
+
+.tessera-safe-plugins label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.tessera-safe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.tessera-safe-actions .is-danger {
+  margin-right: auto;
+  color: var(--atrium-danger-color);
+}
+
+.tessera-safe-plugins input {
+  accent-color: var(--atrium-accent-color);
+}

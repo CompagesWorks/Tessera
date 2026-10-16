@@ -3,16 +3,18 @@
   "version": "0.1.0",
   "productName": "Tessera",
   "private": true,
-  "description": "Tessera desktop app (Electron)",
+  "description": "Tessera desktop app (Tauri)",
   "type": "module",
-  "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev --watch",
-    "build": "electron-vite build",
-    "start": "electron-vite preview",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "dev:web": "vite",
+    "build:web": "vite build",
+    "tauri": "tauri",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.3",
     "@tessera/protocol": "0.1.0",
     "atrium-ui": "github:CompagesWorks/Atrium-UI",
     "bootstrap-icons": "^1.11.3",
@@ -21,9 +23,8 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.2",
     "@types/node": "^24.0.0",
-    "electron": "^44.7.0",
-    "electron-vite": "^5.0.0",
     "jsdom": "^30.1.2",
     "typescript": "~5.9.3",
     "vite": "^7.1.0",

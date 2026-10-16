@@ -1,4 +1,5 @@
 .tessera-dock {
+  position: relative;
   flex: 1;
   display: flex;
   min-width: 0;
@@ -119,7 +120,21 @@
   inset: 0;
 }
 
-.tessera-dock.is-editing .tessera-dock-body > :not(.tessera-dock-empty) {
+.tessera-dock-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.tessera-dock > .tessera-dock-layer > * {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 0 0 9px 9px;
+  pointer-events: auto;
+}
+
+.tessera-dock.is-editing > .tessera-dock-layer > * {
   pointer-events: none;
   opacity: 0.55;
 }

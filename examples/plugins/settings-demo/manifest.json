@@ -1,0 +1,38 @@
+{
+  "id": "examples.settings-demo",
+  "name": "Settings Demo",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "Exemple de réglages de plugin (contributes.settings), de console et d'écriture dans le projet pour tester le laboratoire.",
+  "icon": "sliders2",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": ["fs.project.read", "fs.project.write"],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "demo",
+        "title": "Settings Demo",
+        "description": "Lit ses réglages et écrit un fichier",
+        "icon": "sliders2",
+        "category": "tools",
+        "entry": "widget.html"
+      }
+    ],
+    "settings": [
+      { "id": "greeting", "type": "string", "title": "Message", "description": "Texte affiché dans le widget.", "default": "Bonjour", "maxLength": 40, "group": "Affichage" },
+      { "id": "loud", "type": "boolean", "title": "Message en majuscules", "default": false, "group": "Affichage" },
+      { "id": "size", "type": "number", "title": "Taille du texte", "description": "En pixels.", "default": 16, "min": 10, "max": 40, "step": 1, "group": "Affichage" },
+      {
+        "id": "mode",
+        "type": "select",
+        "title": "Mode d'écriture",
+        "default": "append",
+        "options": [
+          { "value": "append", "label": "Ajouter à la fin" },
+          { "value": "replace", "label": "Remplacer" }
+        ],
+        "group": "Fichier"
+      }
+    ]
+  }
+}

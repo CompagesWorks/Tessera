@@ -1,6 +1,7 @@
-import type { InstalledPlugin } from '@tessera/protocol';
+import { PACKAGE_EXTENSION, PERMISSION_RISK, type AuditEntry, type InstalledPlugin, type Settings } from '@tessera/protocol';
 import type { AppContext } from '../../app/context';
 import { required } from '../../components/dom';
+import { iconElement, pluginIcon } from '../../components/icon';
 import { hueOf } from '../../components/project-card/project-card';
 import { applyTranslations, t } from '../../i18n';
 import { errorMessage } from '../../i18n/format';
@@ -8,6 +9,7 @@ import { installedPlugins, loadPlugins } from '../../plugins/loader';
 import { permissionRow } from '../../plugins/permissions';
 import { allWidgets } from '../../widgets/registry';
 import type { Page } from '../types';
+import { pluginExtras } from './extras';
 import { installDialog } from './install-dialog';
 import './plugins.css';
 import template from './plugins.html?raw';
@@ -27,7 +29,7 @@ function icon(name: string, seed: string, className = 'tessera-plugin-icon') {
   const el = document.createElement('span');
   el.className = className;
   el.style.setProperty('--_hue', String(seed === CORE ? 225 : hueOf(seed)));
-  el.innerHTML = `<i class="bi bi-${name}"></i>`;
+  el.append(iconElement(pluginIcon(seed, name)));
   return el;
 }
 
@@ -56,6 +58,7 @@ export const pluginsPage: Page = {
     const list = required<HTMLElement>(root, '[data-list]');
     const detail = required<HTMLElement>(root, '[data-detail]');
     let selected = CORE;
+    let settings: Settings | null = null;
 
     const attempt = async (run: () => Promise<unknown>) => {
       try {
@@ -76,7 +79,8 @@ export const pluginsPage: Page = {
       const text = document.createElement('div');
       const title = document.createElement('div');
       title.className = 'tessera-plugin-name';
-      title.append(name, plugin ? badge(t('plugins.trustLocal'), 'atrium-badge-warning') : badge(t('plugins.trustBuiltin'), 'atrium-badge-neutral'));
+      title.append(name, plugin ? statusBadge(plugin) : badge(t('plugins.trustBuiltin'), 'atrium-badge-neutral'));
+      if (plugin?.pending.length) title.append(badge(t('plugins.pendingBadge'), 'atrium-badge-warning'));
       const sub = document.createElement('div');
       sub.className = 'tessera-plugin-meta';
       sub.textContent = meta;
@@ -88,6 +92,93 @@ export const pluginsPage: Page = {
         render();
       });
       return button;
+    }
+
+    function statusBadge(plugin: InstalledPlugin) {
+      if (plugin.integrity === 'tampered') return badge(t('plugins.statusTampered'), 'atrium-badge-danger');
+      if (plugin.integrity === 'dev') return badge(t('plugins.statusDev'), 'atrium-badge-warning');
+      return badge(t('plugins.statusInstalled'), 'atrium-badge-success');
+    }
+
+    function banner(text: string, icon: string, actions: HTMLElement[] = []) {
+      const box = document.createElement('div');
+      box.className = 'tessera-plugin-warning';
+      box.innerHTML = `<i class="bi bi-${icon}"></i>`;
+      const span = document.createElement('span');
+      span.textContent = text;
+      const wrap = document.createElement('div');
+      wrap.className = 'tessera-plugin-banner-body';
+      wrap.append(span);
+      if (actions.length) {
+        const row = document.createElement('div');
+        row.className = 'tessera-plugin-banner-actions';
+        row.append(...actions);
+        wrap.append(row);
+      }
+      box.append(wrap);
+      return box;
+    }
+
+    function actionButton(label: string, icon: string, primary: boolean, onClick: () => void) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `atrium-btn ${primary ? 'atrium-btn-primary' : 'atrium-btn-secondary'}`;
+      button.innerHTML = `<i class="bi bi-${icon}"></i>`;
+      button.append(label);
+      button.addEventListener('click', onClick);
+      return button;
+    }
+
+    async function installFrom(path?: string, defaultMode: 'installed' | 'dev' = 'installed') {
+      const inspected = await window.tessera.invoke('plugins:inspect-local', path ? { path } : undefined);
+      if (!inspected) return;
+      if ('error' in inspected) {
+        await ui.atrium.modal.alert({ title: t('plugins.invalidTitle'), message: inspected.error, tone: 'danger' });
+        return;
+      }
+      const choice = await installDialog(ui, inspected.manifest, defaultMode);
+      if (!choice) return;
+      selected = inspected.manifest.id;
+      await attempt(() => window.tessera.invoke('plugins:install-local', { path: inspected.path, granted: choice.granted, mode: choice.mode }));
+      ui.toast('success', t('plugins.installed', { name: inspected.manifest.name }));
+    }
+
+    async function installPackage(path?: string) {
+      const inspected = await window.tessera.invoke('plugins:inspect-package', path ? { path } : undefined);
+      if (!inspected) return;
+      if ('error' in inspected) {
+        await ui.atrium.modal.alert({ title: t('plugins.invalidTitle'), message: inspected.error, tone: 'danger' });
+        return;
+      }
+      const choice = await installDialog(ui, inspected.manifest, 'installed', true);
+      if (!choice) return;
+      selected = inspected.manifest.id;
+      await attempt(() => window.tessera.invoke('plugins:install-package', { token: inspected.token, granted: choice.granted }));
+      ui.toast('success', t('plugins.installed', { name: inspected.manifest.name }));
+    }
+
+    function activityList(entries: AuditEntry[]) {
+      if (entries.length === 0) {
+        return Object.assign(document.createElement('div'), { className: 'atrium-empty is-boxed', textContent: t('plugins.noActivity') });
+      }
+      const list = document.createElement('div');
+      list.className = 'tessera-activity';
+      for (const entry of entries.slice(0, 30)) {
+        const row = document.createElement('div');
+        row.className = `tessera-activity-row ${entry.allowed ? '' : 'is-denied'}`;
+        row.innerHTML = `<i class="bi bi-${entry.allowed ? 'check-circle' : 'x-octagon'}"></i>`;
+        const action = document.createElement('code');
+        action.textContent = entry.action;
+        const target = document.createElement('span');
+        target.className = 'tessera-activity-target';
+        target.textContent = entry.target;
+        const time = document.createElement('span');
+        time.className = 'tessera-activity-time';
+        time.textContent = new Date(entry.time).toLocaleTimeString();
+        row.append(action, target, time);
+        list.append(row);
+      }
+      return list;
     }
 
     function widgetBadges(names: string[]) {
@@ -159,15 +250,54 @@ export const pluginsPage: Page = {
       desc.className = 'tessera-plugin-desc';
       desc.textContent = manifest.description || t('plugins.noDescription');
 
+      const banners: HTMLElement[] = [];
+      if (plugin.integrity === 'tampered') {
+        banners.push(
+          banner(t('plugins.tamperedBanner', { reason: plugin.integrityError ?? '' }), 'shield-exclamation', [
+            actionButton(t('plugins.reinstall'), 'arrow-repeat', true, () => void (plugin.source.endsWith(`.${PACKAGE_EXTENSION}`) ? installPackage(plugin.source) : installFrom(plugin.source))),
+          ]),
+        );
+      }
+      if (plugin.integrity === 'dev') banners.push(banner(t('plugins.devBanner'), 'link-45deg'));
+      if (plugin.pending.length) {
+        banners.push(
+          banner(t('plugins.pendingBanner', { list: plugin.pending.join(', ') }), 'person-raised-hand', [
+            actionButton(t('plugins.allow'), 'check-lg', true, () =>
+              void attempt(() => window.tessera.invoke('plugins:set-grants', { id: manifest.id, granted: [...plugin.granted, ...plugin.pending] })),
+            ),
+            actionButton(t('plugins.deny'), 'x-lg', false, () =>
+              void attempt(() => window.tessera.invoke('plugins:set-grants', { id: manifest.id, granted: plugin.granted })),
+            ),
+          ]),
+        );
+      }
+
+      const activity = document.createElement('div');
+      void window.tessera.invoke('plugins:activity', { id: manifest.id }).then((entries) => activity.replaceChildren(activityList(entries)));
+
       const permissions: HTMLElement[] = manifest.permissions.length
         ? manifest.permissions.map((permission) =>
-            permissionRow(permission, {
-              checked: plugin.granted.includes(permission),
-              onChange: (checked) => {
-                const granted = checked ? [...plugin.granted, permission] : plugin.granted.filter((p) => p !== permission);
-                void attempt(() => window.tessera.invoke('plugins:set-grants', { id: manifest.id, granted }));
+            permissionRow(
+              permission,
+              {
+                checked: plugin.granted.includes(permission),
+                onChange: async (checked) => {
+                  if (checked && PERMISSION_RISK[permission] === 'high') {
+                    const ok = await ui.atrium.modal.confirm({
+                      title: t('plugins.highRiskTitle', { permission }),
+                      message: t(permission === 'ui.provider' ? 'plugins.providerWarning' : 'plugins.execWarning'),
+                      confirmText: t('plugins.allow'),
+                      cancelText: t('dialog.cancel'),
+                      danger: true,
+                    });
+                    if (!ok) return render();
+                  }
+                  const granted = checked ? [...plugin.granted, permission] : plugin.granted.filter((p) => p !== permission);
+                  void attempt(() => window.tessera.invoke('plugins:set-grants', { id: manifest.id, granted }));
+                },
               },
-            }),
+              manifest,
+            ),
           )
         : [Object.assign(document.createElement('div'), { className: 'atrium-empty is-boxed', textContent: t('plugins.noPermission') })];
 
@@ -175,7 +305,9 @@ export const pluginsPage: Page = {
       info.className = 'tessera-plugin-info';
       const pairs: Array<[string, string]> = [
         [t('plugins.id'), manifest.id],
+        [t('plugins.mode'), plugin.mode === 'installed' ? t('plugins.modeInstalled') : t('plugins.modeDev')],
         [t('plugins.folder'), plugin.path],
+        ...(plugin.source !== plugin.path ? [[t('plugins.source'), plugin.source] as [string, string]] : []),
         [t('plugins.sandbox'), t('plugins.sandboxValue')],
       ];
       for (const [k, v] of pairs) {
@@ -191,10 +323,13 @@ export const pluginsPage: Page = {
       detail.replaceChildren(
         head,
         desc,
-        heading('plugins.widgets'),
-        widgetBadges(manifest.contributes.widgets.map((w) => w.title)),
+        ...banners,
+        ...(manifest.contributes.widgets.length ? [heading('plugins.widgets'), widgetBadges(manifest.contributes.widgets.map((w) => w.title))] : []),
         heading('plugins.permissions'),
         ...permissions,
+        ...(settings ? pluginExtras(plugin, { ui, settings, attempt }) : []),
+        heading('plugins.activity'),
+        activity,
         heading('plugins.info'),
         info,
       );
@@ -212,18 +347,21 @@ export const pluginsPage: Page = {
       else renderCore();
     }
 
-    required(root, '[data-load-local]').addEventListener('click', async () => {
-      const inspected = await window.tessera.invoke('plugins:inspect-local');
-      if (!inspected) return;
-      if ('error' in inspected) {
-        await ui.atrium.modal.alert({ title: t('plugins.invalidTitle'), message: inspected.error, tone: 'danger' });
-        return;
-      }
-      const granted = await installDialog(ui, inspected.manifest);
-      if (!granted) return;
-      selected = inspected.manifest.id;
-      await attempt(() => window.tessera.invoke('plugins:install-local', { path: inspected.path, granted }));
-      ui.toast('success', t('plugins.installed', { name: inspected.manifest.name }));
+    required(root, '[data-load-local]').addEventListener('click', () => void installFrom());
+    required(root, '[data-load-package]').addEventListener('click', () => void installPackage());
+
+    window.tessera.on('plugins:tampered', ({ id, reason }) => {
+      ui.toast('error', t('plugins.tamperedToast', { id, reason }));
+      void loadPlugins().then(render);
+    });
+
+    void window.tessera.invoke('settings:get').then((value) => {
+      settings = value;
+      render();
+    });
+    window.tessera.on('settings:changed', (value) => {
+      settings = value;
+      render();
     });
 
     rerender = render;

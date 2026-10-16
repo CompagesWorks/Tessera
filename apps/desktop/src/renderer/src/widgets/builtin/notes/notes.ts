@@ -1,5 +1,6 @@
 import { NoteNameSchema } from '@tessera/protocol';
 import { fromTemplate, required } from '../../../components/dom';
+import { HISTORY_APPLIED } from '../../../app/history';
 import { handleMarkdownLinks, mountMarkdown } from '../../../components/markdown/markdown';
 import { t } from '../../../i18n';
 import { errorMessage } from '../../../i18n/format';
@@ -170,6 +171,16 @@ export const notesWidget: WidgetDefinition = {
       ], { placement: 'bottom-end' });
     });
 
+    const onHistory = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== project.id || disposed) return;
+      clearTimeout(timer);
+      saved = area.value;
+      void refreshList(current)
+        .then((selected) => (selected ? open(selected) : create(t('widget.notes.defaultName'))))
+        .catch((error) => ui.toast('error', errorMessage(error)));
+    };
+    window.addEventListener(HISTORY_APPLIED, onHistory);
+
     void init().catch((error) => {
       if (!disposed) ui.toast('error', errorMessage(error));
     });
@@ -178,6 +189,7 @@ export const notesWidget: WidgetDefinition = {
       element,
       dispose: () => {
         disposed = true;
+        window.removeEventListener(HISTORY_APPLIED, onHistory);
         clearTimeout(previewTimer);
         void flush();
       },
