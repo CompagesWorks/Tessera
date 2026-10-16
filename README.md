@@ -20,7 +20,6 @@ Tests: `npm test` and `cargo test` in `apps/desktop/src-tauri`.
 
 ## Docs
 
-- [Architecture](docs/ARCHITECTURE.md)
 - [Writing a plugin](docs/plugins/README.md)
 
 ## Credits

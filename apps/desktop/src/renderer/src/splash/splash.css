@@ -152,14 +152,6 @@ html.is-booting body > :not(.tessera-splash) {
   width: 44px;
   height: 44px;
   flex-shrink: 0;
-  animation: tessera-logo-in 0.8s var(--atrium-ease-back) 0.2s both;
-}
-
-@keyframes tessera-logo-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) rotate(-24deg) scale(0.55);
-  }
 }
 
 .tessera-splash-card h1 {
@@ -233,7 +225,6 @@ html.is-booting body > :not(.tessera-splash) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tessera-splash-logo,
   .tessera-splash-art span {
     animation: none;
   }
