@@ -12,6 +12,7 @@ pub const MAX_BINARY_BYTES: u64 = 20 * 1024 * 1024;
 pub const PLUGIN_SCHEME: &str = "tessera-plugin";
 pub const PROVIDER_SCHEME: &str = "tessera-provider";
 pub const COVER_SCHEME: &str = "tessera-cover";
+pub const MEDIA_SCHEME: &str = "tessera-media";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Permission {

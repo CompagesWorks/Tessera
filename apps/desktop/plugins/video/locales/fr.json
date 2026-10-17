@@ -1,0 +1,15 @@
+{
+  "description": "Convertit les vidéos en .h264 avec ffmpeg, le format des vidéos de Smash Ultimate (cinématiques de Final Smash).",
+  "convert.action": "Convertir en .h264…",
+  "form.title": "Convertir en .h264",
+  "convert": "Convertir",
+  "size": "Résolution",
+  "fps": "Images par seconde",
+  "bitrate": "Débit (kbps)",
+  "keep": "Garder celle de la source",
+  "pickFfmpeg": "Choisis le programme ffmpeg installé sur ton PC.",
+  "badBitrate": "Le débit doit être un nombre entre 100 et 100000.",
+  "created": "{{name}} créé",
+  "failed": "ffmpeg a échoué : {{error}}",
+  "progress": "ffmpeg convertit {{from}} en {{to}}. Ça peut prendre quelques minutes."
+}

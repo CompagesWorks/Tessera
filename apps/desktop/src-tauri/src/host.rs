@@ -174,4 +174,8 @@ impl Host for TauriHost {
     fn notify(&self, title: &str, body: &str) {
         let _ = self.app.notification().builder().title(title).body(body).show();
     }
+
+    fn exec_output(&self, plugin_id: &str, stream: &str, kind: &str, text: &str) {
+        crate::events::emit(&self.app, "plugin:exec-output", serde_json::json!({ "pluginId": plugin_id, "stream": stream, "kind": kind, "text": text }));
+    }
 }

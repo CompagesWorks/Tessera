@@ -29,5 +29,7 @@
   "form.title": "Convertir la texture",
   "form.format": "Format (dds et nutexb)",
   "converting": "Conversion de {{name}}…",
-  "created": "{{name}} créé"
+  "created": "{{name}} créé",
+  "gammaFix": "Correction gamma",
+  "gammaFix.hint": "Assombrit les tons moyens (gamma 2.2) comme Switch Toolbox, pour les textures qui paraissent délavées en jeu. Pas appliquée en sortie .png."
 }

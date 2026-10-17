@@ -38,11 +38,23 @@ pub struct Options {
     pub format: Option<ImageFormat>,
     pub mipmaps: Mipmaps,
     pub quality: Quality,
+    pub gamma_fix: bool,
 }
 
 impl Default for Options {
     fn default() -> Self {
-        Options { format: None, mipmaps: Mipmaps::GeneratedAutomatic, quality: Quality::Normal }
+        Options { format: None, mipmaps: Mipmaps::GeneratedAutomatic, quality: Quality::Normal, gamma_fix: false }
+    }
+}
+
+const SMASH_GAMMA: f32 = 2.2;
+
+fn fix_gamma(rgba: &mut [u8]) {
+    let table: Vec<u8> = (0..=255u8).map(|v| ((v as f32 / 255.0).powf(SMASH_GAMMA) * 255.0).round() as u8).collect();
+    for pixel in rgba.chunks_exact_mut(4) {
+        for channel in &mut pixel[..3] {
+            *channel = table[*channel as usize];
+        }
     }
 }
 
@@ -61,7 +73,7 @@ impl Options {
             "Slow" => Quality::Slow,
             other => return Err(Error::new(format!("unknown quality {other}"))),
         };
-        Ok(Options { format, mipmaps, quality })
+        Ok(Options { format, mipmaps, quality, gamma_fix: false })
     }
 }
 
@@ -131,10 +143,13 @@ pub fn convert_texture(source: &[u8], from: &str, to: &str, existing: Option<&[u
             Source::Image(_) => None,
         })
         .unwrap_or(ImageFormat::BC7RgbaUnormSrgb);
-    let rgba = match input {
+    let mut rgba = match input {
         Source::Image(image) => SurfaceRgba8 { width: image.width(), height: image.height(), depth: 1, layers: 1, mipmaps: 1, data: image.into_raw() },
         Source::Dds(dds) => SurfaceRgba8::decode_dds(&dds).map_err(bad)?,
     };
+    if options.gamma_fix {
+        fix_gamma(&mut rgba.data);
+    }
     let dds = rgba.encode(format, options.quality, options.mipmaps).map_err(bad)?.to_dds().map_err(bad)?;
     match output {
         Kind::Dds => dds.write(&mut out).map_err(bad)?,
@@ -213,6 +228,20 @@ mod tests {
             convert(bytes.get_ref(), &path, "a.nutexb", None);
         }
         assert!(convert_texture(&png(4, 4), "a.png", "a.webp", None, &Options::default()).is_err());
+    }
+
+    #[test]
+    fn gamma_fix_darkens_midtones_like_switch_toolbox() {
+        let mut pixels = vec![0, 128, 200, 128, 255, 64, 10, 77];
+        fix_gamma(&mut pixels);
+        assert_eq!(pixels, vec![0, 56, 149, 128, 255, 12, 0, 77]);
+        let image = image::RgbaImage::from_pixel(8, 8, image::Rgba([128, 128, 128, 200]));
+        let mut source = Cursor::new(Vec::new());
+        image.write_to(&mut source, FileFormat::Png).unwrap();
+        let options = Options { format: Some(ImageFormat::Rgba8Unorm), mipmaps: Mipmaps::Disabled, gamma_fix: true, ..Options::default() };
+        let dds = convert_texture(source.get_ref(), "a.png", "a.dds", None, &options).unwrap();
+        let back = image::load_from_memory(&convert(&dds, "a.dds", "a.png", None)).unwrap().to_rgba8();
+        assert_eq!(back.get_pixel(0, 0).0, [56, 56, 56, 200]);
     }
 
     #[test]

@@ -28,6 +28,7 @@ interface Tessera {
   ui: {
     toast(kind: 'success' | 'info' | 'warning' | 'error', message: string): Promise<void>;
     form(spec: FormSpec): Promise<Record<string, string | boolean> | null>;
+    progress(title: string, message?: string): Promise<{ update(message: string): Promise<void>; close(): Promise<void> }>;
     contextMenu(spec: { x: number; y: number; path?: string; items?: MenuItem[] }): Promise<string | null>;
   };
   widget: {
@@ -63,7 +64,7 @@ interface Tessera {
   };
   exec: {
     run(args?: string[], options?: { timeout?: number }): Promise<ExecResult>;
-    runSystem(program: string, args?: string[], options?: { timeout?: number; detach?: boolean }): Promise<ExecResult | null>;
+    runSystem(program: string, args?: string[], options?: { timeout?: number; detach?: boolean; onOutput?(line: string, kind: 'stdout' | 'stderr'): void }): Promise<ExecResult | null>;
     pickSystem(program: string): Promise<boolean>;
     systemInfo(): Promise<Record<string, boolean>>;
   };
@@ -236,6 +237,26 @@ row.addEventListener('contextmenu', async (event) => {
 | `items` | 0 to 20 items `{ id, label, icon?, danger?, disabled? }` or `'separator'` |
 
 No permission is needed to open a menu. Adding entries to other plugins' menus needs [`ui.menus`](permissions.md#uimenus).
+
+### `tessera.ui.progress(title, message?)`
+
+Shows a Tessera modal with a spinner, your `title`, an optional `message` and the elapsed time, for long work such as running a program. Resolves with a handle:
+
+| | |
+| --- | --- |
+| `update(message, percent?)` | changes the message and, with a number from 0 to 100, shows a progress bar |
+| `close()` | closes the modal |
+
+One per widget or host page: calling it again updates the open one. While it runs, an entry with the title and percentage stays in Tessera's status bar: the user can hide the modal (the work goes on) and click that entry to show it again. Both go away on `close()` or when your page unloads. `title` 1 to 60 characters, `message` 300 max.
+
+```js
+const progress = await tessera.ui.progress('Converting intro.mp4…', 'This can take a few minutes.');
+try {
+  await tessera.exec.runSystem('ffmpeg', args, { timeout: 600000 });
+} finally {
+  progress.close();
+}
+```
 
 ### `tessera.ui.form(spec)`
 
@@ -471,6 +492,7 @@ Needs `fs.project.write` **and** `fs.project.read`. Converts a texture inside th
 | `format` | an image format such as `BC7RgbaUnormSrgb`, `BC7RgbaUnorm`, `BC1RgbaUnormSrgb`, `BC5RgUnorm`, `Rgba8UnormSrgb`… | the format of `to` if it already exists, then the format of `from`, then `BC7RgbaUnormSrgb` |
 | `mipmaps` | `GeneratedAutomatic`, `FromSurface`, `Disabled` | `GeneratedAutomatic` |
 | `quality` | `Fast`, `Normal`, `Slow` | `Normal` |
+| `gammaFix` | `true` darkens mid-tones before encoding: each RGB value becomes `round(255 × (v / 255) ^ 2.2)`, alpha unchanged. Same as Switch Toolbox's "Gamma Fix (Smash Ultimate)", for textures that look washed out in game | `false` |
 
 `.png` output keeps the first layer and mipmap and ignores the options. `to` is overwritten and the change goes to the project history.
 
@@ -551,6 +573,16 @@ const result = await tessera.exec.runSystem('git', ['add', '-A']);
 
 `{ detach: true }` starts the program and returns `null` right away, without waiting or killing it at the timeout. Use it to launch an app such as an emulator.
 
+`{ onOutput(line, kind) }` receives the program's output line by line while it runs (`kind` is `'stdout'` or `'stderr'`), for example to show progress with [`tessera.ui.progress`](#tesserauiprogresstitle-message). The full output is still in the result. Works with `exec.run` too.
+
+```js
+const progress = await tessera.ui.progress('Converting…');
+await tessera.exec.runSystem('ffmpeg', ['-progress', 'pipe:1', '-i', 'in.mp4', 'out.h264'], {
+  timeout: 600000,
+  onOutput: (line) => line.startsWith('out_time=') && progress.update(line.slice(9)),
+}).finally(() => progress.close());
+```
+
 `program not picked` and `program changed since it was picked, pick it again in Plugins` mean the user has to (re)pick the file.
 
 ## Discord
@@ -598,7 +630,7 @@ Needs [`projects.list`](permissions.md#projectslist). `tessera.projects.list()` 
 | Message | Cause |
 | --- | --- |
 | `permission denied: <permission>` | permission missing from the manifest, not granted, revoked by the user, or plugin disabled |
-| `invalid params` | missing parameter, wrong type, text too long, state too large |
+| `invalid params (method …)` | missing parameter, wrong type, text too long, state too large; the method and, when known, the field and the rule follow in parentheses |
 | `rate limited` | more than 40 calls in the last second |
 | `unknown method` | the method doesn't exist (modified SDK or raw `postMessage`) |
 | `outside scope` | the path leaves its scope or targets `.tessera/` |

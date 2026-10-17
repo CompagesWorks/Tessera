@@ -12,12 +12,13 @@ async function convert(path) {
       { type: 'select', id: 'format', label: t('form.format'), options: options([['', t('auto')], ...FORMATS.map((format) => [format, format])]), value: '' },
       { type: 'select', id: 'mipmaps', label: t('column.mipmaps'), options: options(MIPMAPS.map(([value, key]) => [value, t(key)])), value: 'GeneratedAutomatic' },
       { type: 'select', id: 'quality', label: t('quality'), options: options([['Fast', t('quality.fast')], ['Normal', t('quality.normal')], ['Slow', t('quality.slow')]]), value: 'Normal' },
+      { type: 'checkbox', id: 'gammaFix', label: t('gammaFix'), value: false },
     ],
   });
   if (!values) return;
   const to = path.replace(/\.[^./]+$/, `.${values.output}`);
   tessera.ui.toast('info', t('converting', { name: path.slice(path.lastIndexOf('/') + 1) }));
-  await tessera.textures.convert(path, to, { format: values.format || undefined, mipmaps: values.mipmaps, quality: values.quality });
+  await tessera.textures.convert(path, to, { format: values.format || undefined, mipmaps: values.mipmaps, quality: values.quality, gammaFix: values.gammaFix });
   tessera.ui.toast('success', t('created', { name: to.slice(to.lastIndexOf('/') + 1) }));
 }
 

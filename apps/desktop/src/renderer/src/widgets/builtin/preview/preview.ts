@@ -2,13 +2,13 @@ import { t } from '../../../i18n';
 import { errorMessage } from '../../../i18n/format';
 import type { WidgetDefinition } from '../../types';
 import './preview.css';
+import { previewKind, renderPreview } from './renderers';
 
-const PREVIEWABLE = /\.(png|jpe?g|webp|gif|bmp|tga|tiff?|ico|dds|nutexb)$/i;
 const selection = new Map<string, string | null>();
 const mounted = new Map<string, number>();
 const listeners = new Set<(projectId: string) => void>();
 
-export const canPreview = (path: string) => PREVIEWABLE.test(path);
+export const canPreview = (path: string) => previewKind(path) !== null;
 
 export const hasPreviewWidget = (projectId: string) => (mounted.get(projectId) ?? 0) > 0;
 
@@ -39,31 +39,36 @@ export function createPreview(projectId: string, onClose?: () => void) {
     close.addEventListener('click', onClose);
     head.append(close);
   }
-  const image = document.createElement('img');
+  const content = document.createElement('div');
+  content.className = 'tessera-preview-content';
   const info = document.createElement('div');
   info.className = 'tessera-preview-info';
-  element.append(head, image, info);
+  element.append(head, content, info);
   let ticket = 0;
+  let shown: string | null = null;
 
   async function show(path: string | null) {
+    const kind = path === null ? null : previewKind(path);
+    element.hidden = kind === null;
+    if (path === null || kind === null) {
+      shown = null;
+      content.replaceChildren();
+      return;
+    }
+    if (path === shown && (kind === 'video' || kind === 'h264' || kind === 'audio')) return;
     const mine = ++ticket;
-    element.hidden = path === null || !canPreview(path);
-    if (element.hidden || path === null) return;
+    shown = path;
     name.textContent = path.slice(path.lastIndexOf('/') + 1);
     info.textContent = t('widget.explorer.loading');
+    element.dataset['kind'] = kind;
     element.classList.add('is-loading');
+    const rendered = renderPreview(kind, projectId, path, name.textContent);
+    content.replaceChildren(rendered.node);
     try {
-      const preview = await window.tessera.invoke('files:preview', { id: projectId, path });
-      if (mine !== ticket) return;
-      image.src = `data:image/png;base64,${preview.data}`;
-      image.alt = name.textContent;
-      info.textContent = [`${preview.width} × ${preview.height}`, preview.format, preview.mipmaps > 1 ? t('widget.explorer.mipmaps', { count: preview.mipmaps }) : null]
-        .filter(Boolean)
-        .join(' · ');
+      const text = await rendered.info;
+      if (mine === ticket) info.textContent = text;
     } catch (error) {
-      if (mine !== ticket) return;
-      image.removeAttribute('src');
-      info.textContent = errorMessage(error);
+      if (mine === ticket) info.textContent = errorMessage(error);
     } finally {
       if (mine === ticket) element.classList.remove('is-loading');
     }

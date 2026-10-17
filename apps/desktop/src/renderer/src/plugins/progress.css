@@ -1,0 +1,95 @@
+.tessera-plugin-progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: min(360px, 80vw);
+}
+
+.tessera-plugin-progress p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--atrium-text-secondary);
+  word-break: break-all;
+  white-space: pre-line;
+}
+
+.tessera-plugin-progress small {
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tessera-plugin-progress-spin {
+  font-size: 28px;
+  color: var(--atrium-accent-color);
+  animation: tessera-spin 1s linear infinite;
+}
+
+@keyframes tessera-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tessera-plugin-progress-spin {
+    animation: none;
+  }
+}
+
+.tessera-plugin-progress > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tessera-plugin-progress progress {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin: 8px 0 4px;
+  accent-color: var(--atrium-accent-color);
+}
+
+.tessera-plugin-progress progress[hidden] {
+  display: none;
+}
+
+.tessera-status-tasks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: 12px;
+}
+
+.tessera-status-task {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 280px;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--atrium-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tessera-status-task:hover,
+.tessera-status-task:focus-visible {
+  background: var(--atrium-bg-hover);
+  color: var(--atrium-text-primary);
+}
+
+.tessera-status-task span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tessera-status-task .tessera-plugin-progress-spin {
+  font-size: 12px;
+}

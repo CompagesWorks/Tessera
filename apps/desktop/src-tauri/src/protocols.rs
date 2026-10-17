@@ -1,4 +1,5 @@
-use std::fs;
+use std::fs::{self, File};
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -7,7 +8,9 @@ use tauri::http::{Request, Response, StatusCode};
 use tauri::{AppHandle, Manager, Runtime, UriSchemeContext, UriSchemeResponder};
 
 use crate::schema::check;
-use crate::schema::plugins::{Permission, COVER_SCHEME, PLUGIN_SCHEME, PROVIDER_SCHEME};
+use crate::plugins::scoped_fs::{scoped_reveal, Scope};
+use crate::projects::files::TESSERA_DIR;
+use crate::schema::plugins::{Permission, COVER_SCHEME, MEDIA_SCHEME, PLUGIN_SCHEME, PROVIDER_SCHEME};
 use crate::state::AppState;
 use crate::util::paths::{inside, normalize};
 
@@ -159,6 +162,75 @@ fn cover_response(state: &AppState, request: &Request<Vec<u8>>) -> Response<Vec<
     serve_plain(state.projects.cover_path(id))
 }
 
+const MEDIA_CHUNK: u64 = 4 * 1024 * 1024;
+const MEDIA_WHOLE: u64 = 64 * 1024 * 1024;
+
+fn media_type(path: &str) -> Option<&'static str> {
+    match Path::new(path).extension()?.to_string_lossy().to_lowercase().as_str() {
+        "mp4" | "m4v" => Some("video/mp4"),
+        "webm" => Some("video/webm"),
+        "mov" => Some("video/quicktime"),
+        "mp3" => Some("audio/mpeg"),
+        "wav" => Some("audio/wav"),
+        "ogg" => Some("audio/ogg"),
+        "flac" => Some("audio/flac"),
+        "m4a" => Some("audio/mp4"),
+        "h264" => Some("video/h264"),
+        _ => None,
+    }
+}
+
+fn byte_range(header: Option<&str>, len: u64) -> Option<(u64, u64)> {
+    let Some(header) = header else { return (len > 0).then(|| (0, len.min(MEDIA_WHOLE) - 1)) };
+    let (start, end) = header.strip_prefix("bytes=")?.split(',').next()?.trim().split_once('-')?;
+    let (start, end) = if start.is_empty() {
+        let suffix: u64 = end.parse().ok()?;
+        (len.checked_sub(suffix.min(len))?, len - 1)
+    } else {
+        let start: u64 = start.parse().ok()?;
+        let end = if end.is_empty() { start + MEDIA_CHUNK - 1 } else { end.parse().ok()? };
+        (start, end.min(len - 1).min(start + MEDIA_CHUNK - 1))
+    };
+    (start <= end && start < len).then_some((start, end))
+}
+
+fn app_origin(request: &Request<Vec<u8>>) -> Option<&str> {
+    let origin = request.headers().get("origin")?.to_str().ok()?;
+    let app = matches!(origin, "http://tauri.localhost" | "https://tauri.localhost" | "tauri://localhost") || (cfg!(debug_assertions) && origin == "http://localhost:5173");
+    app.then_some(origin)
+}
+
+fn media_response(state: &AppState, request: &Request<Vec<u8>>) -> Response<Vec<u8>> {
+    let target = target_of(request);
+    let Some((id, path)) = target.path.split_once('/') else { return not_found() };
+    let Some(kind) = media_type(path).filter(|_| check::is_uuid(id)) else { return not_found() };
+    let Ok(root) = state.projects.root_of(id) else { return not_found() };
+    let Ok(file) = scoped_reveal(&Scope { root, hidden: Some(TESSERA_DIR.into()), trash: None }, path) else { return not_found() };
+    let Ok(mut handle) = File::open(&file) else { return not_found() };
+    let len = handle.metadata().map(|m| m.len()).unwrap_or(0);
+    let range = request.headers().get("range").and_then(|v| v.to_str().ok());
+    let Some((start, end)) = byte_range(range, len) else {
+        return Response::builder().status(StatusCode::RANGE_NOT_SATISFIABLE).header("Content-Range", format!("bytes */{len}")).body(Vec::new()).unwrap();
+    };
+    let mut data = vec![0; (end - start + 1) as usize];
+    if handle.seek(SeekFrom::Start(start)).and_then(|_| handle.read_exact(&mut data)).is_err() {
+        return not_found();
+    }
+    let whole = start == 0 && end + 1 == len && range.is_none();
+    let mut builder = Response::builder();
+    if let Some(origin) = app_origin(request) {
+        builder = builder.header("Access-Control-Allow-Origin", origin).header("Vary", "Origin");
+    }
+    builder
+        .status(if whole { StatusCode::OK } else { StatusCode::PARTIAL_CONTENT })
+        .header("Content-Type", kind)
+        .header("Accept-Ranges", "bytes")
+        .header("Content-Range", format!("bytes {start}-{end}/{len}"))
+        .header("Cache-Control", "no-store")
+        .body(data)
+        .unwrap_or_else(|_| not_found())
+}
+
 fn spawn<R: Runtime>(ctx: UriSchemeContext<'_, R>, request: Request<Vec<u8>>, responder: UriSchemeResponder, handle: Handler) {
     let app = ctx.app_handle().clone();
     std::thread::spawn(move || {
@@ -178,4 +250,26 @@ pub fn register<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
         .register_asynchronous_uri_scheme_protocol(PLUGIN_SCHEME, |ctx, request, responder| spawn(ctx, request, responder, plugin_response))
         .register_asynchronous_uri_scheme_protocol(PROVIDER_SCHEME, |ctx, request, responder| spawn(ctx, request, responder, |s, _, r| provider_response(s, r)))
         .register_asynchronous_uri_scheme_protocol(COVER_SCHEME, |ctx, request, responder| spawn(ctx, request, responder, |s, _, r| cover_response(s, r)))
+        .register_asynchronous_uri_scheme_protocol(MEDIA_SCHEME, |ctx, request, responder| spawn(ctx, request, responder, |s, _, r| media_response(s, r)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn byte_ranges_stay_inside_the_file() {
+        assert_eq!(byte_range(Some("bytes=0-"), 10), Some((0, 9)));
+        assert_eq!(byte_range(Some("bytes=2-5"), 10), Some((2, 5)));
+        assert_eq!(byte_range(Some("bytes=8-100"), 10), Some((8, 9)));
+        assert_eq!(byte_range(Some("bytes=-3"), 10), Some((7, 9)));
+        assert_eq!(byte_range(Some("bytes=10-"), 10), None);
+        assert_eq!(byte_range(Some("items=0-1"), 10), None);
+        assert_eq!(byte_range(None, 10), Some((0, 9)));
+        assert_eq!(byte_range(None, 0), None);
+        assert_eq!(byte_range(None, 100 * MEDIA_CHUNK), Some((0, MEDIA_WHOLE - 1)));
+        assert_eq!(byte_range(Some("bytes=0-"), 100 * MEDIA_CHUNK), Some((0, MEDIA_CHUNK - 1)));
+        assert_eq!(media_type("a/b.MP4"), Some("video/mp4"));
+        assert_eq!(media_type("a/b.txt"), None);
+    }
 }

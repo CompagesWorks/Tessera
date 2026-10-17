@@ -14,7 +14,7 @@ use crate::util::{json, Error, Result};
 
 pub const BUILD_DIR: &str = "build";
 const DEPLOY_MARKER: &str = ".tessera-deploy";
-static WORK_FILES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\.(blend\d*|psd|kra|xcf|spp|aseprite|png|dds)$").unwrap());
+static WORK_FILES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\.(blend\d*|psd|kra|xcf|spp|aseprite|png|dds|mp4|mov|mkv|webm|avi|m4v|wmv|flv)$").unwrap());
 
 fn category(kind: ProjectKind) -> &'static str {
     match kind {

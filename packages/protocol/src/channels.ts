@@ -84,7 +84,7 @@ export const INVOKE_CHANNELS = [
 ] as const;
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number];
 
-export const EVENT_CHANNELS = ['settings:changed', 'keyboard:shortcut', 'plugins:tampered', 'plugin:files-changed', 'backups:changed', 'audit:changed', 'history:changed', 'plugins:settings-changed', 'plugins:confirm'] as const;
+export const EVENT_CHANNELS = ['settings:changed', 'keyboard:shortcut', 'plugins:tampered', 'plugin:files-changed', 'backups:changed', 'audit:changed', 'history:changed', 'plugins:settings-changed', 'plugins:confirm', 'plugin:exec-output'] as const;
 export type EventChannel = (typeof EVENT_CHANNELS)[number];
 
 export const ipcName = (channel: InvokeChannel | EventChannel) => `tessera:${channel}` as const;

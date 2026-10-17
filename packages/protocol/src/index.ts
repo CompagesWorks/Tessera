@@ -290,6 +290,7 @@ export interface EventPayloads {
   'history:changed': { projectId: string };
   'plugins:settings-changed': { id: string; values: Record<string, PluginSettingValue> };
   'plugins:confirm': ConfirmRequest;
+  'plugin:exec-output': { pluginId: string; stream: string; kind: 'stdout' | 'stderr'; text: string };
 }
 
 type InvokeArgs<C extends InvokeChannel> = InvokeRequest<C> extends undefined ? [] : [request: InvokeRequest<C>];

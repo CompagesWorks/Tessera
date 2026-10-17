@@ -5,6 +5,7 @@ import type { UiProvider } from '../ui/provider';
 import { FormSchema, showForm, type FormSpec } from './form';
 import { pluginFileActions } from './hosts';
 import { pluginMessages } from './locale';
+import { closeProgress, ProgressSchema, showProgress, type ProgressSpec } from './progress';
 
 const MAX_STATE_BYTES = 64 * 1024;
 const MAX_CALLS_PER_SECOND = 40;
@@ -199,7 +200,7 @@ const methods: Record<string, Method> = {
     schema: FormSchema,
     run: (frame, spec: FormSpec) => {
       if (!ui) throw new Error('not ready');
-      return showForm(ui, `${frame.pluginId}|${frame.widgetId}`, localizedName(frame.pluginId), spec);
+      return showForm(ui, ownerOf(frame), localizedName(frame.pluginId), spec);
     },
   },
   'ui.contextMenu': {
@@ -221,6 +222,17 @@ const methods: Record<string, Method> = {
       const entries = own.length && shared.length ? [...own, 'separator' as const, ...shared] : [...own, ...shared];
       if (entries.length) ui.atrium.menu.open({ x: rect.left + spec.x, y: rect.top + spec.y }, entries);
     },
+  },
+  'ui.progress': {
+    schema: ProgressSchema,
+    run: (frame, spec: ProgressSpec) => {
+      if (!ui) throw new Error('not ready');
+      showProgress(ui, ownerOf(frame), localizedName(frame.pluginId), spec);
+    },
+  },
+  'ui.progress.close': {
+    schema: z.undefined(),
+    run: (frame) => closeProgress(ownerOf(frame)),
   },
   'widget.getState': {
     schema: z.undefined(),
@@ -310,13 +322,18 @@ async function onRequest(frame: FrameInfo, id: unknown, name: unknown, params: u
   if (permission && lab.denied.get(frame.pluginId)?.has(permission)) return reply({ error: `permission denied: ${permission} (simulated)` }, 'denied');
   if (permission && !hasGrant(frame.pluginId, permission)) return reply({ error: `permission denied: ${permission}` }, 'denied');
   const parsed = method.schema.safeParse(params);
-  if (!parsed.success) return reply({ error: 'invalid params' });
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return reply({ error: `invalid params (${label}${issue?.path.length ? ` ${issue.path.join('.')}` : ''}: ${issue?.message ?? 'invalid'})` });
+  }
   try {
     reply({ result: await method.run(frame, parsed.data as never) });
   } catch (error) {
     reply({ error: error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') : 'failed' });
   }
 }
+
+const ownerOf = (frame: FrameInfo) => `${frame.pluginId}|${frame.widgetId}`;
 
 function localizedName(pluginId: string) {
   const name = names.get(pluginId) ?? pluginId;
@@ -383,6 +400,9 @@ export function initPluginBridge(provider: UiProvider, initialTheme: 'dark' | 'l
   window.tessera.on('plugins:settings-changed', ({ id, values }) => {
     for (const frame of frames) if (frame.pluginId === id) post(frame, { event: 'settings.changed', payload: values });
   });
+  window.tessera.on('plugin:exec-output', ({ pluginId, stream, kind, text }) => {
+    for (const frame of frames) if (frame.pluginId === pluginId) post(frame, { event: 'exec.output', payload: { stream, kind, text } });
+  });
   window.tessera.on('plugin:files-changed', ({ projectId, paths }) => {
     for (const frame of frames) {
       if (frame.watching && frame.project.id === projectId && hasGrant(frame.pluginId, 'fs.project.read')) post(frame, { event: 'files.changed', payload: { paths } });
@@ -425,6 +445,7 @@ export function attachFrame(info: Omit<FrameInfo, 'calls' | 'greeted' | 'lastPon
   frames.add(frame);
   return () => {
     frames.delete(frame);
+    closeProgress(ownerOf(frame));
     void setWatching(frame, false).catch(() => {});
   };
 }

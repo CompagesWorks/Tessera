@@ -5,6 +5,7 @@ const empty = document.getElementById('empty');
 const filter = document.getElementById('filter');
 const quality = document.getElementById('quality');
 const all = document.getElementById('all');
+const gamma = document.getElementById('gamma');
 const drop = document.getElementById('drop');
 const rows = new Map();
 let busy = false;
@@ -71,6 +72,7 @@ function row(path) {
         format: format.value || undefined,
         mipmaps: mipmaps.value,
         quality: quality.value,
+        gammaFix: gamma.checked,
       }),
   };
   convert.addEventListener('click', () => work([item]));

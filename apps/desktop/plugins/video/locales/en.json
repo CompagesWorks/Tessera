@@ -1,0 +1,15 @@
+{
+  "description": "Converts videos to .h264 with ffmpeg, the format of Smash Ultimate movies (Final Smash cutscenes).",
+  "convert.action": "Convert to .h264…",
+  "form.title": "Convert to .h264",
+  "convert": "Convert",
+  "size": "Resolution",
+  "fps": "Frame rate",
+  "bitrate": "Bitrate (kbps)",
+  "keep": "Keep the source",
+  "pickFfmpeg": "Pick the ffmpeg program installed on your PC.",
+  "badBitrate": "The bitrate must be a number between 100 and 100000.",
+  "created": "{{name}} created",
+  "failed": "ffmpeg failed: {{error}}",
+  "progress": "ffmpeg is converting {{from}} to {{to}}. This can take a few minutes."
+}

@@ -381,6 +381,9 @@ impl Host for FakeHost {
     fn notify(&self, title: &str, body: &str) {
         self.effects.lock().unwrap().push(format!("notify {title} {body}"));
     }
+    fn exec_output(&self, _plugin_id: &str, stream: &str, kind: &str, text: &str) {
+        self.effects.lock().unwrap().push(format!("output {stream} {kind} {text}"));
+    }
 }
 
 struct ApiFixture {
@@ -432,7 +435,7 @@ fn api_reads_and_writes_binary() {
     f.call("fs.writeBytes", Some(json!({ "path": "tex/a.nutexb", "data": encoded }))).unwrap();
     assert_eq!(fs::read(f.project.join("tex/a.nutexb")).unwrap(), bytes);
     assert_eq!(f.call("fs.readBytes", Some(json!({ "path": "tex/a.nutexb" }))).unwrap(), json!(encoded));
-    assert_eq!(err(f.call("fs.writeBytes", Some(json!({ "path": "x.bin", "data": "not base64!" })))), "invalid params");
+    assert_eq!(err(f.call("fs.writeBytes", Some(json!({ "path": "x.bin", "data": "not base64!" })))), "invalid params (fs.writeBytes)");
 }
 
 #[test]
@@ -441,7 +444,7 @@ fn api_converts_textures_inside_the_project() {
     let mut png = std::io::Cursor::new(Vec::new());
     image::RgbaImage::from_pixel(8, 8, image::Rgba([200, 30, 30, 255])).write_to(&mut png, image::ImageFormat::Png).unwrap();
     fs::write(f.project.join("sources/col.png"), png.get_ref()).unwrap();
-    f.call("textures.convert", Some(json!({ "from": "sources/col.png", "to": "sources/col.nutexb" }))).unwrap();
+    f.call("textures.convert", Some(json!({ "from": "sources/col.png", "to": "sources/col.nutexb", "gammaFix": true }))).unwrap();
     f.call("textures.convert", Some(json!({ "from": "sources/col.nutexb", "to": "sources/back.png" }))).unwrap();
     assert_eq!(image::open(f.project.join("sources/back.png")).unwrap().width(), 8);
     assert_eq!(err(f.call("textures.convert", Some(json!({ "from": "sources/col.png", "to": ".tessera/x.nutexb" })))), "outside scope");
@@ -471,7 +474,7 @@ fn api_asks_before_opening_links() {
     let f = ApiFixture::new(json!(["open.external"]), &[Permission::OpenExternal], Decision::Session);
     f.call("shell.openUrl", Some(json!({ "url": "https://gamebanana.com/mods/1" }))).unwrap();
     f.call("shell.openUrl", Some(json!({ "url": "https://gamebanana.com/mods/2" }))).unwrap();
-    assert_eq!(err(f.call("shell.openUrl", Some(json!({ "url": "http://gamebanana.com/" })))), "invalid params");
+    assert_eq!(err(f.call("shell.openUrl", Some(json!({ "url": "http://gamebanana.com/" })))), "invalid params (shell.openUrl)");
     assert_eq!(*f.host.asked.lock().unwrap(), vec!["https://gamebanana.com/mods/1".to_string()]);
     assert_eq!(*f.host.effects.lock().unwrap(), vec!["open https://gamebanana.com/mods/1".to_string(), "open https://gamebanana.com/mods/2".to_string()]);
 }

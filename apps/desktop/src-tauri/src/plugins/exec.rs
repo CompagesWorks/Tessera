@@ -41,7 +41,11 @@ pub struct ExecParams {
     pub program: Option<String>,
     #[serde(default)]
     pub detach: bool,
+    #[serde(default)]
+    pub stream: Option<String>,
 }
+
+pub type OutputSink = std::sync::Arc<dyn Fn(&'static str, &str) + Send + Sync>;
 
 fn default_timeout() -> u64 {
     DEFAULT_TIMEOUT
@@ -60,6 +64,9 @@ impl ExecParams {
             (Some(name), true) if check::PROGRAM_NAME.is_match(name) => {}
             (None, false) => {}
             _ => return Err(Error::new("invalid program")),
+        }
+        if params.stream.as_ref().is_some_and(|s| !check::PROGRAM_NAME.is_match(s)) {
+            return Err(Error::new("invalid stream"));
         }
         Ok(params)
     }
@@ -124,7 +131,7 @@ fn safe_env(command: &mut Command) {
     }
 }
 
-fn capped(mut reader: impl Read + Send + 'static) -> thread::JoinHandle<Vec<u8>> {
+fn capped(mut reader: impl Read + Send + 'static, kind: &'static str, sink: Option<OutputSink>) -> thread::JoinHandle<Vec<u8>> {
     thread::spawn(move || {
         let mut kept = Vec::new();
         let mut buffer = [0u8; 8192];
@@ -134,6 +141,9 @@ fn capped(mut reader: impl Read + Send + 'static) -> thread::JoinHandle<Vec<u8>>
             }
             if kept.len() < MAX_OUTPUT {
                 kept.extend_from_slice(&buffer[..n]);
+                if let Some(sink) = &sink {
+                    sink(kind, &String::from_utf8_lossy(&buffer[..n]));
+                }
             }
         }
         kept.truncate(MAX_OUTPUT);
@@ -152,7 +162,7 @@ pub fn spawn_program(file: &Path, args: &[String]) -> Result<()> {
     Ok(())
 }
 
-pub fn run_program(file: &Path, args: &[String], cwd: &Path, timeout_ms: u64) -> Result<ExecResult> {
+pub fn run_program(file: &Path, args: &[String], cwd: &Path, timeout_ms: u64, sink: Option<OutputSink>) -> Result<ExecResult> {
     let mut command = Command::new(file);
     command.args(args).current_dir(cwd).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     safe_env(&mut command);
@@ -162,8 +172,8 @@ pub fn run_program(file: &Path, args: &[String], cwd: &Path, timeout_ms: u64) ->
         command.creation_flags(0x0800_0000);
     }
     let mut child = command.spawn().map_err(|e| exec_error(&e.to_string()))?;
-    let stdout = capped(child.stdout.take().expect("stdout"));
-    let stderr = capped(child.stderr.take().expect("stderr"));
+    let stdout = capped(child.stdout.take().expect("stdout"), "stdout", sink.clone());
+    let stderr = capped(child.stderr.take().expect("stderr"), "stderr", sink);
     let started = Instant::now();
     let mut timed_out = false;
     let status = loop {
@@ -185,4 +195,28 @@ pub fn run_program(file: &Path, args: &[String], cwd: &Path, timeout_ms: u64) ->
         stderr: String::from_utf8_lossy(&err).into_owned(),
         timed_out,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn streams_output_while_running() {
+        let (shell, args) = if cfg!(windows) {
+            (PathBuf::from(std::env::var("ComSpec").unwrap()), vec!["/c".to_string(), "echo hello".to_string()])
+        } else {
+            (PathBuf::from("/bin/sh"), vec!["-c".to_string(), "echo hello".to_string()])
+        };
+        let seen = Arc::new(Mutex::new(String::new()));
+        let sink: OutputSink = {
+            let seen = seen.clone();
+            Arc::new(move |kind, text| seen.lock().unwrap().push_str(&format!("{kind}:{text}")))
+        };
+        let result = run_program(&shell, &args, &std::env::temp_dir(), 10_000, Some(sink)).unwrap();
+        assert_eq!(result.code, Some(0));
+        assert!(seen.lock().unwrap().starts_with("stdout:hello"));
+        assert!(ExecParams::parse(serde_json::json!({ "program": "ffmpeg", "stream": "bad stream!" }), true).is_err());
+    }
 }

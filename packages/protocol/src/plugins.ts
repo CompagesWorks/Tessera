@@ -333,6 +333,7 @@ export const MAX_BINARY_BYTES = 20 * 1024 * 1024;
 
 export const PLUGIN_SCHEME = 'tessera-plugin';
 export const PROVIDER_SCHEME = 'tessera-provider';
+export const MEDIA_SCHEME = 'tessera-media';
 
 export const PluginPathSchema = z
   .string()

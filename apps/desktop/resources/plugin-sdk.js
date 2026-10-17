@@ -112,6 +112,31 @@
     });
   }
 
+  let streams = 0;
+
+  async function streamed(onOutput, run) {
+    if (typeof onOutput !== 'function') return run(undefined);
+    const stream = `s${(streams += 1)}-${Math.random().toString(36).slice(2, 10)}`;
+    const pending = { stdout: '', stderr: '' };
+    const deliver = (kind, final) => {
+      const lines = pending[kind].split(/\r?\n|\r/);
+      pending[kind] = final ? '' : lines.pop();
+      for (const line of lines) if (line || !final) onOutput(line, kind);
+    };
+    const off = window.tessera.on('exec.output', (payload) => {
+      if (!payload || payload.stream !== stream || !(payload.kind in pending)) return;
+      pending[payload.kind] += payload.text;
+      deliver(payload.kind, false);
+    });
+    try {
+      return await run(stream);
+    } finally {
+      off();
+      deliver('stdout', true);
+      deliver('stderr', true);
+    }
+  }
+
   let menuResolve = null;
   let messages = Object.freeze({});
   let language = 'en';
@@ -223,6 +248,13 @@
         });
       },
       form: (spec) => call('ui.form', spec),
+      async progress(title, message) {
+        await call('ui.progress', { title, message });
+        return Object.freeze({
+          update: (next, percent) => call('ui.progress', { title, message: next, percent }),
+          close: () => call('ui.progress.close'),
+        });
+      },
     }),
     widget: Object.freeze({
       getState: () => call('widget.getState'),
@@ -265,7 +297,7 @@
     }),
     textures: Object.freeze({
       convert: (from, to, options = {}) =>
-        call('textures.convert', { from, to, format: options.format, mipmaps: options.mipmaps, quality: options.quality }),
+        call('textures.convert', { from, to, format: options.format, mipmaps: options.mipmaps, quality: options.quality, gammaFix: options.gammaFix }),
     }),
     net: Object.freeze({
       fetch: (url, options = {}) =>
@@ -284,8 +316,9 @@
       keys: () => call('secrets.keys'),
     }),
     exec: Object.freeze({
-      run: (args = [], options = {}) => call('exec.run', { args, timeout: options.timeout }),
-      runSystem: (program, args = [], options = {}) => call('exec.runSystem', { program, args, timeout: options.timeout, detach: options.detach }),
+      run: (args = [], options = {}) => streamed(options.onOutput, (stream) => call('exec.run', { args, timeout: options.timeout, stream })),
+      runSystem: (program, args = [], options = {}) =>
+        streamed(options.onOutput, (stream) => call('exec.runSystem', { program, args, timeout: options.timeout, detach: options.detach, stream })),
       pickSystem: (program) => call('exec.pickSystem', { program }),
       systemInfo: () => call('exec.systemInfo'),
     }),

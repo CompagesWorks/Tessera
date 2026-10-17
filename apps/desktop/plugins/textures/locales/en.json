@@ -29,5 +29,7 @@
   "form.title": "Convert texture",
   "form.format": "Format (dds and nutexb)",
   "converting": "Converting {{name}}…",
-  "created": "{{name}} created"
+  "created": "{{name}} created",
+  "gammaFix": "Gamma fix",
+  "gammaFix.hint": "Darkens mid-tones (gamma 2.2) like Switch Toolbox, for textures that look washed out in game. Not applied to .png output."
 }

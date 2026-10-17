@@ -1,0 +1,21 @@
+{
+  "id": "compagesworks.video",
+  "name": "Video",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "film",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": ["ui.menus", { "id": "exec.system", "programs": ["ffmpeg"] }],
+  "contributes": {
+    "host": "host.html",
+    "fileActions": [
+      {
+        "id": "h264",
+        "title": "%convert.action%",
+        "icon": "film",
+        "extensions": ["mp4", "mov", "mkv", "webm", "avi", "m4v", "wmv", "flv", "gif", "h264"]
+      }
+    ]
+  }
+}

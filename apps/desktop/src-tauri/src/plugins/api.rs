@@ -22,7 +22,7 @@ use crate::util::{Error, Result};
 
 use super::audit::AuditLog;
 use super::discord::{DiscordPresence, SetActivity};
-use super::exec::{check_system_program, command_line, describe_program, resolve_program, run_program, spawn_program, ExecParams};
+use super::exec::{check_system_program, command_line, describe_program, resolve_program, run_program, spawn_program, ExecParams, OutputSink};
 use super::net::{check_url, plugin_fetch, FetchParams};
 use super::scoped_fs::{self, Scope, Trash};
 use super::secrets::SecretStore;
@@ -47,6 +47,7 @@ pub trait Host: Send + Sync {
     fn trash(&self, path: &Path) -> Result<()>;
     fn write_clipboard(&self, text: &str);
     fn notify(&self, title: &str, body: &str);
+    fn exec_output(&self, plugin_id: &str, stream: &str, kind: &str, text: &str);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -122,13 +123,14 @@ struct RenameParams {
 }
 
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct ConvertParams {
     from: String,
     to: String,
     format: Option<String>,
     mipmaps: Option<String>,
     quality: Option<String>,
+    gamma_fix: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -252,7 +254,13 @@ impl PluginApi {
 
     pub fn call(&self, request: PluginCall) -> Result<Value> {
         let ctx = Ctx { plugin_id: request.plugin_id.clone(), project_id: request.project_id.clone() };
-        let prepared = self.prepare(&ctx, &request.method, &request.params)?;
+        let prepared = self.prepare(&ctx, &request.method, &request.params).map_err(|error| {
+            if error.0 == "invalid params" {
+                Error::new(format!("invalid params ({})", request.method))
+            } else {
+                error
+            }
+        })?;
         let allowed = self.plugins.has_grant(&ctx.plugin_id, prepared.permission);
         if !allowed {
             self.audit.record(&ctx.plugin_id, prepared.action, &prepared.target, false);
@@ -266,6 +274,13 @@ impl PluginApi {
         }
         self.audit.record(&ctx.plugin_id, prepared.action, &prepared.target, true);
         (prepared.run)()
+    }
+
+    fn output_sink(&self, ctx: &Ctx, stream: Option<String>) -> Option<OutputSink> {
+        let stream = stream?;
+        let host = self.host.clone();
+        let plugin_id = ctx.plugin_id.clone();
+        Some(Arc::new(move |kind: &'static str, text: &str| host.exec_output(&plugin_id, &stream, kind, text)))
     }
 
     fn trash(&self) -> Trash {
@@ -455,7 +470,8 @@ impl PluginApi {
                 let p: ConvertParams = object(params)?;
                 plugin_path(&p.from, 1)?;
                 plugin_path(&p.to, 1)?;
-                let options = Options::parse(p.format.as_deref(), p.mipmaps.as_deref(), p.quality.as_deref()).map_err(|_| invalid())?;
+                let mut options = Options::parse(p.format.as_deref(), p.mipmaps.as_deref(), p.quality.as_deref()).map_err(|_| invalid())?;
+                options.gamma_fix = p.gamma_fix.unwrap_or(false);
                 let target = format!("project:{} -> {}", p.from, p.to);
                 prepared(
                     Permission::FsProjectWrite,
@@ -524,7 +540,7 @@ impl PluginApi {
                         if !self.plugins.has_grant(&ctx.plugin_id, Permission::Exec) {
                             return Err(Error::new("permission denied: exec"));
                         }
-                        to_value(run_program(&file, &p.args, &cwd, p.timeout)?)
+                        to_value(run_program(&file, &p.args, &cwd, p.timeout, self.output_sink(ctx, p.stream.clone()))?)
                     }),
                 )
             }
@@ -551,7 +567,7 @@ impl PluginApi {
                             spawn_program(&file, &p.args)?;
                             return Ok(Value::Null);
                         }
-                        to_value(run_program(&file, &p.args, &cwd, p.timeout)?)
+                        to_value(run_program(&file, &p.args, &cwd, p.timeout, self.output_sink(ctx, p.stream.clone()))?)
                     }),
                 )
             }
