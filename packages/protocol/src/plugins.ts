@@ -12,6 +12,7 @@ export const PERMISSIONS = [
   'secrets',
   'ui.theme',
   'ui.provider',
+  'ui.menus',
   'exec',
   'exec.system',
   'discord.rpc',
@@ -32,6 +33,7 @@ export const PERMISSION_RISK: Record<Permission, PermissionRisk> = {
   secrets: 'medium',
   'ui.theme': 'low',
   'ui.provider': 'high',
+  'ui.menus': 'low',
   exec: 'high',
   'exec.system': 'high',
   'discord.rpc': 'medium',
@@ -113,6 +115,19 @@ export const PluginTitlebarButtonSchema = z
   .strict();
 export type PluginTitlebarButton = z.infer<typeof PluginTitlebarButtonSchema>;
 
+export const PluginFileActionSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9-]{1,40}$/),
+    title: z.string().trim().min(1).max(40),
+    icon: IconSchema.default('puzzle'),
+    extensions: z
+      .array(z.string().regex(/^[a-zA-Z0-9]{1,12}$/).transform((value) => value.toLowerCase()))
+      .min(1)
+      .max(24),
+  })
+  .strict();
+export type PluginFileAction = z.infer<typeof PluginFileActionSchema>;
+
 const SettingKeySchema = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,39}$/);
 const SettingTextSchema = z.string().trim().min(1).max(60);
 const settingBase = {
@@ -189,8 +204,9 @@ export const PluginManifestSchema = z
         settings: z.array(PluginSettingSchema).max(40).default([]),
         host: RelativePathSchema.nullable().default(null),
         titlebar: z.array(PluginTitlebarButtonSchema).max(4).default([]),
+        fileActions: z.array(PluginFileActionSchema).max(8).default([]),
       })
-      .default({ widgets: [], themes: [], uiProvider: null, settings: [], host: null, titlebar: [] }),
+      .default({ widgets: [], themes: [], uiProvider: null, settings: [], host: null, titlebar: [], fileActions: [] }),
   })
   .superRefine((manifest, ctx) => {
     const ids = manifest.permissions.map((entry) => (typeof entry === 'string' ? entry : entry.id));
@@ -216,6 +232,12 @@ export const PluginManifestSchema = z
     });
     if (manifest.contributes.titlebar.length && !manifest.contributes.host) {
       ctx.addIssue({ code: 'custom', path: ['contributes', 'titlebar'], message: 'titlebar buttons need contributes.host' });
+    }
+    if (manifest.contributes.fileActions.length && !manifest.contributes.host) {
+      ctx.addIssue({ code: 'custom', path: ['contributes', 'fileActions'], message: 'file actions need contributes.host' });
+    }
+    if (manifest.contributes.fileActions.length && !ids.includes('ui.menus')) {
+      ctx.addIssue({ code: 'custom', path: ['contributes', 'fileActions'], message: 'file actions need the ui.menus permission' });
     }
     if (manifest.contributes.uiProvider && !ids.includes('ui.provider')) {
       ctx.addIssue({ code: 'custom', path: ['contributes', 'uiProvider'], message: 'uiProvider needs the ui.provider permission' });
@@ -275,6 +297,7 @@ export interface InstalledPlugin {
   source: string;
   externalFolder: string | null;
   systemPrograms: Record<string, SystemProgram>;
+  locales: Record<string, Record<string, string>>;
 }
 
 export const PluginRefSchema = z.object({ id: PluginIdSchema }).strict();
@@ -296,6 +319,12 @@ export const ReadTextSchema = z
       .max(400)
       .refine((p) => !p.split(/[\\/]/).includes('..'), 'no parent segments'),
   })
+  .strict();
+
+const ProjectFilePathSchema = ReadTextSchema.shape.path;
+export const RenameFileSchema = z.object({ id: z.uuid(), from: ProjectFilePathSchema, to: ProjectFilePathSchema }).strict();
+export const WriteBytesSchema = z
+  .object({ id: z.uuid(), path: ProjectFilePathSchema, data: z.base64().max(Math.ceil((20 * 1024 * 1024) / 3) * 4) })
   .strict();
 
 export const MAX_TEXT_READ = 1024 * 1024;

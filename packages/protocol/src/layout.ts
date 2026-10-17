@@ -90,6 +90,14 @@ export interface DirEntry {
   size: number;
 }
 
+export interface TexturePreview {
+  data: string;
+  width: number;
+  height: number;
+  format: string | null;
+  mipmaps: number;
+}
+
 export function defaultLayout(): ProjectLayout {
   return {
     formatVersion: 1,

@@ -1,7 +1,10 @@
-import type { FsScope, Permission, ProjectSummary } from '@tessera/protocol';
+import { PluginPathSchema, type FsScope, type InstalledPlugin, type Permission, type ProjectSummary } from '@tessera/protocol';
 import { z } from 'zod';
 import { getLanguage } from '../i18n';
 import type { UiProvider } from '../ui/provider';
+import { FormSchema, showForm, type FormSpec } from './form';
+import { pluginFileActions } from './hosts';
+import { pluginMessages } from './locale';
 
 const MAX_STATE_BYTES = 64 * 1024;
 const MAX_CALLS_PER_SECOND = 40;
@@ -23,6 +26,32 @@ interface FrameInfo {
   watching: boolean;
 }
 
+const ContextMenuSchema = z
+  .object({
+    x: z.number().finite(),
+    y: z.number().finite(),
+    path: PluginPathSchema.min(1).optional(),
+    items: z
+      .array(
+        z.union([
+          z.literal('separator'),
+          z
+            .object({
+              id: z.string().regex(/^[a-zA-Z0-9_-]{1,40}$/),
+              label: z.string().trim().min(1).max(60),
+              icon: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),
+              danger: z.boolean().optional(),
+              disabled: z.boolean().optional(),
+            })
+            .strict(),
+        ]),
+      )
+      .max(20)
+      .default([]),
+  })
+  .strict();
+type ContextMenuSpec = z.infer<typeof ContextMenuSchema>;
+
 interface Method {
   schema: z.ZodType;
   permission?(params: unknown): Permission;
@@ -34,6 +63,8 @@ let theme: 'dark' | 'light' = 'dark';
 let tokens: Record<string, string> = {};
 const frames = new Set<FrameInfo>();
 const grants = new Map<string, Set<Permission>>();
+const names = new Map<string, string>();
+const locales = new Map<string, InstalledPlugin['locales']>();
 const watchers = new Map<string, number>();
 
 const MAX_LAB_ENTRIES = 300;
@@ -164,6 +195,33 @@ const methods: Record<string, Method> = {
     schema: z.object({ kind: z.enum(['success', 'info', 'warning', 'error']), message: z.string().min(1).max(300) }).strict(),
     run: (_frame, { kind, message }: { kind: 'success' | 'info' | 'warning' | 'error'; message: string }) => ui?.toast(kind, message),
   },
+  'ui.form': {
+    schema: FormSchema,
+    run: (frame, spec: FormSpec) => {
+      if (!ui) throw new Error('not ready');
+      return showForm(ui, `${frame.pluginId}|${frame.widgetId}`, localizedName(frame.pluginId), spec);
+    },
+  },
+  'ui.contextMenu': {
+    schema: ContextMenuSchema,
+    run: (frame, spec: ContextMenuSpec) => {
+      if (!ui) throw new Error('not ready');
+      const rect = frame.iframe.getBoundingClientRect();
+      const own = spec.items.map((item) =>
+        item === 'separator' ? item : { ...item, onClick: () => post(frame, { event: 'menu.select', payload: { id: item.id } }) },
+      );
+      const shared = spec.path
+        ? pluginFileActions(spec.path, frame.pluginId).map((action) => ({
+            label: action.title,
+            icon: action.icon.includes('/') ? 'puzzle' : action.icon,
+            hint: action.pluginName,
+            onClick: action.run,
+          }))
+        : [];
+      const entries = own.length && shared.length ? [...own, 'separator' as const, ...shared] : [...own, ...shared];
+      if (entries.length) ui.atrium.menu.open({ x: rect.left + spec.x, y: rect.top + spec.y }, entries);
+    },
+  },
   'widget.getState': {
     schema: z.undefined(),
     run: (frame) => frame.getState(),
@@ -193,6 +251,7 @@ const methods: Record<string, Method> = {
   'external.pick': forward('external.pick', () => 'fs.external'),
   'external.info': forward('external.info', () => 'fs.external'),
   'export.deploy': forward('export.deploy', () => 'fs.external'),
+  'textures.convert': forward('textures.convert', () => 'fs.project.write'),
   'net.fetch': forward('net.fetch', () => 'net'),
   'secrets.get': forward('secrets.get', () => 'secrets'),
   'secrets.set': forward('secrets.set', () => 'secrets'),
@@ -259,9 +318,15 @@ async function onRequest(frame: FrameInfo, id: unknown, name: unknown, params: u
   }
 }
 
+function localizedName(pluginId: string) {
+  const name = names.get(pluginId) ?? pluginId;
+  const key = /^%([A-Za-z0-9_.-]{1,80})%$/.exec(name)?.[1];
+  return key ? (pluginMessages(locales.get(pluginId) ?? {})[key] ?? key) : name;
+}
+
 async function sendInit(frame: FrameInfo) {
   const settings = await window.tessera.invoke('plugins:settings-get', { id: frame.pluginId }).catch(() => ({}));
-  post(frame, { event: 'init', payload: { ...themePayload(), language: getLanguage(), widgetId: frame.widgetId, settings } });
+  post(frame, { event: 'init', payload: { ...themePayload(), language: getLanguage(), widgetId: frame.widgetId, settings, messages: pluginMessages(locales.get(frame.pluginId) ?? {}) } });
 }
 
 function themePayload() {
@@ -337,8 +402,16 @@ export function whenFramesReady(timeout: number): Promise<void> {
   });
 }
 
-export function setPluginGrants(pluginId: string, granted: Permission[]) {
+export function broadcastDrag(projectId: string, paths: string[] | null) {
+  for (const frame of frames) {
+    if (frame.project.id === projectId && hasGrant(frame.pluginId, 'fs.project.read')) post(frame, { event: 'drag', payload: { paths } });
+  }
+}
+
+export function setPluginGrants(pluginId: string, granted: Permission[], name: string, messages: InstalledPlugin['locales']) {
   grants.set(pluginId, new Set(granted));
+  names.set(pluginId, name);
+  locales.set(pluginId, messages);
 }
 
 export function broadcastTheme(next: 'dark' | 'light', nextTokens: Record<string, string> = tokens) {

@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use base64::Engine;
 use serde::Serialize;
 use serde_json::{json, Map, Value};
 use tauri::{Manager, Runtime, Webview};
@@ -12,7 +13,10 @@ use crate::plugins::archive::{unpack, PACKAGE_EXTENSION};
 use crate::plugins::exec::describe_program;
 use crate::plugins::service::inspect_package;
 use crate::profile::{build_profile, preview_profile, profile_settings_patch, strip_layout_state, MAX_PROFILE_BYTES, PROFILE_EXTENSION};
+use crate::plugins::scoped_fs::{scoped_mkdir, scoped_read_bytes, scoped_remove, scoped_rename, scoped_reveal, scoped_write_bytes, Scope};
 use crate::projects::export::export_project;
+use crate::projects::files::TESSERA_DIR;
+use crate::projects::textures::preview_texture;
 use crate::projects::files_list::{list_dir, read_text, resolve_inside};
 use crate::projects::history::{FileChange, Meta};
 use crate::projects::layout::{layout_file, read_layout, write_layout};
@@ -25,6 +29,7 @@ use crate::schema::requests::*;
 use crate::schema::settings::validate_patch;
 use crate::schema::tools::{HistoryKind, Profile, ProfileApplied};
 use crate::state::{AppState, PendingPackage};
+use crate::util::paths::{realpath, resolve};
 use crate::util::time::stamp_for_file;
 use crate::util::{Error, Result};
 use crate::window;
@@ -45,6 +50,11 @@ fn path_string(path: Option<PathBuf>) -> Value {
 
 fn open_path(path: &Path) -> Result<()> {
     tauri_plugin_opener::open_path(path, None::<&str>).map_err(|e| Error::new(e.to_string()))
+}
+
+fn project_scope(s: &AppState, id: &str) -> Result<Scope> {
+    let root = realpath(&s.projects.root_of(id)?)?;
+    Ok(Scope { root, hidden: Some(TESSERA_DIR.into()), trash: Some(Arc::new(|path: &Path| trash::delete(path).map_err(|e| Error::new(e.to_string())))) })
 }
 
 fn reveal(path: &Path) {
@@ -306,6 +316,49 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
             let r: ProjectPath = parse(request)?;
             r.validate(1)?;
             reveal(&resolve_inside(&s.projects.root_of(&r.id)?, &r.path)?);
+            done()
+        }
+        "files:open" => {
+            let r: ProjectPath = parse(request)?;
+            r.validate(1)?;
+            open_path(&scoped_reveal(&project_scope(s, &r.id)?, &r.path)?)?;
+            done()
+        }
+        "files:preview" => {
+            let r: ProjectPath = parse(request)?;
+            r.validate(1)?;
+            let bytes = scoped_read_bytes(&project_scope(s, &r.id)?, &r.path)?;
+            value(preview_texture(&bytes, &r.path)?)
+        }
+        "files:mkdir" => {
+            let r: ProjectPath = parse(request)?;
+            r.validate(1)?;
+            scoped_mkdir(&project_scope(s, &r.id)?, &r.path)?;
+            done()
+        }
+        "files:remove" => {
+            let r: ProjectPath = parse(request)?;
+            r.validate(1)?;
+            let scope = project_scope(s, &r.id)?;
+            let paths = [resolve(&scope.root, &r.path)];
+            s.history.track(&r.id, &scope.root, Meta::new(HistoryKind::FileRemove, r.path.clone()), &paths, || scoped_remove(&scope, &r.path))?;
+            done()
+        }
+        "files:rename" => {
+            let r: ProjectRename = parse(request)?;
+            r.validate()?;
+            let scope = project_scope(s, &r.id)?;
+            let paths = [resolve(&scope.root, &r.from), resolve(&scope.root, &r.to)];
+            s.history.track(&r.id, &scope.root, Meta::new(HistoryKind::FileRename, r.to.clone()), &paths, || scoped_rename(&scope, &r.from, &r.to))?;
+            done()
+        }
+        "files:write-bytes" => {
+            let r: ProjectBytes = parse(request)?;
+            r.validate()?;
+            let data = base64::engine::general_purpose::STANDARD.decode(&r.data).map_err(|_| Error::new("invalid request (data)"))?;
+            let scope = project_scope(s, &r.id)?;
+            let paths = [resolve(&scope.root, &r.path)];
+            s.history.track(&r.id, &scope.root, Meta::new(HistoryKind::FileWrite, r.path.clone()), &paths, || scoped_write_bytes(&scope, &r.path, &data))?;
             done()
         }
         "files:index" => value(list_project_files(&s.projects.root_of(&IdRef::uuid(request)?)?, MAX_INDEXED, SEARCH_BUDGET_MS)),

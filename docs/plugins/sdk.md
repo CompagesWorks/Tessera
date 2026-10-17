@@ -23,9 +23,12 @@ interface Tessera {
   on(event: 'init', listener: (payload: InitPayload) => void): () => void;
   on(event: 'theme', listener: (payload: ThemePayload) => void): () => void;
   on(event: 'files.changed', listener: (payload: { paths: string[] }) => void): () => void;
+  on(event: 'files.dropped', listener: (payload: { paths: string[] }) => void): () => void;
 
   ui: {
     toast(kind: 'success' | 'info' | 'warning' | 'error', message: string): Promise<void>;
+    form(spec: FormSpec): Promise<Record<string, string | boolean> | null>;
+    contextMenu(spec: { x: number; y: number; path?: string; items?: MenuItem[] }): Promise<string | null>;
   };
   widget: {
     getState(): Promise<Record<string, unknown>>;
@@ -186,6 +189,8 @@ Subscribes `listener` to an event. Returns a function that unsubscribes it.
 | `init` | `InitPayload` | once, when the widget starts |
 | `theme` | `{ theme, tokens }` | the user switches theme, or applies a plugin theme |
 | `files.changed` | `{ paths }` | a project file changed, while [`tessera.files.watch`](#tesserafileswatchlistener) is active |
+| `fileAction` | `{ id, paths }` | the user picked one of your [file actions](manifest.md#file-actions) in the Explorer (host page only) |
+| `files.dropped` | `{ paths }` | the user dragged files from the Explorer and dropped them on your widget; needs `fs.project.read`. Listening is enough to accept the drop |
 | `titlebar` | `{ id }` | the user clicked one of your [titlebar buttons](manifest.md#titlebar-buttons) (host page only) |
 
 ```js
@@ -206,6 +211,85 @@ Shows a notification in Tessera.
 | --- | --- |
 | `kind` | `'success'`, `'info'`, `'warning'`, `'error'` |
 | `message` | 1 to 300 characters of plain text (no HTML) |
+
+### `tessera.ui.contextMenu(spec)`
+
+Opens Tessera's context menu at a point of your widget. Pass `path` (a project file) to add the actions other plugins contribute for that file type with [`contributes.fileActions`](manifest.md#file-actions), after your own items. Resolves with the `id` of the item the user picked among yours, or `null` if another menu replaces it. Picking another plugin's action runs it in that plugin and leaves your promise pending until your next menu.
+
+```js
+row.addEventListener('contextmenu', async (event) => {
+  event.preventDefault();
+  const id = await tessera.ui.contextMenu({
+    x: event.clientX,
+    y: event.clientY,
+    path: 'sources/fighter/mario/model/body/c00/def_mario_001_col.nutexb',
+    items: [{ id: 'rename', label: 'Rename', icon: 'pencil' }, 'separator', { id: 'delete', label: 'Delete', icon: 'trash3', danger: true }],
+  });
+  if (id === 'delete') removeRow();
+});
+```
+
+| Field | Rule |
+| --- | --- |
+| `x`, `y` | position in your page, like `event.clientX` / `event.clientY` |
+| `path` | optional project path; adds other plugins' file actions |
+| `items` | 0 to 20 items `{ id, label, icon?, danger?, disabled? }` or `'separator'` |
+
+No permission is needed to open a menu. Adding entries to other plugins' menus needs [`ui.menus`](permissions.md#uimenus).
+
+### `tessera.ui.form(spec)`
+
+Opens a Tessera modal with fields and resolves with the values (`{ [field id]: value }`), or `null` if the user cancels. One form at a time per widget or host page. The plugin name is shown in the modal.
+
+```js
+const values = await tessera.ui.form({
+  title: 'Export',
+  icon: 'box-arrow-up',
+  message: 'sources/fighter/mario',
+  confirmText: 'Export',
+  fields: [
+    { type: 'select', id: 'quality', label: 'Quality', options: [{ value: 'fast', label: 'Fast' }, { value: 'best', label: 'Best' }], value: 'best' },
+    { type: 'text', id: 'name', label: 'Name', placeholder: 'my-mod' },
+    { type: 'checkbox', id: 'zip', label: 'Zip it', value: true },
+  ],
+});
+```
+
+| Field | Rule |
+| --- | --- |
+| `title` | 1 to 60 characters |
+| `icon` | Bootstrap Icons name, optional |
+| `message` | 300 characters max, optional |
+| `confirmText` | 1 to 24 characters, default OK |
+| `fields` | 1 to 12 fields: `select` (1 to 40 `options`), `text` (500 characters max) or `checkbox`; `id` starts with a letter, 40 max |
+
+## Translations
+
+Reads your plugin's [`locales/`](manifest.md#translations) files in Tessera's language, with English as fallback.
+
+| | |
+| --- | --- |
+| `tessera.i18n.language` | Tessera's language, like `'en'` or `'fr'` |
+| `tessera.i18n.t(key, params?)` | the translation of `key`, with `{{name}}` replaced by `params.name`; the key itself when missing |
+
+Translations arrive with the `init` event: call `t` after `await tessera.ready`. Elements with these attributes are translated for you at the same moment:
+
+| Attribute | Sets |
+| --- | --- |
+| `data-i18n="key"` | the text |
+| `data-i18n-placeholder="key"` | `placeholder` |
+| `data-i18n-title="key"` | `title` |
+| `data-i18n-label="key"` | `aria-label` |
+
+```html
+<button data-i18n="convertAll"></button>
+<input type="search" data-i18n-placeholder="filter" />
+```
+
+```js
+await tessera.ready;
+tessera.ui.toast('success', tessera.i18n.t('converted', { name: 'mario.nutexb' }));
+```
 
 ## Widget state
 
@@ -377,6 +461,23 @@ await tessera.external.writeText('mods/my-skin/config.json', config);
 Needs `fs.external` **and** `fs.project.read`. Exports the open project (like the Export button) and copies the mod folder into the picked folder, as `<picked folder>/<mod name>`. Resolves the mod folder name.
 
 A previous copy is replaced only if Tessera deployed it (it leaves a `.tessera-deploy` file inside). Any other folder with the same name is left alone and the call fails with `… already exists in the mods folder and was not deployed by Tessera`.
+
+#### `tessera.textures.convert(from, to, options?)`
+
+Needs `fs.project.write` **and** `fs.project.read`. Converts a texture inside the project, picked from the extensions of `from` and `to`. `from` can be `.nutexb`, `.dds`, `.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tga` or `.tiff`; `to` can be `.nutexb`, `.dds` or `.png`. Works the same on Windows, macOS and Linux.
+
+| Option | Values | Default |
+|---|---|---|
+| `format` | an image format such as `BC7RgbaUnormSrgb`, `BC7RgbaUnorm`, `BC1RgbaUnormSrgb`, `BC5RgUnorm`, `Rgba8UnormSrgb`… | the format of `to` if it already exists, then the format of `from`, then `BC7RgbaUnormSrgb` |
+| `mipmaps` | `GeneratedAutomatic`, `FromSurface`, `Disabled` | `GeneratedAutomatic` |
+| `quality` | `Fast`, `Normal`, `Slow` | `Normal` |
+
+`.png` output keeps the first layer and mipmap and ignores the options. `to` is overwritten and the change goes to the project history.
+
+```js
+await tessera.textures.convert('sources/fighter/mario/model/body/c00/def_mario_001_col.nutexb', 'def_mario_001_col.png');
+await tessera.textures.convert('def_mario_001_nor.png', 'sources/fighter/mario/model/body/c00/def_mario_001_nor.nutexb', { format: 'BC7RgbaUnorm' });
+```
 
 ## Network
 

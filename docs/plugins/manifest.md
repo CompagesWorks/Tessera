@@ -44,8 +44,9 @@
 | `contributes.widgets` | no | list of widgets, 32 max | `[]` |
 | `contributes.themes` | no | list of [themes](#themes), 16 max. Needs `ui.theme`. | `[]` |
 | `contributes.uiProvider` | no | the [UI provider](#ui-provider) module. Needs `ui.provider`, and `ui.provider` needs it. | `null` |
-| `contributes.host` | no | a hidden page that runs while a project is open, for logic that is not in a widget (titlebar buttons) | `null` |
+| `contributes.host` | no | a hidden page that runs while a project is open, for logic that is not in a widget (titlebar buttons, Explorer right-click actions) | `null` |
 | `contributes.titlebar` | no | [titlebar buttons](#titlebar-buttons), 4 max. Needs `contributes.host`. | `[]` |
+| `contributes.fileActions` | no | [file actions](#file-actions) in the Explorer right-click menu and other plugins' file menus, 8 max. Needs `contributes.host` and the `ui.menus` permission. | `[]` |
 
 Unknown fields are ignored.
 
@@ -182,6 +183,35 @@ tessera.on('titlebar', ({ id }) => {
 
 The host page has the same SDK and permissions as a widget. It has no visible area: report results with [`tessera.ui.toast`](sdk.md#tesserauitoastkind-message).
 
+## File actions
+
+Entries added to the Explorer right-click menu, and to the file menus other plugins open with [`tessera.ui.contextMenu`](sdk.md#tesserauicontextmenuspec), for files with one of the listed extensions. Needs the [`ui.menus`](permissions.md#uimenus) permission. A click sends the `fileAction` event to the plugin's `host` page. Ask for options with [`tessera.ui.form`](sdk.md#tesserauiformspec).
+
+```json
+"permissions": ["ui.menus"],
+"contributes": {
+  "host": "host.html",
+  "fileActions": [{ "id": "convert", "title": "Convert…", "icon": "arrow-repeat", "extensions": ["nutexb", "dds", "png"] }]
+}
+```
+
+```js
+tessera.on('fileAction', async ({ id, paths }) => {
+  if (id !== 'convert') return;
+  const values = await tessera.ui.form({ title: 'Convert', fields: [{ type: 'select', id: 'to', label: 'Output', options: [{ value: 'png', label: '.png' }] }] });
+  if (values) await tessera.textures.convert(paths[0], paths[0].replace(/\.[^.]+$/, `.${values.to}`));
+});
+```
+
+| Field | Rule |
+| --- | --- |
+| `id` | `a-z`, `0-9`, `-`, 40 max |
+| `title` | 1 to 40 characters |
+| `icon` | Bootstrap Icons name or image path. Default `puzzle` |
+| `extensions` | 1 to 24 extensions, letters and digits without the dot, case-insensitive |
+
+`paths` are project paths, like the ones [`tessera.files`](sdk.md) takes.
+
 ## Settings
 
 `contributes.settings` declares options the user can change in **Settings > Plugin settings**. No permission is needed. Tessera stores the values, checks them against your definition and gives them to your widget through [`tessera.settings`](sdk.md#settings).
@@ -207,6 +237,23 @@ The host page has the same SDK and permissions as a widget. It has no visible ar
 | `browse` | `string` only, optional list of file extensions (`["nsp", "xci"]`): adds a **Browse…** button that fills the field with the path of the picked file |
 
 At most 40 settings per plugin. A stored value that no longer fits the definition (you narrowed `max`, removed an option) is ignored and the default is used. The example plugin `examples/plugins/settings-demo` uses all four types.
+
+## Translations
+
+Put one JSON file per language in `locales/`, named with the two-letter code: `locales/en.json`, `locales/fr.json`… Each file is a flat object of keys to strings (1000 keys, 64 KB max; keys use letters, digits, `.`, `_`, `-`). Invalid files are ignored.
+
+```json
+{ "convert.action": "Convert…", "converted": "{{name}} converted" }
+```
+
+Any manifest string written as `%key%` is replaced by its translation in Tessera's language, then in English, then by the key itself: name, description, widget titles, titlebar buttons, file actions, settings…
+
+```json
+"description": "%description%",
+"contributes": { "fileActions": [{ "id": "convert", "title": "%convert.action%", "extensions": ["png"] }] }
+```
+
+In your pages, use [`tessera.i18n`](sdk.md#translations). The built-in [Textures plugin](../../apps/desktop/plugins/textures) is translated this way.
 
 ## Folder contents
 

@@ -29,6 +29,8 @@ pub enum Permission {
     UiTheme,
     #[serde(rename = "ui.provider")]
     UiProvider,
+    #[serde(rename = "ui.menus")]
+    UiMenus,
     #[serde(rename = "exec")]
     Exec,
     #[serde(rename = "exec.system")]
@@ -46,7 +48,7 @@ pub enum Permission {
 }
 
 impl Permission {
-    pub const ALL: [Permission; 14] = [
+    pub const ALL: [Permission; 15] = [
         Permission::FsProjectRead,
         Permission::FsProjectWrite,
         Permission::FsExternal,
@@ -54,6 +56,7 @@ impl Permission {
         Permission::Secrets,
         Permission::UiTheme,
         Permission::UiProvider,
+        Permission::UiMenus,
         Permission::Exec,
         Permission::ExecSystem,
         Permission::DiscordRpc,
@@ -72,6 +75,7 @@ impl Permission {
             Permission::Secrets => "secrets",
             Permission::UiTheme => "ui.theme",
             Permission::UiProvider => "ui.provider",
+            Permission::UiMenus => "ui.menus",
             Permission::Exec => "exec",
             Permission::ExecSystem => "exec.system",
             Permission::DiscordRpc => "discord.rpc",
@@ -122,6 +126,15 @@ pub struct TitlebarButton {
     pub title: String,
     #[serde(default = "puzzle")]
     pub icon: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FileAction {
+    pub id: String,
+    pub title: String,
+    #[serde(default = "puzzle")]
+    pub icon: String,
+    pub extensions: Vec<String>,
 }
 
 fn puzzle() -> String {
@@ -328,6 +341,8 @@ pub struct Contributes {
     pub host: Option<String>,
     #[serde(default)]
     pub titlebar: Vec<TitlebarButton>,
+    #[serde(default)]
+    pub file_actions: Vec<FileAction>,
 }
 
 
@@ -502,6 +517,27 @@ pub fn parse_manifest(value: Value) -> Result<PluginManifest> {
         check::trimmed(&format!("{path}.title"), &mut button.title, 1, 24)?;
         check::icon(&format!("{path}.icon"), &button.icon)?;
     }
+    if contributes.file_actions.len() > 8 {
+        return fail("contributes.fileActions", "too many actions");
+    }
+    if !contributes.file_actions.is_empty() && contributes.host.is_none() {
+        return fail("contributes.fileActions", "file actions need contributes.host");
+    }
+    for (index, action) in contributes.file_actions.iter_mut().enumerate() {
+        let path = format!("contributes.fileActions.{index}");
+        matches(&format!("{path}.id"), &check::ICON, &action.id)?;
+        check::trimmed(&format!("{path}.title"), &mut action.title, 1, 40)?;
+        check::icon(&format!("{path}.icon"), &action.icon)?;
+        if action.extensions.is_empty() || action.extensions.len() > 24 {
+            return fail(&format!("{path}.extensions"), "1 to 24 extensions");
+        }
+        for extension in action.extensions.iter_mut() {
+            *extension = extension.to_ascii_lowercase();
+            if extension.is_empty() || extension.len() > 12 || !extension.chars().all(|c| c.is_ascii_alphanumeric()) {
+                return fail(&format!("{path}.extensions"), "extensions are letters and digits, without the dot");
+            }
+        }
+    }
     if contributes.themes.len() > 16 {
         return fail("contributes.themes", "too many themes");
     }
@@ -541,6 +577,9 @@ pub fn parse_manifest(value: Value) -> Result<PluginManifest> {
         if theme_ids.iter().position(|t| t == id) != Some(index) {
             return fail(&format!("contributes.themes.{index}"), &format!("duplicate theme {id}"));
         }
+    }
+    if !contributes.file_actions.is_empty() && !ids.contains(&Permission::UiMenus) {
+        return fail("contributes.fileActions", "file actions need the ui.menus permission");
     }
     if !theme_ids.is_empty() && !ids.contains(&Permission::UiTheme) {
         return fail("contributes.themes", "themes need the ui.theme permission");
@@ -655,6 +694,30 @@ pub struct InstalledPlugin {
     pub source: String,
     pub external_folder: Option<String>,
     pub system_programs: BTreeMap<String, SystemProgram>,
+    pub locales: Locales,
+}
+
+pub type Locales = BTreeMap<String, BTreeMap<String, String>>;
+
+const MAX_LOCALE_BYTES: u64 = 64 * 1024;
+const MAX_LOCALE_KEYS: usize = 1000;
+
+pub fn read_locales(dir: &std::path::Path) -> Locales {
+    let mut locales = Locales::new();
+    for item in std::fs::read_dir(dir.join("locales")).into_iter().flatten().flatten() {
+        let path = item.path();
+        let Some(language) = path.file_stem().and_then(|s| s.to_str()).filter(|s| s.len() == 2 && s.bytes().all(|b| b.is_ascii_lowercase())) else { continue };
+        if path.extension().and_then(|e| e.to_str()) != Some("json") || item.metadata().map(|m| m.len() > MAX_LOCALE_BYTES).unwrap_or(true) {
+            continue;
+        }
+        let Ok(messages) = std::fs::read_to_string(&path).map_err(|_| ()).and_then(|text| serde_json::from_str::<BTreeMap<String, String>>(&text).map_err(|_| ())) else { continue };
+        let valid = messages.len() <= MAX_LOCALE_KEYS
+            && messages.iter().all(|(key, value)| (1..=80).contains(&key.len()) && key.bytes().all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b)) && value.len() <= 1000);
+        if valid {
+            locales.insert(language.to_string(), messages);
+        }
+    }
+    locales
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

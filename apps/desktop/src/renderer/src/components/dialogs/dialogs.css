@@ -83,3 +83,8 @@
   border-radius: 3px;
   flex-shrink: 0;
 }
+
+.atrium-modal:has(.atrium-select),
+.atrium-modal:has(.atrium-select) .atrium-modal-body {
+  overflow: visible;
+}

@@ -73,3 +73,19 @@
   font-size: 12px;
   color: var(--atrium-text-muted);
 }
+
+.tessera-explorer-row:focus-visible {
+  outline: 2px solid var(--atrium-accent-color);
+  outline-offset: -2px;
+}
+
+.tessera-explorer-row.is-drop,
+.tessera-explorer-tree.is-drop {
+  background: rgba(var(--atrium-accent-rgb), 0.15);
+  color: var(--atrium-text-primary);
+}
+
+.tessera-explorer-row.is-selected {
+  background: rgba(var(--atrium-accent-rgb), 0.15);
+  color: var(--atrium-text-primary);
+}

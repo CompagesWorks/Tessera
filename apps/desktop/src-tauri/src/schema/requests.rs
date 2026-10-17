@@ -171,6 +171,36 @@ impl ProjectPath {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct ProjectRename {
+    pub id: String,
+    pub from: String,
+    pub to: String,
+}
+
+impl ProjectRename {
+    pub fn validate(&self) -> Result<()> {
+        ProjectPath { id: self.id.clone(), path: self.from.clone() }.validate(1)?;
+        ProjectPath { id: self.id.clone(), path: self.to.clone() }.validate(1)
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectBytes {
+    pub id: String,
+    pub path: String,
+    pub data: String,
+}
+
+impl ProjectBytes {
+    pub fn validate(&self) -> Result<()> {
+        ProjectPath { id: self.id.clone(), path: self.path.clone() }.validate(1)?;
+        check::base64("data", &self.data, (super::plugins::MAX_BINARY_BYTES as usize).div_ceil(3) * 4)
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NoteRef {
     pub id: String,
     pub name: String,

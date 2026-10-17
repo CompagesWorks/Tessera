@@ -112,6 +112,46 @@
     });
   }
 
+  let menuResolve = null;
+  let messages = Object.freeze({});
+  let language = 'en';
+
+  function translate(key, params = {}) {
+    let text = Object.hasOwn(messages, key) ? messages[key] : key;
+    for (const [name, value] of Object.entries(params)) text = text.replaceAll(`{{${name}}}`, String(value));
+    return text;
+  }
+
+  const I18N_ATTRIBUTES = [
+    ['i18nPlaceholder', 'data-i18n-placeholder', 'placeholder'],
+    ['i18nTitle', 'data-i18n-title', 'title'],
+    ['i18nLabel', 'data-i18n-label', 'aria-label'],
+  ];
+
+  function translatePage() {
+    const apply = () => {
+      for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = translate(node.dataset.i18n);
+      for (const [key, attribute, target] of I18N_ATTRIBUTES) {
+        for (const node of document.querySelectorAll(`[${attribute}]`)) node.setAttribute(target, translate(node.dataset[key]));
+      }
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply, { once: true });
+    else apply();
+  }
+  let dragged = null;
+  let dragTimer = 0;
+  const wantsDrop = () => dragged !== null && (listeners.get('files.dropped') ?? []).length > 0;
+  document.addEventListener('dragover', (event) => {
+    if (wantsDrop()) event.preventDefault();
+  });
+  document.addEventListener('drop', (event) => {
+    if (!wantsDrop()) return;
+    event.preventDefault();
+    const paths = dragged;
+    dragged = null;
+    emit('files.dropped', { paths });
+  });
+
   window.addEventListener('message', (event) => {
     if (event.source !== window.parent) return;
     const data = event.data;
@@ -120,9 +160,25 @@
       window.parent.postMessage({ tessera: 1, pong: data.payload }, '*');
       return;
     }
+    if (data.event === 'menu.select') {
+      if (menuResolve) menuResolve(data.payload && data.payload.id);
+      menuResolve = null;
+      return;
+    }
+    if (data.event === 'drag') {
+      clearTimeout(dragTimer);
+      if (data.payload && Array.isArray(data.payload.paths)) dragged = data.payload.paths;
+      else dragTimer = setTimeout(() => (dragged = null), 1000);
+      return;
+    }
     if (typeof data.event === 'string') {
       if (data.event === 'init' || data.event === 'theme') applyTheme(data.payload);
       if (data.event === 'init') settingsValues = Object.freeze({ ...((data.payload && data.payload.settings) || {}) });
+      if (data.event === 'init') {
+        messages = Object.freeze({ ...((data.payload && data.payload.messages) || {}) });
+        language = (data.payload && data.payload.language) || 'en';
+        translatePage();
+      }
       if (data.event === 'settings.changed') settingsValues = Object.freeze({ ...(data.payload || {}) });
       emit(data.event, data.payload);
       return;
@@ -148,8 +204,25 @@
       listeners.set(event, list);
       return () => listeners.set(event, (listeners.get(event) ?? []).filter((l) => l !== listener));
     },
+    i18n: Object.freeze({
+      get language() {
+        return language;
+      },
+      t: translate,
+    }),
     ui: Object.freeze({
       toast: (kind, message) => call('ui.toast', { kind, message }),
+      contextMenu(spec) {
+        if (menuResolve) menuResolve(null);
+        return new Promise((resolve, reject) => {
+          menuResolve = resolve;
+          call('ui.contextMenu', spec).catch((error) => {
+            menuResolve = null;
+            reject(error);
+          });
+        });
+      },
+      form: (spec) => call('ui.form', spec),
     }),
     widget: Object.freeze({
       getState: () => call('widget.getState'),
@@ -189,6 +262,10 @@
     }),
     export: Object.freeze({
       deploy: () => call('export.deploy'),
+    }),
+    textures: Object.freeze({
+      convert: (from, to, options = {}) =>
+        call('textures.convert', { from, to, format: options.format, mipmaps: options.mipmaps, quality: options.quality }),
     }),
     net: Object.freeze({
       fetch: (url, options = {}) =>

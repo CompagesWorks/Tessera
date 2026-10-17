@@ -12,6 +12,7 @@ use crate::projects::export::deploy_project;
 use crate::projects::files::TESSERA_DIR;
 use crate::projects::history::{HistoryService, Meta};
 use crate::projects::service::ProjectService;
+use crate::projects::textures::{convert_texture, Options};
 use crate::schema::check;
 use crate::schema::plugins::{Permission, MAX_BINARY_BYTES};
 use crate::schema::requests::PluginCall;
@@ -118,6 +119,16 @@ struct RenameParams {
     scope: FsScope,
     from: String,
     to: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ConvertParams {
+    from: String,
+    to: String,
+    format: Option<String>,
+    mipmaps: Option<String>,
+    quality: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -437,6 +448,28 @@ impl PluginApi {
                         let mods = self.scope_of(ctx, FsScope::External)?.root;
                         let target = deploy_project(&root, &mods)?;
                         Ok(json!(target.file_name().map(|n| n.to_string_lossy().into_owned())))
+                    }),
+                )
+            }
+            "textures.convert" => {
+                let p: ConvertParams = object(params)?;
+                plugin_path(&p.from, 1)?;
+                plugin_path(&p.to, 1)?;
+                let options = Options::parse(p.format.as_deref(), p.mipmaps.as_deref(), p.quality.as_deref()).map_err(|_| invalid())?;
+                let target = format!("project:{} -> {}", p.from, p.to);
+                prepared(
+                    Permission::FsProjectWrite,
+                    "textures.convert",
+                    target,
+                    Box::new(move || {
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsProjectRead) {
+                            return Err(Error::new("permission denied: fs.project.read"));
+                        }
+                        let scope = self.scope_of(ctx, FsScope::Project)?;
+                        let source = scoped_fs::scoped_read_bytes(&scope, &p.from)?;
+                        let data = convert_texture(&source, &p.from, &p.to, scoped_fs::scoped_read_bytes(&scope, &p.to).ok().as_deref(), &options)?;
+                        self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.to.clone(), &[&p.to], || scoped_fs::scoped_write_bytes(&scope, &p.to, &data))?;
+                        Ok(Value::Null)
                     }),
                 )
             }

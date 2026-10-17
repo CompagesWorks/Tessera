@@ -12,6 +12,7 @@ Without any permission, a widget can only: render a UI, show notifications, save
 | [`net`](#net) | medium | HTTPS requests to the domains listed in the manifest |
 | [`secrets`](#secrets) | medium | store the plugin's own secrets (tokens) encrypted |
 | [`ui.theme`](#uitheme) | low | provide Tessera themes |
+| [`ui.menus`](#uimenus) | low | add entries to the Explorer right-click menu and to other plugins' file menus |
 | [`ui.provider`](#uiprovider) | **high** | replace Tessera's UI engine, **outside the sandbox** |
 | [`exec`](#exec) | **high** | run one specific program shipped with the plugin |
 | [`exec.system`](#execsystem) | **high** | run programs installed on the PC (git…), picked by the user |
@@ -123,6 +124,17 @@ Stores API tokens and similar values encrypted by the operating system (DPAPI on
 | Manifest | [`contributes.themes`](manifest.md#themes) |
 
 Lets a plugin ship themes for Tessera. A theme only changes `--atrium-*` design tokens: no script and no free CSS run in Tessera's UI, and values containing `url(…)` are refused. The user applies a theme from Plugins → your plugin → Themes. The theme also reaches every plugin widget, so `atrium-*` components inside widgets follow it.
+
+## `ui.menus`
+
+| | |
+| --- | --- |
+| Risk | low |
+| Asked | on install |
+| Scope | file context menus |
+| Manifest | [`contributes.fileActions`](manifest.md#file-actions) |
+
+Lets a plugin add entries to the Explorer right-click menu and to the file menus other plugins open with [`tessera.ui.contextMenu`](sdk.md#tesserauicontextmenuspec). An entry only shows for the extensions it lists. When the user picks it, the plugin's host page receives the `fileAction` event with the path of that file, and nothing else: reading or changing the file still needs `fs.project.read` / `fs.project.write`. Revoking the permission removes the entries at once.
 
 ## `ui.provider`
 

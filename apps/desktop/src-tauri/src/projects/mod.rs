@@ -7,3 +7,4 @@ pub mod layout;
 pub mod notes;
 pub mod search;
 pub mod service;
+pub mod textures;

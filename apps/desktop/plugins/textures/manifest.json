@@ -1,0 +1,49 @@
+{
+  "id": "compagesworks.textures",
+  "name": "Textures",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "image",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write",
+    "ui.menus"
+  ],
+  "contributes": {
+    "host": "host.html",
+    "widgets": [
+      {
+        "id": "textures",
+        "title": "Textures",
+        "description": "%widget.description%",
+        "icon": "image",
+        "category": "media",
+        "entry": "widget.html"
+      }
+    ],
+    "fileActions": [
+      {
+        "id": "convert",
+        "title": "%convert.action%",
+        "icon": "arrow-repeat",
+        "extensions": [
+          "nutexb",
+          "dds",
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "gif",
+          "bmp",
+          "tga",
+          "tif",
+          "tiff"
+        ]
+      }
+    ]
+  }
+}

@@ -17,8 +17,9 @@ import { initPluginBridge, setLabEnabled, whenFramesReady } from './plugins/brid
 import { installedPlugins, loadPlugins, setThemeChoice, suspendPlugins } from './plugins/loader';
 import { loadUiProvider } from './plugins/provider';
 import { startPluginConfirm } from './plugins/confirm';
-import { startPluginTitlebar } from './plugins/titlebar';
+import { startPluginHosts } from './plugins/hosts';
 import { mountShell } from './shell/shell';
+import { startPluginNotice } from './pages/plugins/notice';
 import { safeScreen } from './splash/safe-screen';
 import { createSplash } from './splash/splash';
 import { HomeStore } from './state/home-store';
@@ -72,6 +73,7 @@ async function boot() {
   startPluginConfirm(ui);
 
   const shell = mountShell(pages);
+  startPluginNotice(shell.sidebar.querySelector<HTMLElement>('[data-atrium-tab="plugins"]')!);
   atrium.windowControls();
 
   const status = atrium.statusbar(shell.statusbar);
@@ -99,7 +101,7 @@ async function boot() {
 
   shell.homeButton.addEventListener('click', () => ctx.navigation.closeProject());
   shell.exportButton.addEventListener('click', () => void exportProject(ctx));
-  startPluginTitlebar(shell.exportButton.parentElement!, (listener) => ctx.navigation.onChange(listener));
+  startPluginHosts(shell.exportButton.parentElement!, (listener) => ctx.navigation.onChange(listener));
   ctx.navigation.onChange((project) => {
     shell.crumb.textContent = project?.name ?? '';
     if (!project) void store.refresh();

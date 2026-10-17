@@ -5,6 +5,7 @@ import { t } from '../i18n';
 import { replacePluginWidgets } from '../widgets/registry';
 import type { WidgetDefinition } from '../widgets/types';
 import { attachFrame, broadcastTheme, setPluginGrants } from './bridge';
+import { localizePlugin, pluginText } from './locale';
 import { applyThemeTokens, findTheme } from './theme';
 import { accentTokens } from '../app/appearance';
 import './plugin-frame.css';
@@ -23,22 +24,22 @@ export function suspendPlugins() {
 }
 
 export function activePlugins(): InstalledPlugin[] {
-  return suspended ? [] : installed.filter((plugin) => plugin.enabled);
+  return suspended ? [] : installedPlugins().filter((plugin) => plugin.enabled);
 }
 
 export function installedPlugins(): InstalledPlugin[] {
-  return installed;
+  return installed.map(localizePlugin);
 }
 
 function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
   const { manifest } = plugin;
   return manifest.contributes.widgets.map((widget) => ({
     type: `${manifest.id}/${widget.id}`,
-    title: () => widget.title,
-    description: () => widget.description,
+    title: () => pluginText(plugin, widget.title),
+    description: () => pluginText(plugin, widget.description),
     icon: pluginIcon(manifest.id, widget.icon),
     category: widget.category,
-    source: manifest.name,
+    source: pluginText(plugin, manifest.name),
     trust: 'plugin',
     create({ widgetId, project, state, setState }) {
       const element = document.createElement('div');
@@ -47,14 +48,14 @@ function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
       iframe.sandbox.add('allow-scripts');
       iframe.referrerPolicy = 'no-referrer';
       iframe.allow = '';
-      iframe.title = widget.title;
+      iframe.title = pluginText(plugin, widget.title);
       iframe.src = pluginUrl(manifest.id, widget.entry);
       const hung = document.createElement('div');
       hung.className = 'tessera-plugin-hung';
       hung.hidden = true;
       hung.innerHTML = '<i class="bi bi-hourglass-split"></i>';
       const message = document.createElement('b');
-      message.textContent = t('plugins.unresponsive', { name: manifest.name });
+      message.textContent = t('plugins.unresponsive', { name: pluginText(plugin, manifest.name) });
       const reload = document.createElement('button');
       reload.type = 'button';
       reload.className = 'atrium-btn atrium-btn-secondary';
@@ -88,7 +89,7 @@ function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
 
 export async function loadPlugins() {
   installed = await window.tessera.invoke('plugins:list');
-  for (const plugin of installed) setPluginGrants(plugin.manifest.id, plugin.enabled && !suspended ? plugin.granted : []);
+  for (const plugin of installed) setPluginGrants(plugin.manifest.id, plugin.enabled && !suspended ? plugin.granted : [], plugin.manifest.name, plugin.locales);
   replacePluginWidgets(suspended ? [] : installed.filter((p) => p.enabled).flatMap(widgetsOf));
   refreshPluginTheme();
   loadedListeners.forEach((listener) => listener());

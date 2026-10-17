@@ -4,6 +4,21 @@ A plugin adds **widgets** to a project's workspace. Each widget is an HTML page 
 
 No Node, no direct network, no access to Tessera's own UI: a plugin only sees what the SDK gives it, and only with the permissions the user granted. The one exception is [`ui.provider`](permissions.md#uiprovider), which runs outside the sandbox behind a danger warning.
 
+## What a plugin can add
+
+| Where | How |
+| --- | --- |
+| Widgets in the project workspace | [`contributes.widgets`](manifest.md) |
+| Entries in the **Explorer right-click menu** and in other plugins' file menus (for example "Convert…" on `.nutexb` files) | [`contributes.fileActions`](manifest.md#file-actions) + the `ui.menus` permission + the `fileAction` event |
+| A right-click menu in your widget that also shows other plugins' actions | [`tessera.ui.contextMenu`](sdk.md#tesserauicontextmenuspec) |
+| Buttons in the project titlebar, next to Export | [`contributes.titlebar`](manifest.md#titlebar-buttons) + the `titlebar` event |
+| A modal that asks the user for options | [`tessera.ui.form`](sdk.md#tesserauiformspec) |
+| Files dragged from the Explorer onto your widget | the [`files.dropped`](sdk.md) event |
+| Translations of the manifest and your pages | [`locales/*.json`](manifest.md#translations) + [`tessera.i18n`](sdk.md#translations) |
+| Themes and settings | [`contributes.themes`](manifest.md), [`contributes.settings`](manifest.md#settings) |
+
+The built-in [Textures plugin](../../apps/desktop/plugins/textures) uses a widget, a right-click action and a form: read it as a complete example.
+
 ## Contents
 
 | Page | What's inside |

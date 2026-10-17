@@ -19,6 +19,7 @@ import {
   SaveLayoutSchema,
   WriteNoteSchema,
   type DirEntry,
+  type TexturePreview,
   type NoteInfo,
   type ProjectLayout,
 } from './layout';
@@ -34,6 +35,8 @@ import {
   type PluginSettingValue,
   PluginWatchSchema,
   ReadTextSchema,
+  RenameFileSchema,
+  WriteBytesSchema,
   SetExternalFolderSchema,
   PickProgramSchema,
   ConfirmAnswerSchema,
@@ -138,6 +141,12 @@ export const requestSchemas = {
   'notes:delete': NoteRefSchema,
   'files:read-text': ReadTextSchema,
   'files:reveal': ReadTextSchema,
+  'files:open': ReadTextSchema,
+  'files:preview': ReadTextSchema,
+  'files:mkdir': ReadTextSchema,
+  'files:remove': ReadTextSchema,
+  'files:rename': RenameFileSchema,
+  'files:write-bytes': WriteBytesSchema,
   'files:index': HistoryRefSchema,
   'plugins:list': z.undefined(),
   'plugins:inspect-local': InspectLocalSchema,
@@ -217,6 +226,12 @@ export interface InvokeResponses {
   'notes:delete': void;
   'files:read-text': string;
   'files:reveal': void;
+  'files:open': void;
+  'files:preview': TexturePreview;
+  'files:mkdir': void;
+  'files:remove': void;
+  'files:rename': void;
+  'files:write-bytes': void;
   'files:index': FileIndex;
   'plugins:list': InstalledPlugin[];
   'plugins:inspect-local': { path: string; manifest: PluginManifest } | { path: string; error: string } | null;

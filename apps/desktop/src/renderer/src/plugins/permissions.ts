@@ -15,6 +15,7 @@ export const PERMISSION_INFO: Record<Permission, PermissionInfo> = {
   secrets: { icon: 'key', label: 'permission.secrets', description: 'permission.secretsDesc' },
   'ui.theme': { icon: 'palette', label: 'permission.uiTheme', description: 'permission.uiThemeDesc' },
   'ui.provider': { icon: 'window-stack', label: 'permission.uiProvider', description: 'permission.uiProviderDesc' },
+  'ui.menus': { icon: 'menu-button-wide', label: 'permission.uiMenus', description: 'permission.uiMenusDesc' },
   exec: { icon: 'terminal', label: 'permission.exec', description: 'permission.execDesc' },
   'exec.system': { icon: 'terminal-plus', label: 'permission.execSystem', description: 'permission.execSystemDesc' },
   'discord.rpc': { icon: 'discord', label: 'permission.discordRpc', description: 'permission.discordRpcDesc' },

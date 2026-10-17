@@ -182,6 +182,7 @@ mod tests {
             source: "x".into(),
             external_folder: None,
             system_programs: BTreeMap::new(),
+            locales: BTreeMap::new(),
         }
     }
 

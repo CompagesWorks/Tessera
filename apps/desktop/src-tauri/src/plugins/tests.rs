@@ -74,6 +74,13 @@ fn builtin_plugins_are_registered_and_cannot_be_removed() {
     assert!(plugin.pending.is_empty());
     assert!(service.has_grant("test.plugin", Permission::FsProjectRead));
     assert_eq!(service.remove("test.plugin").unwrap_err().code, "builtin");
+    service.set_grants("test.plugin", &[]).unwrap();
+    fs::write(builtin.join("plugin/manifest.json"), serde_json::to_string(&manifest(json!({ "permissions": ["fs.project.read", "clipboard.write"] }))).unwrap()).unwrap();
+    service.sync_builtin(&builtin);
+    service.load();
+    assert!(service.get("test.plugin").unwrap().pending.is_empty());
+    assert!(service.has_grant("test.plugin", Permission::ClipboardWrite));
+    assert!(!service.has_grant("test.plugin", Permission::FsProjectRead));
     service.set_enabled("test.plugin", false).unwrap();
     service.sync_builtin(&builtin);
     service.load();
@@ -81,6 +88,20 @@ fn builtin_plugins_are_registered_and_cannot_be_removed() {
     fs::write(f.dir.path().join("plugins.json"), "{ broken").unwrap();
     service.sync_builtin(&builtin);
     assert_eq!(fs::read_to_string(f.dir.path().join("plugins.json")).unwrap(), "{ broken");
+}
+
+#[test]
+fn reads_valid_locales_only() {
+    let f = Fixture::new();
+    let locales = f.plugin_dir.join("locales");
+    fs::create_dir_all(&locales).unwrap();
+    fs::write(locales.join("fr.json"), r#"{ "convert": "Convertir", "widget.title": "Textures" }"#).unwrap();
+    fs::write(locales.join("en.json"), r#"{ "bad key!": "x" }"#).unwrap();
+    fs::write(locales.join("de.json"), "not json").unwrap();
+    fs::write(locales.join("english.json"), r#"{ "a": "b" }"#).unwrap();
+    let read = crate::schema::plugins::read_locales(&f.plugin_dir);
+    assert_eq!(read.keys().collect::<Vec<_>>(), vec!["fr"]);
+    assert_eq!(read["fr"]["convert"], "Convertir");
 }
 
 #[test]
@@ -114,6 +135,14 @@ fn reads_manifest_and_refuses_bad_ones() {
     assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "missing-entry");
     fs::write(f.plugin_dir.join("host.html"), "<p>host</p>").unwrap();
     assert_eq!(read_manifest(&f.plugin_dir).unwrap().contributes.titlebar[0].icon, "puzzle");
+    f.write(manifest(json!({ "contributes": { "fileActions": [{ "id": "convert", "title": "Convert", "extensions": ["png"] }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
+    f.write(manifest(json!({ "permissions": ["ui.menus"], "contributes": { "host": "host.html", "fileActions": [{ "id": "convert", "title": "Convert", "extensions": [".png"] }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
+    f.write(manifest(json!({ "permissions": ["ui.menus"], "contributes": { "host": "host.html", "fileActions": [{ "id": "convert", "title": "Convert", "extensions": ["PNG", "nutexb"] }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap().contributes.file_actions[0].extensions, vec!["png", "nutexb"]);
+    f.write(manifest(json!({ "contributes": { "host": "host.html", "fileActions": [{ "id": "convert", "title": "Convert", "extensions": ["png"] }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
     f.write(manifest(json!({ "icon": "icon.png" })));
     assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "missing-icon");
     fs::write(f.plugin_dir.join("icon.png"), [137, 80, 78, 71]).unwrap();
@@ -404,6 +433,20 @@ fn api_reads_and_writes_binary() {
     assert_eq!(fs::read(f.project.join("tex/a.nutexb")).unwrap(), bytes);
     assert_eq!(f.call("fs.readBytes", Some(json!({ "path": "tex/a.nutexb" }))).unwrap(), json!(encoded));
     assert_eq!(err(f.call("fs.writeBytes", Some(json!({ "path": "x.bin", "data": "not base64!" })))), "invalid params");
+}
+
+#[test]
+fn api_converts_textures_inside_the_project() {
+    let f = ApiFixture::new(json!(["fs.project.read", "fs.project.write"]), &[Permission::FsProjectRead, Permission::FsProjectWrite], Decision::Deny);
+    let mut png = std::io::Cursor::new(Vec::new());
+    image::RgbaImage::from_pixel(8, 8, image::Rgba([200, 30, 30, 255])).write_to(&mut png, image::ImageFormat::Png).unwrap();
+    fs::write(f.project.join("sources/col.png"), png.get_ref()).unwrap();
+    f.call("textures.convert", Some(json!({ "from": "sources/col.png", "to": "sources/col.nutexb" }))).unwrap();
+    f.call("textures.convert", Some(json!({ "from": "sources/col.nutexb", "to": "sources/back.png" }))).unwrap();
+    assert_eq!(image::open(f.project.join("sources/back.png")).unwrap().width(), 8);
+    assert_eq!(err(f.call("textures.convert", Some(json!({ "from": "sources/col.png", "to": ".tessera/x.nutexb" })))), "outside scope");
+    let read_only = ApiFixture::new(json!(["fs.project.read", "fs.project.write"]), &[Permission::FsProjectRead], Decision::Deny);
+    assert_eq!(err(read_only.call("textures.convert", Some(json!({ "from": "a.png", "to": "a.nutexb" })))), "permission denied: fs.project.write");
 }
 
 #[test]

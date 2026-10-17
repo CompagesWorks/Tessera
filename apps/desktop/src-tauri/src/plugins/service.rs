@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::schema::check;
-use crate::schema::plugins::{parse_manifest, permission_key, InstalledPlugin, Permission, PluginManifest, PluginMode, SystemProgram};
+use crate::schema::plugins::{parse_manifest, permission_key, read_locales, InstalledPlugin, Permission, PluginManifest, PluginMode, SystemProgram};
 use crate::util::paths::{inside, inside_or_same, realpath, relative_slash, resolve};
 use crate::util::time::mtime_ms;
 use crate::util::{json, Error, Result};
@@ -134,7 +134,8 @@ pub fn read_manifest(folder: &Path) -> PResult<PluginManifest> {
     }
     let widget_icons = manifest.contributes.widgets.iter().map(|w| &w.icon);
     let button_icons = manifest.contributes.titlebar.iter().map(|b| &b.icon);
-    for icon in std::iter::once(&manifest.icon).chain(widget_icons).chain(button_icons) {
+    let action_icons = manifest.contributes.file_actions.iter().map(|a| &a.icon);
+    for icon in std::iter::once(&manifest.icon).chain(widget_icons).chain(button_icons).chain(action_icons) {
         if check::ICON_IMAGE.is_match(icon) && !exists(icon) {
             return Err(PluginError::new("missing-icon", format!("Icon {icon} not found")));
         }
@@ -226,9 +227,21 @@ impl PluginService {
             let Ok(manifest) = read_manifest(&item.path()) else { continue };
             let path = realpath(&item.path()).unwrap_or_else(|_| item.path()).to_string_lossy().into_owned();
             match registry.plugins.iter_mut().find(|p| p.id == manifest.id) {
-                Some(entry) if entry.mode == PluginMode::Builtin && entry.path != path => {
-                    entry.path = path;
-                    changed = true;
+                Some(entry) if entry.mode == PluginMode::Builtin => {
+                    if entry.path != path {
+                        entry.path = path;
+                        changed = true;
+                    }
+                    for permission in &manifest.permissions {
+                        let key = permission_key(&manifest, *permission);
+                        if !entry.decided.contains(&key) {
+                            entry.decided.push(key);
+                            if !entry.granted.contains(permission) {
+                                entry.granted.push(*permission);
+                            }
+                            changed = true;
+                        }
+                    }
                 }
                 Some(_) => {}
                 None => {
@@ -575,6 +588,7 @@ fn list_of(state: &State) -> Vec<InstalledPlugin> {
                 source: entry.source.clone().unwrap_or_else(|| entry.path.clone()),
                 external_folder: entry.external.clone(),
                 system_programs: entry.programs.iter().filter(|(name, _)| manifest.system_programs.contains(name)).map(|(k, v)| (k.clone(), v.clone())).collect(),
+                locales: read_locales(Path::new(&entry.path)),
             })
         })
         .collect()

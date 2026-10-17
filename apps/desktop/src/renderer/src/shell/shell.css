@@ -119,3 +119,19 @@ body.is-project .tessera-workspaces {
   border-radius: 0 3px 3px 0;
   background: var(--atrium-accent-color);
 }
+
+.atrium-sidebar-btn.has-notice {
+  position: relative;
+}
+
+.atrium-sidebar-btn.has-notice::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--atrium-warning-color, #f0b429);
+  box-shadow: 0 0 0 2px var(--atrium-bg-secondary);
+}
