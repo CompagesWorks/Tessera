@@ -485,7 +485,7 @@ A previous copy is replaced only if Tessera deployed it (it leaves a `.tessera-d
 
 #### `tessera.textures.convert(from, to, options?)`
 
-Needs `fs.project.write` **and** `fs.project.read`. Converts a texture inside the project, picked from the extensions of `from` and `to`. `from` can be `.nutexb`, `.dds`, `.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tga` or `.tiff`; `to` can be `.nutexb`, `.dds` or `.png`. Works the same on Windows, macOS and Linux.
+Needs `fs.project.write` **and** `fs.project.read`. Converts a texture inside the project, picked from the extensions of `from` and `to`. `from` can be `.nutexb`, `.bntx`, `.dds`, `.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tga` or `.tiff`; `to` can be `.nutexb`, `.dds` or `.png`. Works the same on Windows, macOS and Linux.
 
 | Option | Values | Default |
 |---|---|---|

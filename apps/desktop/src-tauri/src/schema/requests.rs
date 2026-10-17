@@ -171,6 +171,12 @@ impl ProjectPath {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct GamebananaLink {
+    pub url: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProjectRename {
     pub id: String,
     pub from: String,

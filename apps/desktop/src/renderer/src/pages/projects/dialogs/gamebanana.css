@@ -1,0 +1,93 @@
+.tessera-gb {
+  min-width: min(480px, 80vw);
+}
+
+.tessera-gb-link {
+  display: flex;
+  gap: 8px;
+}
+
+.tessera-gb-link .atrium-input {
+  flex: 1;
+}
+
+.tessera-gb-mod {
+  display: grid;
+  gap: 14px;
+}
+
+.tessera-gb-mod[hidden],
+.tessera-gb-progress[hidden] {
+  display: none;
+}
+
+.tessera-gb-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--atrium-bg-tertiary);
+}
+
+.tessera-gb-image {
+  width: 132px;
+  aspect-ratio: 16 / 9;
+  flex: none;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--atrium-bg-secondary);
+}
+
+.tessera-gb-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tessera-gb-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-gb-remix {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tessera-gb-remix[data-remix='yes'] {
+  color: var(--atrium-success-color, #3fb950);
+}
+
+.tessera-gb-remix[data-remix='ask'],
+.tessera-gb-remix[data-remix='unknown'] {
+  color: var(--atrium-warning-color, #f0b429);
+}
+
+.tessera-gb-remix[data-remix='no'] {
+  color: var(--atrium-danger-color, #f85149);
+}
+
+.tessera-gb-progress {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-gb-progress progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--atrium-accent-color);
+}
+
+.tessera-gb .tessera-form-error:empty {
+  display: none;
+}
+
+.tessera-gb select.atrium-input {
+  width: 100%;
+}

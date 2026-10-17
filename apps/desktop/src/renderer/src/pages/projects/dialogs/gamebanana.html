@@ -1,0 +1,40 @@
+<div class="tessera-form tessera-gb">
+  <form class="tessera-gb-link" data-lookup>
+    <input class="atrium-input" data-url type="url" data-i18n-placeholder="gamebanana.linkPlaceholder" />
+    <button type="submit" class="atrium-btn atrium-btn-secondary" data-i18n="gamebanana.lookup"></button>
+  </form>
+  <div class="tessera-form-error" data-error></div>
+  <div class="tessera-gb-mod" data-mod hidden>
+    <div class="tessera-gb-card">
+      <div class="tessera-gb-image" data-image></div>
+      <div>
+        <b data-title></b>
+        <div class="tessera-gb-meta" data-meta></div>
+        <div class="tessera-gb-remix" data-remix></div>
+      </div>
+    </div>
+    <div class="tessera-form-field">
+      <label class="atrium-label" data-i18n="gamebanana.file"></label>
+      <select class="atrium-input" data-file></select>
+    </div>
+    <div class="tessera-form-field">
+      <label class="atrium-label" data-i18n="newProject.name"></label>
+      <input class="atrium-input" data-name maxlength="80" />
+    </div>
+    <div class="tessera-form-field">
+      <label class="atrium-label" data-i18n="newProject.kind"></label>
+      <div class="tessera-chip-list" data-kind></div>
+    </div>
+    <div class="tessera-form-field">
+      <label class="atrium-label" data-i18n="newProject.location"></label>
+      <div class="tessera-location">
+        <span class="tessera-location-path" data-location></span>
+        <button type="button" class="atrium-btn atrium-btn-secondary" data-change data-i18n="dialog.change"></button>
+      </div>
+    </div>
+  </div>
+  <div class="tessera-gb-progress" data-progress hidden>
+    <div data-phase></div>
+    <progress max="100" data-bar></progress>
+  </div>
+</div>

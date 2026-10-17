@@ -2,6 +2,7 @@ pub mod accounts;
 pub mod backups;
 pub mod commands;
 pub mod events;
+pub mod gamebanana;
 pub mod host;
 pub mod plugins;
 pub mod profile;

@@ -5,6 +5,7 @@ import { choose } from '../../components/dialogs/choose';
 import { editTag } from '../../components/dialogs/tag-editor';
 import { t } from '../../i18n';
 import { errorMessage } from '../../i18n/format';
+import { gamebananaDialog } from './dialogs/gamebanana';
 import { newProjectDialog } from './dialogs/new-project';
 import { pickTags } from './dialogs/pick-tags';
 
@@ -25,6 +26,13 @@ export function createProjectActions(ctx: AppContext) {
 
   async function newProject() {
     const project = await newProjectDialog(ui, store.current.defaultLocation);
+    if (!project) return;
+    store.replace(project);
+    await navigation.openProject(project.id);
+  }
+
+  async function fromGamebanana() {
+    const project = await gamebananaDialog(ui, store.current.defaultLocation);
     if (!project) return;
     store.replace(project);
     await navigation.openProject(project.id);
@@ -201,7 +209,7 @@ export function createProjectActions(ctx: AppContext) {
     ];
   }
 
-  return { newProject, importProject, projectMenu, createTag, createCollection, tagMenu, collectionMenu };
+  return { newProject, fromGamebanana, importProject, projectMenu, createTag, createCollection, tagMenu, collectionMenu };
 }
 
 export type ProjectActions = ReturnType<typeof createProjectActions>;

@@ -7,7 +7,7 @@ import { createPlayer, mediaEngine } from './player';
 export type PreviewKind = 'image' | 'video' | 'h264' | 'audio' | 'markdown' | 'text';
 
 const KINDS: [PreviewKind, RegExp][] = [
-  ['image', /\.(png|jpe?g|webp|gif|bmp|tga|tiff?|ico|dds|nutexb)$/i],
+  ['image', /\.(png|jpe?g|webp|gif|bmp|tga|tiff?|ico|dds|nutexb|bntx)$/i],
   ['video', /\.(mp4|m4v|webm|mov)$/i],
   ['h264', /\.h264$/i],
   ['audio', /\.(mp3|wav|ogg|flac|m4a)$/i],

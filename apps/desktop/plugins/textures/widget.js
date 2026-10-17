@@ -1,4 +1,4 @@
-const TEXTURE = /\.(nutexb|dds|png|jpe?g|webp|gif|bmp|tga|tiff?)$/i;
+const TEXTURE = /\.(nutexb|bntx|dds|png|jpe?g|webp|gif|bmp|tga|tiff?)$/i;
 
 const list = document.getElementById('list');
 const empty = document.getElementById('empty');

@@ -19,6 +19,7 @@ const FILE_ICONS: Record<string, string> = {
   ico: 'file-image',
   dds: 'file-image',
   nutexb: 'file-image',
+  bntx: 'file-image',
   mp4: 'file-play',
   m4v: 'file-play',
   webm: 'file-play',

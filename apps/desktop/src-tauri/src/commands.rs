@@ -8,6 +8,9 @@ use serde_json::{json, Map, Value};
 use tauri::{Manager, Runtime, Webview};
 
 use crate::backups::service::BackupReason;
+use crate::gamebanana::api::{lookup, mod_id};
+use crate::gamebanana::download::image_data_url;
+use crate::gamebanana::import::{import_mod, ImportRequest};
 use crate::plugins::api::Decision;
 use crate::plugins::archive::{unpack, PACKAGE_EXTENSION};
 use crate::plugins::exec::describe_program;
@@ -217,6 +220,32 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
             let mut r: CreateProject = parse(request)?;
             r.validate()?;
             value(s.projects.create(&r)?)
+        }
+        "gamebanana:lookup" => {
+            let r: GamebananaLink = parse(request)?;
+            let id = mod_id(&r.url).ok_or_else(|| Error::new("gamebanana: not a GameBanana mod link"))?;
+            value(lookup(id)?)
+        }
+        "gamebanana:image" => {
+            let r: GamebananaLink = parse(request)?;
+            value(image_data_url(&r.url)?)
+        }
+        "gamebanana:import" => {
+            let mut r: ImportRequest = parse(request)?;
+            r.validate()?;
+            let mut create = CreateProject { name: r.name.clone(), kind: r.kind, location: r.location.clone() };
+            create.validate()?;
+            r.name = create.name;
+            let last = std::cell::Cell::new(std::time::Instant::now() - std::time::Duration::from_secs(1));
+            let token = r.token.clone();
+            let app = s.app.clone();
+            value(import_mod(&s.projects, &r, |phase, done, total| {
+                if phase == "download" && done < total && last.get().elapsed() < std::time::Duration::from_millis(150) {
+                    return;
+                }
+                last.set(std::time::Instant::now());
+                crate::events::emit(&app, "gamebanana:progress", json!({ "token": token, "phase": phase, "done": done, "total": total }));
+            })?)
         }
         "projects:pick-location" => {
             none(&request)?;

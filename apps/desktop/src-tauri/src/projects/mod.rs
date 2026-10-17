@@ -1,3 +1,4 @@
+pub mod bntx;
 pub mod export;
 pub mod files;
 pub mod files_list;

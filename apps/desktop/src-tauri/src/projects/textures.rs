@@ -9,6 +9,7 @@ use image_dds::ddsfile::Dds;
 use image_dds::{dds_image_format, image_from_dds, ImageFormat, Mipmaps, Quality, SurfaceRgba8};
 use nutexb::NutexbFile;
 
+use super::bntx::read_bntx;
 use crate::util::{Error, Result};
 
 const PREVIEW_SIZE: u32 = 512;
@@ -16,6 +17,7 @@ const PREVIEW_SIZE: u32 = 512;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Image(FileFormat),
+    Bntx,
     Dds,
     Nutexb,
 }
@@ -85,6 +87,7 @@ fn kind(path: &str) -> Result<Kind> {
     let extension = Path::new(path).extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
     match extension.as_str() {
         "dds" => Ok(Kind::Dds),
+        "bntx" => Ok(Kind::Bntx),
         "nutexb" => Ok(Kind::Nutexb),
         _ => FileFormat::from_extension(&extension).filter(|f| f.reading_enabled()).map(Kind::Image).ok_or_else(|| Error::new(format!("unsupported image type .{extension}"))),
     }
@@ -94,6 +97,7 @@ fn read(bytes: &[u8], kind: Kind) -> Result<Source> {
     Ok(match kind {
         Kind::Image(format) => Source::Image(image::load_from_memory_with_format(bytes, format).map_err(bad)?.to_rgba8()),
         Kind::Dds => Source::Dds(Dds::read(Cursor::new(bytes)).map_err(bad)?),
+        Kind::Bntx => Source::Dds(read_bntx(bytes)?),
         Kind::Nutexb => Source::Dds(NutexbFile::read(&mut Cursor::new(bytes)).map_err(bad)?.to_dds().map_err(bad)?),
     })
 }
@@ -122,6 +126,9 @@ pub fn preview_texture(bytes: &[u8], path: &str) -> Result<Preview> {
 
 pub fn convert_texture(source: &[u8], from: &str, to: &str, existing: Option<&[u8]>, options: &Options) -> Result<Vec<u8>> {
     let output = kind(to)?;
+    if output == Kind::Bntx {
+        return Err(Error::new("can only convert to .png, .dds or .nutexb"));
+    }
     let input = read(source, kind(from)?)?;
     let mut out = Cursor::new(Vec::new());
     if let Kind::Image(other) = output {

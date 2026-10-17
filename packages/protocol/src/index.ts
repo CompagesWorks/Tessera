@@ -1,3 +1,4 @@
+import { GbImportSchema, GbLinkSchema, type GbMod, type GbProgress } from './gamebanana';
 import { z } from 'zod';
 import type { EventChannel, InvokeChannel } from './channels';
 import {
@@ -80,6 +81,7 @@ import {
 } from './tools';
 
 export * from './channels';
+export * from './gamebanana';
 export * from './projects';
 export * from './layout';
 export * from './plugins';
@@ -118,6 +120,9 @@ export const requestSchemas = {
   'settings:update': SettingsPatchSchema,
   'projects:home': z.undefined(),
   'projects:create': CreateProjectSchema,
+  'gamebanana:lookup': GbLinkSchema,
+  'gamebanana:image': GbLinkSchema,
+  'gamebanana:import': GbImportSchema,
   'projects:pick-location': z.undefined(),
   'projects:import': z.undefined(),
   'projects:open': ProjectRefSchema,
@@ -203,6 +208,9 @@ export interface InvokeResponses {
   'settings:update': Settings;
   'projects:home': HomeData;
   'projects:create': ProjectSummary;
+  'gamebanana:lookup': GbMod;
+  'gamebanana:image': string;
+  'gamebanana:import': ProjectSummary;
   'projects:pick-location': string | null;
   'projects:import': ProjectSummary | null;
   'projects:open': ProjectSummary;
@@ -290,6 +298,7 @@ export interface EventPayloads {
   'history:changed': { projectId: string };
   'plugins:settings-changed': { id: string; values: Record<string, PluginSettingValue> };
   'plugins:confirm': ConfirmRequest;
+  'gamebanana:progress': GbProgress;
   'plugin:exec-output': { pluginId: string; stream: string; kind: 'stdout' | 'stderr'; text: string };
 }
 

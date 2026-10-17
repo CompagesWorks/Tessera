@@ -144,6 +144,7 @@ export const projectsPage: Page = {
       render(store.current);
     });
     required(root, '[data-new]').addEventListener('click', () => void actions.newProject());
+    required(root, '[data-gamebanana]').addEventListener('click', () => void actions.fromGamebanana());
     required(root, '[data-import]').addEventListener('click', () => void actions.importProject());
 
     relabel = () => {
