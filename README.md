@@ -1,3 +1,4 @@
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/logo.svg">
@@ -5,7 +6,15 @@
   </picture>
 </p>
 
-<p align="center">A plugin-based tool to create Super Smash Bros. Ultimate mods.</p>
+<p align="center">
+  A plugin-based tool to create Super Smash Bros. Ultimate mods.
+</p>
+
+<p align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=tauri,rust,html,css,ts" alt="Tessera Use">
+  </a>
+</p>
 
 ## Development
 
