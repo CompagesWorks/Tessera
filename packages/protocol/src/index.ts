@@ -1,4 +1,4 @@
-import { GbImportSchema, GbLinkSchema, type GbMod, type GbProgress } from './gamebanana';
+import { GbImportSchema, GbLinkSchema, GbPostRefSchema, GbPostsSchema, GbReplySchema, GbStampSchema, type GbMember, type GbPost, type GbStamp, type GbStampChoice, type GbMod, type GbProgress } from './gamebanana';
 import { z } from 'zod';
 import type { EventChannel, InvokeChannel } from './channels';
 import {
@@ -122,6 +122,11 @@ export const requestSchemas = {
   'projects:create': CreateProjectSchema,
   'gamebanana:lookup': GbLinkSchema,
   'gamebanana:image': GbLinkSchema,
+  'gamebanana:member': z.undefined(),
+  'gamebanana:posts': GbPostsSchema,
+  'gamebanana:reply': GbReplySchema,
+  'gamebanana:stamps': GbPostRefSchema,
+  'gamebanana:stamp': GbStampSchema,
   'gamebanana:import': GbImportSchema,
   'projects:pick-location': z.undefined(),
   'projects:import': z.undefined(),
@@ -210,6 +215,11 @@ export interface InvokeResponses {
   'projects:create': ProjectSummary;
   'gamebanana:lookup': GbMod;
   'gamebanana:image': string;
+  'gamebanana:member': GbMember;
+  'gamebanana:posts': GbPost[];
+  'gamebanana:reply': void;
+  'gamebanana:stamps': GbStampChoice;
+  'gamebanana:stamp': GbStamp[];
   'gamebanana:import': ProjectSummary;
   'projects:pick-location': string | null;
   'projects:import': ProjectSummary | null;

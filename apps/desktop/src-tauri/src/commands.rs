@@ -226,6 +226,41 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
             let id = mod_id(&r.url).ok_or_else(|| Error::new("gamebanana: not a GameBanana mod link"))?;
             value(lookup(id)?)
         }
+        "gamebanana:member" => {
+            none(&request)?;
+            let account = s.settings.current().accounts.gamebanana.ok_or_else(|| Error::new("account:not-linked"))?;
+            value(crate::gamebanana::member::member(account.member_id, s.accounts.gamebanana_session()?.as_deref())?)
+        }
+        "gamebanana:posts" => {
+            let r: GamebananaPosts = parse(request)?;
+            let (of, id) = match (r.mod_id, r.post_id) {
+                (Some(id), None) => ("Mod", id),
+                (None, Some(id)) => ("Post", id),
+                _ => return Err(Error::new("gamebanana: give a mod or a post")),
+            };
+            value(crate::gamebanana::member::posts(of, id, s.accounts.gamebanana_session()?.as_deref())?)
+        }
+        "gamebanana:stamps" => {
+            let r: GamebananaPost = parse(request)?;
+            let session = s.accounts.gamebanana_session()?.ok_or_else(|| Error::new("account:not-signed-in"))?;
+            value(crate::gamebanana::member::stamp_choice(r.post_id, &session)?)
+        }
+        "gamebanana:stamp" => {
+            let r: GamebananaStamp = parse(request)?;
+            if r.stamp_ids.len() > 32 {
+                return Err(Error::new("gamebanana: too many stamps"));
+            }
+            let session = s.accounts.gamebanana_session()?.ok_or_else(|| Error::new("account:not-signed-in"))?;
+            value(crate::gamebanana::member::set_stamps(r.post_id, &r.stamp_ids, &session)?)
+        }
+        "gamebanana:reply" => {
+            let r: GamebananaReply = parse(request)?;
+            let text = check::js_trim(&r.text);
+            check::text("text", &text, 1, 5000)?;
+            let session = s.accounts.gamebanana_session()?.ok_or_else(|| Error::new("account:not-signed-in"))?;
+            crate::gamebanana::member::reply(r.post_id, &text, &session)?;
+            Ok(Value::Null)
+        }
         "gamebanana:image" => {
             let r: GamebananaLink = parse(request)?;
             value(image_data_url(&r.url)?)
@@ -661,6 +696,15 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
                     let member = check::js_trim(&member);
                     check::text("member", &member, 1, 200)?;
                     accounts.gamebanana = Some(s.accounts.connect_gamebanana(&member)?);
+                }
+                ConnectAccount::GamebananaLogin { username, password, code } => {
+                    let username = check::js_trim(&username);
+                    check::text("username", &username, 1, 100)?;
+                    check::text("password", &password, 1, 200)?;
+                    if code.as_deref().is_some_and(|c| c.len() != 6 || !c.bytes().all(|b| b.is_ascii_digit())) {
+                        return Err(Error::new("account:invalid-2fa"));
+                    }
+                    accounts.gamebanana = Some(s.accounts.login_gamebanana(&username, &password, code.as_deref())?);
                 }
             }
             value(s.settings.set_accounts(accounts)?)

@@ -21,6 +21,40 @@ fn account_error(code: &str) -> Error {
     Error::new(format!("account:{code}"))
 }
 
+pub fn cookie_header<'a>(set_cookies: impl Iterator<Item = &'a str>) -> String {
+    set_cookies.filter_map(|c| c.split(';').next()).map(str::trim).filter(|pair| pair.contains('=') && !pair.ends_with('=')).collect::<Vec<_>>().join("; ")
+}
+
+fn id_of(value: &Value, key: &str) -> Option<i64> {
+    let v = value.get(key)?;
+    v.as_i64().or_else(|| v.as_str()?.parse().ok()).filter(|n| *n > 0)
+}
+
+pub fn session_member(login: &Value, session: &Value) -> Option<GamebananaAccount> {
+    let member_id = id_of(login, "_idRow")?;
+    let name = login.get("_sUsername").and_then(Value::as_str).filter(|n| !n.is_empty())?;
+    let logged_in = session.get("_bIsLoggedIn").and_then(Value::as_bool) == Some(true) && id_of(session, "_idMemberRow") == Some(member_id);
+    logged_in.then(|| GamebananaAccount { member_id, name: name.chars().take(80).collect() })
+}
+
+fn shape(value: &Value) -> String {
+    match value {
+        Value::Object(map) => format!("{{{}}}", map.iter().map(|(k, v)| match v { Value::Object(_) => format!("{k}{}", shape(v)), Value::Bool(b) => format!("{k}={b}"), _ => k.clone() }).collect::<Vec<_>>().join(",")),
+        Value::Bool(b) => b.to_string(),
+        _ => "-".into(),
+    }
+}
+
+pub fn login_refusal(body: &Value) -> Option<String> {
+    let fields = body.get("_aErrorData").and_then(Value::as_object);
+    let mut reasons: Vec<String> = fields.map(|f| f.values().filter_map(|e| e.get("_sErrorMessage")?.as_str()).map(crate::gamebanana::member::plain_text).collect()).unwrap_or_default();
+    if reasons.is_empty() {
+        reasons.extend(body.get("_sErrorMessage").and_then(Value::as_str).map(crate::gamebanana::member::plain_text));
+    }
+    reasons.retain(|r| !r.is_empty());
+    (!reasons.is_empty()).then(|| reasons.join(" "))
+}
+
 type Fetch = Arc<dyn Fn(&str, &[(&str, &str)]) -> Option<(u16, Value)> + Send + Sync>;
 
 pub fn member_id_of(input: &str) -> Option<i64> {
@@ -75,11 +109,59 @@ impl AccountService {
         }
     }
 
-    pub fn disconnect(&self, service: AccountKind) -> Result<()> {
-        if service == AccountKind::Github {
-            self.secrets.delete(ACCOUNT_OWNER, "github")?;
+    pub fn login_gamebanana(&self, username: &str, password: &str, code: Option<&str>) -> Result<GamebananaAccount> {
+        let mut form = serde_json::json!({ "_sUsername": username, "_sPassword": password });
+        if let Some(code) = code {
+            form["_nTotp"] = Value::from(code);
         }
-        Ok(())
+        let http = crate::gamebanana::api::client(Duration::from_secs(20)).map_err(|_| account_error("offline"))?;
+        let response = http
+            .post(format!("{GAMEBANANA_MEMBER}/Authenticate"))
+            .json(&form)
+            .send()
+            .map_err(|_| account_error("offline"))?;
+        let status = response.status().as_u16();
+        let cookies = cookie_header(response.headers().get_all(reqwest::header::SET_COOKIE).iter().filter_map(|v| v.to_str().ok()));
+        let body: Value = response.json().unwrap_or(Value::Null);
+        match body.pointer("/_aErrorData/_sVerificationMethod").and_then(Value::as_str) {
+            Some("2fa") => return Err(account_error(if code.is_some() { "bad-2fa" } else { "needs-2fa" })),
+            Some(_) => return Err(account_error("captcha")),
+            None => {}
+        }
+        if let Some(reason) = login_refusal(&body) {
+            return Err(Error::new(format!("gamebanana-says: {reason}")));
+        }
+        if status == 401 || status == 403 {
+            return Err(account_error("bad-login"));
+        }
+        if status != 200 || cookies.is_empty() || body.get("_sErrorCode").is_some() {
+            let fields = body.as_object().map(|o| o.keys().cloned().collect::<Vec<_>>().join(", ")).unwrap_or_default();
+            return Err(Error::new(format!("gamebanana-says: unexpected answer (HTTP {status}, cookies: {}, fields: {fields})", !cookies.is_empty())));
+        }
+        let session: Value = http
+            .get(format!("{GAMEBANANA_MEMBER}/Session"))
+            .header(reqwest::header::COOKIE, &cookies)
+            .send()
+            .and_then(|r| r.json())
+            .map_err(|_| account_error("offline"))?;
+        let Some(account) = session_member(&body, &session) else {
+            let names: Vec<&str> = cookies.split("; ").filter_map(|c| c.split('=').next()).collect();
+            return Err(Error::new(format!("gamebanana-says: unexpected session (cookies: {}, login: {}, session: {})", names.join(","), shape(&body), shape(&session))));
+        };
+        self.secrets.set(ACCOUNT_OWNER, "gamebanana", &cookies).map_err(|_| account_error("no-encryption"))?;
+        Ok(account)
+    }
+
+    pub fn disconnect(&self, service: AccountKind) -> Result<()> {
+        let key = match service {
+            AccountKind::Github => "github",
+            AccountKind::Gamebanana => "gamebanana",
+        };
+        self.secrets.delete(ACCOUNT_OWNER, key)
+    }
+
+    pub fn gamebanana_session(&self) -> Result<Option<String>> {
+        self.secrets.get(ACCOUNT_OWNER, "gamebanana")
     }
 
     pub fn github_token(&self) -> Result<Option<String>> {
@@ -123,5 +205,22 @@ mod tests {
         let accounts = service(dir.path(), 200, json!({ "_idRow": 42, "_sName": "Mario" }));
         assert_eq!(accounts.connect_gamebanana("42").unwrap().name, "Mario");
         assert_eq!(accounts.connect_gamebanana("43").unwrap_err().0, "account:not-found");
+    }
+
+    #[test]
+    fn reads_gamebanana_sessions() {
+        let cookies = ["sess=abc; path=/; HttpOnly", "rd=1; Secure", "empty=; Max-Age=0", "junk"];
+        assert_eq!(cookie_header(cookies.into_iter()), "sess=abc; rd=1");
+        let login = json!({ "_sStatus": "SUCCESS", "_idRow": 42, "_sUsername": "Mario" });
+        let member = session_member(&login, &json!({ "_bIsLoggedIn": true, "_idMemberRow": 42 })).unwrap();
+        assert_eq!((member.member_id, member.name.as_str()), (42, "Mario"));
+        assert!(session_member(&login, &json!({ "_bIsLoggedIn": true, "_idMemberRow": 7 })).is_none());
+        assert!(session_member(&login, &json!({ "_bIsLoggedIn": false })).is_none());
+        assert!(session_member(&json!({ "_idRow": "42", "_sUsername": "Mario" }), &json!({ "_bIsLoggedIn": true, "_idMemberRow": "42" })).is_some());
+        let refused = json!({ "_sErrorCode": "INPUT_ERRORS", "_aErrorData": { "_sUsername": { "_sErrorCode": "NO_SUCH_RECORD", "_sErrorMessage": "This account <b>doesn't</b> exist" } } });
+        assert_eq!(login_refusal(&refused).as_deref(), Some("This account doesn't exist"));
+        assert_eq!(login_refusal(&json!({ "_sErrorCode": "X", "_sErrorMessage": "Slow down" })).as_deref(), Some("Slow down"));
+        assert_eq!(login_refusal(&json!({ "_bSuccess": true })), None);
+        assert_eq!(shape(&json!({ "_bIsLoggedIn": true, "_aMember": { "_idRow": 1, "_sName": "secret" } })), "{_bIsLoggedIn=true,_aMember{_idRow,_sName}}");
     }
 }

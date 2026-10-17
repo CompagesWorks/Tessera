@@ -176,6 +176,33 @@ pub struct GamebananaLink {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct GamebananaPosts {
+    pub mod_id: Option<u64>,
+    pub post_id: Option<u64>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct GamebananaReply {
+    pub post_id: u64,
+    pub text: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct GamebananaPost {
+    pub post_id: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct GamebananaStamp {
+    pub post_id: u64,
+    pub stamp_ids: Vec<u64>,
+}
+
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectRename {
     pub id: String,
@@ -381,6 +408,8 @@ pub struct PickFile {
 pub enum ConnectAccount {
     Github { token: String },
     Gamebanana { member: String },
+    #[serde(rename = "gamebanana-login")]
+    GamebananaLogin { username: String, password: String, code: Option<String> },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]

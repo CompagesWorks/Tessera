@@ -1,4 +1,5 @@
 import type { AccountService, InvokeRequest } from '@tessera/protocol';
+import '../../../components/dialogs/dialogs.css';
 import { t, type MessageKey } from '../../../i18n';
 import { errorMessage } from '../../../i18n/format';
 import { button, group, note, row, section } from '../controls';
@@ -32,6 +33,61 @@ async function disconnect({ ui }: TabContext, service: AccountService) {
   } catch (error) {
     ui.toast('error', errorMessage(error));
   }
+}
+
+function field(label: string, input: HTMLInputElement): HTMLElement {
+  const wrap = document.createElement('label');
+  wrap.className = 'tessera-form-field';
+  input.className = 'atrium-input';
+  wrap.append(label, input);
+  return wrap;
+}
+
+function gamebananaLogin(ctx: TabContext) {
+  const username = document.createElement('input');
+  username.autocomplete = 'username';
+  const password = document.createElement('input');
+  password.type = 'password';
+  password.autocomplete = 'current-password';
+  const code = document.createElement('input');
+  code.autocomplete = 'one-time-code';
+  code.inputMode = 'numeric';
+  code.maxLength = 6;
+  code.placeholder = t('settings.accounts.codeHint');
+  const message = document.createElement('p');
+  message.textContent = t('settings.accounts.gamebananaLoginMessage');
+  const body = document.createElement('div');
+  body.className = 'tessera-form';
+  body.append(message, field(t('settings.accounts.username'), username), field(t('settings.accounts.password'), password), field(t('settings.accounts.code'), code));
+  let busy = false;
+  const submit = async () => {
+    if (busy || !username.value.trim() || !password.value) return false;
+    busy = true;
+    const totp = code.value.trim();
+    const done = await connect(ctx, { service: 'gamebanana-login', username: username.value, password: password.value, ...(totp ? { code: totp } : {}) }, 'settings.accounts.gamebananaDone');
+    code.value = '';
+    busy = false;
+    return done;
+  };
+  ctx.ui.atrium.modal.open({
+    title: t('settings.accounts.gamebananaLogin'),
+    icon: 'key',
+    body,
+    clickOverlayToClose: false,
+    buttons: [
+      { text: t('dialog.cancel'), variant: 'cancel' },
+      {
+        text: t('settings.accounts.connect'),
+        variant: 'primary',
+        onClick: async (_event, modal) => {
+          const done = await submit();
+          if (!done) modal.shake();
+          return done;
+        },
+      },
+    ],
+  });
+  requestAnimationFrame(() => username.focus());
 }
 
 function connectedRow(title: string, description: string, onDisconnect: () => void, mark: HTMLElement): HTMLElement {
@@ -91,6 +147,7 @@ export const accountsTab: SettingsTab = {
               });
               if (member) await connect(ctx, { service: 'gamebanana', member }, 'settings.accounts.gamebananaDone');
             }),
+            button(t('settings.accounts.gamebananaLogin'), 'key', () => gamebananaLogin(ctx)),
             button(t('settings.accounts.findMember'), 'box-arrow-up-right', () => void window.tessera.invoke('app:open-external', { url: GAMEBANANA_URL })),
           );
           el.querySelector('.tessera-set-text b')?.prepend(badge('GB', 'is-gamebanana'));

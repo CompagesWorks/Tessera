@@ -21,6 +21,7 @@ export type AccountService = z.infer<typeof AccountServiceSchema>;
 export const ConnectAccountSchema = z.discriminatedUnion('service', [
   z.object({ service: z.literal('github'), token: z.string().trim().min(20).max(255) }).strict(),
   z.object({ service: z.literal('gamebanana'), member: z.string().trim().min(1).max(200) }).strict(),
+  z.object({ service: z.literal('gamebanana-login'), username: z.string().trim().min(1).max(100), password: z.string().min(1).max(200), code: z.string().regex(/^\d{6}$/).optional() }).strict(),
 ]);
 export const DisconnectAccountSchema = z.object({ service: AccountServiceSchema }).strict();
 
