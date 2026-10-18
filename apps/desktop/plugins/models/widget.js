@@ -93,6 +93,10 @@ function meshRow(object, index) {
     show();
   });
   li.append(check, name, material);
+  li.addEventListener('pointerenter', () => viewer?.setHighlight(index));
+  li.addEventListener('pointerleave', () => viewer?.setHighlight(null));
+  li.addEventListener('focusin', () => viewer?.setHighlight(index));
+  li.addEventListener('focusout', () => viewer?.setHighlight(null));
   return li;
 }
 

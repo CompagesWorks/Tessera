@@ -7,6 +7,7 @@ in vec4 weights;
 uniform mat4 view;
 uniform mat4 projection;
 uniform sampler2D boneMatrices;
+uniform vec2 outline;
 out vec3 vNormal;
 out vec2 vUv;
 mat4 bone(float index) {
@@ -19,6 +20,8 @@ void main() {
   vNormal = mat3(view) * mat3(skin) * normal;
   vUv = uv;
   gl_Position = projection * view * skin * vec4(position, 1.0);
+  vec2 push = (projection * view * skin * vec4(normal, 0.0)).xy;
+  if (dot(push, push) > 0.0) gl_Position.xy += normalize(push) * outline * gl_Position.w;
 }`;
 
 const LINE_VERTEX = `#version 300 es
@@ -43,8 +46,13 @@ precision mediump float;
 in vec3 vNormal;
 in vec2 vUv;
 uniform sampler2D color;
+uniform vec4 tint;
 out vec4 outColor;
 void main() {
+  if (tint.a > 0.0) {
+    outColor = tint;
+    return;
+  }
   vec4 base = texture(color, vUv);
   float light = 0.35 + 0.65 * abs(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0)));
   outColor = vec4(base.rgb * light, 1.0);
@@ -66,7 +74,7 @@ function orbitView(yaw, pitch, distance, target) {
 }
 
 function createViewer(canvas) {
-  const gl = canvas.getContext('webgl2', { antialias: true, alpha: true });
+  const gl = canvas.getContext('webgl2', { antialias: true, alpha: true, stencil: true });
   if (!gl) throw new Error('webgl2');
   const shader = (type, source) => {
     const s = gl.createShader(type);
@@ -107,6 +115,8 @@ function createViewer(canvas) {
   let lineCount = 0;
   let jointCount = 0;
   let showBones = false;
+  let highlight = null;
+  const accent = (getComputedStyle(document.documentElement).getPropertyValue('--atrium-accent-rgb') || '88, 140, 255').split(',').map((v) => Number(v) / 255);
   const white = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, white);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([200, 200, 200, 255]));
@@ -137,7 +147,7 @@ function createViewer(canvas) {
     if (canvas.width !== width || canvas.height !== height) Object.assign(canvas, { width, height });
     gl.viewport(0, 0, width, height);
     gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
     const viewMatrix = orbitView(camera.yaw, camera.pitch, camera.distance, camera.target);
     const projectionMatrix = perspective(0.8, width / height, camera.radius / 100, camera.distance + camera.radius * 4);
@@ -146,11 +156,30 @@ function createViewer(canvas) {
     gl.uniform1i(uniform('boneMatrices'), 1);
     gl.uniformMatrix4fv(uniform('view'), false, viewMatrix);
     gl.uniformMatrix4fv(uniform('projection'), false, projectionMatrix);
+    gl.uniform2f(uniform('outline'), 0, 0);
+    gl.uniform4f(uniform('tint'), 0, 0, 0, 0);
     for (const draw of draws) {
       if (!draw.visible) continue;
       gl.bindVertexArray(draw.vao);
       gl.bindTexture(gl.TEXTURE_2D, draw.texture ?? white);
       gl.drawElements(gl.TRIANGLES, draw.count, gl.UNSIGNED_INT, 0);
+    }
+    const marked = highlight === null ? null : draws[highlight];
+    if (marked) {
+      gl.bindVertexArray(marked.vao);
+      gl.disable(gl.DEPTH_TEST);
+      gl.enable(gl.STENCIL_TEST);
+      gl.stencilFunc(gl.ALWAYS, 1, 0xff);
+      gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+      gl.colorMask(false, false, false, false);
+      gl.drawElements(gl.TRIANGLES, marked.count, gl.UNSIGNED_INT, 0);
+      gl.colorMask(true, true, true, true);
+      gl.stencilFunc(gl.NOTEQUAL, 1, 0xff);
+      gl.uniform2f(uniform('outline'), (3 * devicePixelRatio * 2) / width, (3 * devicePixelRatio * 2) / height);
+      gl.uniform4f(uniform('tint'), accent[0], accent[1], accent[2], 1);
+      gl.drawElements(gl.TRIANGLES, marked.count, gl.UNSIGNED_INT, 0);
+      gl.disable(gl.STENCIL_TEST);
+      gl.enable(gl.DEPTH_TEST);
     }
     if (showBones && jointCount) {
       gl.disable(gl.DEPTH_TEST);
@@ -171,6 +200,7 @@ function createViewer(canvas) {
 
   function setObjects(objects, box) {
     for (const draw of draws) gl.deleteVertexArray(draw.vao);
+    highlight = null;
     draws = objects.map((object) => {
       const vao = gl.createVertexArray();
       gl.bindVertexArray(vao);
@@ -233,6 +263,11 @@ function createViewer(canvas) {
     redraw();
   }
 
+  function setHighlight(index) {
+    highlight = index;
+    redraw();
+  }
+
   function setVisible(index, visible) {
     draws[index].visible = visible;
     redraw();
@@ -267,5 +302,5 @@ function createViewer(canvas) {
   }, { passive: false });
   new ResizeObserver(redraw).observe(canvas);
 
-  return { setObjects, setTexture, setVisible, setSkeleton, setPose, setBonesVisible, fit };
+  return { setObjects, setTexture, setVisible, setHighlight, setSkeleton, setPose, setBonesVisible, fit };
 }
