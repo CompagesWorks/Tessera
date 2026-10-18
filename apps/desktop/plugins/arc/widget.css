@@ -31,8 +31,14 @@ body[aria-busy='true'] button {
   border-bottom: 1px solid var(--atrium-border-color);
 }
 
-#where {
+#search {
   flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+
+#where {
+  max-width: 40%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

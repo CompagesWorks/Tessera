@@ -560,6 +560,10 @@ Asks the user to pick a Smash Ultimate `.arc` file and keeps it as the plugin's 
 
 Lists a folder of the picked `data.arc` (or of the `data.arc` inside a picked [outside folder](#outside-folder)), with [smash-arc](https://docs.rs/smash-arc): `[{ name, path, dir, size }]`, folders first. `''` is the root, `stream:` holds the streamed files. The first call downloads the file names ([archive-hashes](https://github.com/ultimate-research/archive-hashes), about 5 MB) once and keeps the arc open. Unnamed entries show as `0x…` hashes. Sizes are for the US English region. Needs `fs.external`.
 
+#### `tessera.arc.search(query)`
+
+Finds arc files and folders whose path contains every word of `query` (case-insensitive), in the same shape as `tessera.arc.list`, folders first, 300 results at most. The first search indexes the whole arc, which takes a few seconds. Needs `fs.external`.
+
 #### `tessera.arc.extract(path)`
 
 Extracts an arc file, or a folder with everything under it, to `extracted/<path>` in the project, outside `sources` so nothing extracted gets deployed (`stream:` becomes `stream;`, as ARCropolis expects). Files already in the project are kept, never overwritten. Resolves to `{ written, skipped, failed }`. Needs `fs.project.write` and `fs.external`.

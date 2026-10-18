@@ -14,6 +14,8 @@ const REGION: Region = Region::UsEnglish;
 
 static OPEN: Mutex<Option<(PathBuf, Arc<ArcFile>)>> = Mutex::new(None);
 static LABELS: Mutex<bool> = Mutex::new(false);
+static INDEX: Mutex<Option<(usize, Arc<Vec<(String, bool)>>)>> = Mutex::new(None);
+const MAX_RESULTS: usize = 300;
 
 #[derive(Serialize)]
 pub struct ArcEntry {
@@ -122,6 +124,57 @@ pub fn walk_arc(arc: &ArcFile, path: &str, found: &mut Vec<String>) {
     }
 }
 
+fn index(arc: &ArcFile, path: &str, found: &mut Vec<(String, bool)>) {
+    for node in arc.get_dir_listing(hash_of(path)).unwrap_or_default() {
+        match node {
+            FileNode::Dir(hash) => {
+                let dir = label(*hash);
+                index(arc, &dir, found);
+                found.push((dir, true));
+            }
+            FileNode::File(hash) => found.push((file_label(arc, *hash), false)),
+        }
+    }
+}
+
+fn matches(path: &str, terms: &[String]) -> bool {
+    terms.iter().all(|term| path.contains(term.as_str()))
+}
+
+pub fn search_arc(arc: &Arc<ArcFile>, query: &str) -> Vec<ArcEntry> {
+    let terms: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
+    if terms.is_empty() {
+        return Vec::new();
+    }
+    let key = Arc::as_ptr(arc) as usize;
+    let paths = {
+        let mut cached = INDEX.lock().unwrap();
+        match cached.as_ref() {
+            Some((k, paths)) if *k == key => paths.clone(),
+            _ => {
+                let mut found = Vec::new();
+                index(arc, "", &mut found);
+                let paths = Arc::new(found);
+                *cached = Some((key, paths.clone()));
+                paths
+            }
+        }
+    };
+    let mut entries: Vec<ArcEntry> = paths
+        .iter()
+        .filter(|(path, _)| matches(path, &terms))
+        .take(MAX_RESULTS)
+        .map(|(path, dir)| ArcEntry {
+            name: path.trim_end_matches('/').rsplit('/').next().unwrap_or_default().to_string(),
+            path: path.clone(),
+            dir: *dir,
+            size: if *dir { None } else { arc.get_file_metadata(hash_of(path), REGION).ok().map(|m| m.decomp_size) },
+        })
+        .collect();
+    entries.sort_by(|a, b| b.dir.cmp(&a.dir).then_with(|| a.path.cmp(&b.path)));
+    entries
+}
+
 pub fn read_arc(arc: &ArcFile, path: &str) -> Result<Vec<u8>> {
     arc.get_file_contents(hash_of(path), REGION).map_err(|e| Error::new(format!("{path}: {e:?}")))
 }
@@ -136,6 +189,9 @@ mod tests {
         assert_eq!(mod_path("stream:/sound/bgm/bgm_a01.nus3audio"), "stream;/sound/bgm/bgm_a01.nus3audio");
         assert_eq!(hash_of("0x1f").as_u64(), 0x1f);
         assert_eq!(hash_of(""), Hash40::from("/"));
+        let terms = vec!["mario".to_string(), "c00".to_string()];
+        assert!(matches("fighter/mario/model/body/c00/model.numdlb", &terms));
+        assert!(!matches("fighter/luigi/model/body/c00/model.numdlb", &terms));
     }
 }
 

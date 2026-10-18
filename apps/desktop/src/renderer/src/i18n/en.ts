@@ -219,6 +219,7 @@ export const en: Record<keyof typeof fr, string> = {
   'widget.explorer.description': 'Project files',
   'widget.explorer.refresh': 'Refresh',
   'widget.explorer.empty': 'Empty folder',
+  'widget.explorer.search': 'Search files…',
   'widget.explorer.closePreview': 'Close preview',
   'widget.explorer.loading': 'Loading…',
   'widget.explorer.mipmaps': '{{count}} mipmaps',

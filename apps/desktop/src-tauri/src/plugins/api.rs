@@ -8,7 +8,7 @@ use base64::Engine;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::projects::arc::{list_arc, mod_path, open_arc, read_arc, walk_arc};
+use crate::projects::arc::{list_arc, mod_path, open_arc, read_arc, search_arc, walk_arc};
 use crate::projects::export::deploy_project;
 use crate::projects::files::TESSERA_DIR;
 use crate::projects::history::{HistoryService, Meta};
@@ -702,6 +702,14 @@ impl PluginApi {
                 let p: ArcParams = object(params)?;
                 let target = format!("arc:{}", p.path);
                 prepared(Permission::FsExternal, "arc.list", target, Box::new(move || to_value(list_arc(&*self.open_arc(ctx)?, &p.path)?)))
+            }
+            "arc.search" => {
+                let p: ArcParams = object(params)?;
+                if p.path.chars().count() > 200 {
+                    return Err(invalid());
+                }
+                let target = format!("arc?{}", p.path);
+                prepared(Permission::FsExternal, "arc.search", target, Box::new(move || to_value(search_arc(&self.open_arc(ctx)?, &p.path))))
             }
             "arc.extract" => {
                 let p: ArcParams = object(params)?;

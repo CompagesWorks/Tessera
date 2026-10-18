@@ -10,5 +10,7 @@
   "extracted": "{{written}} extraits dans extracted/, {{skipped}} déjà présents, {{failed}} en échec",
   "error.no data.arc": "Ce data.arc n’existe plus",
   "error.no folder picked": "Choisis ton data.arc",
-  "error.not a folder": "Ce dossier n’est pas dans le data.arc"
+  "error.not a folder": "Ce dossier n’est pas dans le data.arc",
+  "search": "Rechercher dans l’arc…",
+  "noResults": "Aucun résultat."
 }

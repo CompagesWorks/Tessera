@@ -217,6 +217,7 @@ export const fr = {
   'widget.explorer.description': 'Fichiers du projet',
   'widget.explorer.refresh': 'Rafraîchir',
   'widget.explorer.empty': 'Dossier vide',
+  'widget.explorer.search': 'Rechercher des fichiers…',
   'widget.explorer.closePreview': 'Fermer l’aperçu',
   'widget.explorer.loading': 'Chargement…',
   'widget.explorer.mipmaps': '{{count}} mipmaps',

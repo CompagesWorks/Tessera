@@ -360,6 +360,7 @@
     arc: Object.freeze({
       pick: () => call('arc.pick'),
       list: (path = '') => call('arc.list', { path }),
+      search: (query) => call('arc.search', { path: query }),
       extract: (path) => call('arc.extract', { path }),
     }),
     net: Object.freeze({

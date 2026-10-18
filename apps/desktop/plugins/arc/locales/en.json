@@ -10,5 +10,7 @@
   "extracted": "{{written}} extracted to extracted/, {{skipped}} already there, {{failed}} failed",
   "error.no data.arc": "This data.arc no longer exists",
   "error.no folder picked": "Pick your data.arc",
-  "error.not a folder": "This folder is not in the data.arc"
+  "error.not a folder": "This folder is not in the data.arc",
+  "search": "Search the arc…",
+  "noResults": "No results."
 }

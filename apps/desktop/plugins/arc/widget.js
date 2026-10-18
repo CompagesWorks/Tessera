@@ -3,6 +3,7 @@ const t = (key, params) => tessera.i18n.t(key, params);
 const tree = document.getElementById('tree');
 const status = document.getElementById('status');
 const where = document.getElementById('where');
+const search = document.getElementById('search');
 const expanded = new Set();
 let selected = null;
 
@@ -144,13 +145,32 @@ async function level(container, path, depth) {
   for (const entry of entries) row(entry, depth, container);
 }
 
+let ticket = 0;
+async function find(query) {
+  const mine = ++ticket;
+  if (!query) return level(tree, '', 0);
+  const entries = await tessera.arc.search(query);
+  if (mine !== ticket) return;
+  tree.replaceChildren();
+  if (entries.length === 0) tree.append(Object.assign(document.createElement('div'), { className: 'empty', textContent: t('noResults') }));
+  for (const entry of entries) row({ ...entry, name: entry.path }, 0, tree);
+}
+
 async function load() {
   const info = await tessera.external.info();
   if (!info.picked) return;
   where.textContent = info.name;
+  search.value = '';
   await busy(t('loading'), () => level(tree, '', 0));
+  search.disabled = false;
   say('');
 }
+
+let searchTimer;
+search.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => find(search.value.trim()).catch(failed), 250);
+});
 
 document.getElementById('pick').addEventListener('click', () =>
   tessera.arc

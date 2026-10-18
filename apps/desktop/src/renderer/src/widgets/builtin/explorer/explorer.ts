@@ -68,7 +68,12 @@ export const explorerWidget: WidgetDefinition = {
     refresh.className = 'atrium-icon-btn-sm';
     refresh.dataset['atriumTooltip'] = t('widget.explorer.refresh');
     refresh.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
-    bar.append(refresh);
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'atrium-input tessera-explorer-search';
+    search.placeholder = t('widget.explorer.search');
+    search.setAttribute('aria-label', t('widget.explorer.search'));
+    bar.append(search, refresh);
     const tree = document.createElement('div');
     tree.className = 'tessera-explorer-tree';
     let selected: string | null = null;
@@ -89,8 +94,21 @@ export const explorerWidget: WidgetDefinition = {
     let disposed = false;
 
     const list = (path: string) => window.tessera.invoke('files:list', { id: project.id, path });
+    let ticket = 0;
+    async function renderSearch(query: string) {
+      const mine = ++ticket;
+      const response = await window.tessera.invoke('search:project', { id: project.id, query, content: false, limit: 200 }).catch(() => null);
+      if (disposed || mine !== ticket) return;
+      const entries = (response?.results ?? []).map((r) => ({ name: r.path, path: r.path, kind: r.kind === 'dir' ? 'dir' : 'file', size: r.size }) as DirEntry);
+      renderEntries(tree, entries, 0, t('search.noResults'));
+    }
     const rerender = () => {
-      void renderLevel(tree, '', 0);
+      const query = search.value.trim();
+      if (query) void renderSearch(query);
+      else {
+        ticket += 1;
+        void renderLevel(tree, '', 0);
+      }
       if (selected) showInline();
     };
     const actions = fileActions(project.id, ui, rerender);
@@ -147,12 +165,16 @@ export const explorerWidget: WidgetDefinition = {
         entries = [];
       }
       if (disposed) return;
+      renderEntries(container, entries, depth, t('widget.explorer.empty'));
+    }
+
+    function renderEntries(container: HTMLElement, entries: DirEntry[], depth: number, emptyText: string) {
       container.replaceChildren();
       if (entries.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'tessera-explorer-empty';
         empty.style.setProperty('--_depth', String(depth));
-        empty.textContent = t('widget.explorer.empty');
+        empty.textContent = emptyText;
         container.append(empty);
         return;
       }
@@ -203,6 +225,11 @@ export const explorerWidget: WidgetDefinition = {
     }
 
     refresh.addEventListener('click', rerender);
+    let searchTimer = 0;
+    search.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(rerender, 200);
+    });
     tree.addEventListener('contextmenu', (event) => {
       event.preventDefault();
       actions.menu(event, null);
@@ -228,6 +255,7 @@ export const explorerWidget: WidgetDefinition = {
       dispose: () => {
         disposed = true;
         clearTimeout(timer);
+        clearTimeout(searchTimer);
         offHistory();
         offPlugins();
         offSelection();

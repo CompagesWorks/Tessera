@@ -7,9 +7,17 @@
 
 .tessera-explorer-bar {
   display: flex;
+  align-items: center;
+  gap: 6px;
   justify-content: flex-end;
   padding: 6px 8px;
   border-bottom: 1px solid var(--atrium-border-color);
+}
+
+.tessera-explorer-search {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
 }
 
 .tessera-explorer-tree {

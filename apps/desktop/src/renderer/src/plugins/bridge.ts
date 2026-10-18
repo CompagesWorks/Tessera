@@ -273,6 +273,7 @@ const methods: Record<string, Method> = {
   'ssbh.write': forward('ssbh.write', () => 'fs.project.write'),
   'arc.pick': forward('arc.pick', () => 'fs.external'),
   'arc.list': forward('arc.list', () => 'fs.external'),
+  'arc.search': forward('arc.search', () => 'fs.external'),
   'arc.extract': forward('arc.extract', () => 'fs.project.write'),
   'net.fetch': forward('net.fetch', () => 'net'),
   'secrets.get': forward('secrets.get', () => 'secrets'),
