@@ -1,6 +1,6 @@
 {
-  "description": "Affiche les modèles de Smash Ultimate (.numdlb, .numshb, .nusktb) en 3D avec leurs textures et modifie leurs matériaux (.numatb), comme SSBH Editor.",
-  "widget.description": "Visualiseur 3D et éditeur de matériaux",
+  "description": "Affiche les modèles de Smash Ultimate (.numdlb, .numshb) en 3D avec leurs textures, leur squelette (.nusktb) et leurs animations (.nuanmb), et modifie leurs matériaux (.numatb), comme SSBH Editor.",
+  "widget.description": "Visualiseur 3D, animations et éditeur de matériaux",
   "file.label": "Modèle",
   "reset": "Recadrer la caméra",
   "filter": "Filtrer",
@@ -28,5 +28,13 @@
   "group.booleans": "Booléens",
   "group.vectors": "Vecteurs",
   "group.blend": "Blend state",
-  "group.rasterizer": "Rasterizer state"
+  "group.rasterizer": "Rasterizer state",
+  "showBones": "Bones",
+  "tab.bones": "Bones",
+  "anim.label": "Animation",
+  "anim.none": "Aucune animation",
+  "play": "Lecture",
+  "pause": "Pause",
+  "frame.label": "Frame",
+  "loadingAnim": "Chargement de l’animation…"
 }

@@ -11,13 +11,23 @@ const save = document.getElementById('save');
 const inspector = document.getElementById('inspector');
 const params = document.getElementById('params');
 const textureNames = document.getElementById('texture-names');
-const tabs = { meshes: document.getElementById('tab-meshes'), materials: document.getElementById('tab-materials') };
+const bonesList = document.getElementById('bones');
+const animPicker = document.getElementById('anim');
+const play = document.getElementById('play');
+const slider = document.getElementById('frame');
+const frameLabel = document.getElementById('frame-label');
+const tabs = { meshes: document.getElementById('tab-meshes'), materials: document.getElementById('tab-materials'), bones: document.getElementById('tab-bones') };
+const panels = { meshes, materials, bones: bonesList };
 const images = new Map();
 let viewer = null;
 let path = '';
 let box = null;
 let loading = 0;
 let model = null;
+let anims = [];
+let motion = null;
+let playing = false;
+let last = 0;
 
 function failed(error) {
   const key = `error.${error.message}`;
@@ -32,7 +42,8 @@ function say(key, params) {
 async function walk(dir, found) {
   for (const entry of await tessera.files.list(dir)) {
     if (entry.kind === 'dir') await walk(entry.path, found);
-    else if (MODEL.test(entry.name)) found.push(entry.path);
+    else if (MODEL.test(entry.name)) found.models.push(entry.path);
+    else if (ANIM.test(entry.name)) found.anims.push(entry.path);
   }
   return found;
 }
@@ -57,7 +68,8 @@ function meshRow(object, index) {
   check.type = 'checkbox';
   check.checked = object.visible;
   check.setAttribute('aria-label', t('visible', { name: object.name }));
-  check.addEventListener('change', () => viewer.setVisible(index, check.checked));
+  check.addEventListener('change', () => showMesh(index, check.checked));
+  object.check = check;
   const name = document.createElement('span');
   name.textContent = object.name;
   name.title = object.name;
@@ -115,15 +127,99 @@ function inspect(entry) {
   );
 }
 
+function showMesh(index, visible) {
+  const object = model.list[index];
+  object.visible = visible;
+  object.check.checked = visible;
+  viewer.setVisible(index, visible);
+}
+
+function boneRows(skel) {
+  const depth = [];
+  const level = (i) => (depth[i] ??= skel.bones[i].parent_index === null ? 0 : level(skel.bones[i].parent_index) + 1);
+  return skel.bones.map((bone, i) => {
+    const li = document.createElement('li');
+    li.className = 'bone';
+    li.style.paddingLeft = `${4 + Math.min(level(i), 24) * 10}px`;
+    li.textContent = bone.name;
+    li.title = bone.name;
+    li.dataset.search = bone.name.toLowerCase();
+    return li;
+  });
+}
+
+function applyFrame() {
+  if (!model?.skel) return;
+  const frame = motion ? motion.frame : 0;
+  const p = pose(model.skel, model.bind, motion?.anim ?? null, frame);
+  viewer.setPose(p);
+  model.list.forEach((object, i) => {
+    const visible = motion ? visibleBy(p.visibility, object.name) : object.initial;
+    if (visible !== null && visible !== object.visible) showMesh(i, visible);
+  });
+  slider.value = String(Math.floor(frame));
+  frameLabel.textContent = motion ? `${Math.floor(frame)} / ${motion.frames - 1}` : '0 / 0';
+}
+
+function setPlaying(next) {
+  playing = next && Boolean(motion);
+  play.replaceChildren(Object.assign(document.createElement('i'), { className: playing ? 'bi bi-pause-fill' : 'bi bi-play-fill' }));
+  play.title = t(playing ? 'pause' : 'play');
+  play.setAttribute('aria-label', play.title);
+  if (playing) {
+    last = performance.now();
+    requestAnimationFrame(tick);
+  }
+}
+
+function tick(now) {
+  if (!playing || !motion) return;
+  motion.frame = (motion.frame + (Math.max(now - last, 0) / 1000) * 60) % motion.frames;
+  last = now;
+  applyFrame();
+  requestAnimationFrame(tick);
+}
+
+function animOptions() {
+  const folders = path ? motionFolders(path) : [];
+  const list = anims.filter((a) => folders.includes(folderOf(a)));
+  if (motion && !list.includes(motion.path)) list.unshift(motion.path);
+  animPicker.replaceChildren(new Option(t('anim.none'), ''), ...list.map((a) => new Option(a.slice(a.lastIndexOf('/') + 1), a)));
+  animPicker.value = motion?.path ?? '';
+  animPicker.disabled = !model?.skel;
+}
+
+async function openAnim(next) {
+  setPlaying(false);
+  motion = null;
+  slider.disabled = play.disabled = true;
+  if (next && model?.skel) {
+    const run = loading;
+    try {
+      say('loadingAnim');
+      const anim = await tessera.ssbh.read(next);
+      if (run !== loading) return;
+      motion = { path: next, anim, frames: frameCount(anim), frame: 0 };
+      slider.max = String(motion.frames - 1);
+      slider.disabled = play.disabled = false;
+    } catch (error) {
+      failed(error);
+    }
+    say('');
+  }
+  animOptions();
+  applyFrame();
+  if (motion) setPlaying(true);
+}
+
 function show() {
   const query = filter.value.trim().toLowerCase();
-  for (const list of [meshes, materials]) for (const li of list.children) li.hidden = query !== '' && !li.dataset.search.includes(query);
+  for (const list of [meshes, materials, bonesList]) for (const li of list.children) li.hidden = query !== '' && !li.dataset.search.includes(query);
 }
 
 function select(tab) {
   for (const [name, button] of Object.entries(tabs)) button.setAttribute('aria-selected', String(name === tab));
-  meshes.hidden = tab !== 'meshes';
-  materials.hidden = tab !== 'materials';
+  for (const [name, panel] of Object.entries(panels)) panel.hidden = name !== tab;
 }
 
 function image(name) {
@@ -168,11 +264,15 @@ async function open(next) {
   path = next;
   picker.value = path;
   model = null;
+  setPlaying(false);
+  motion = null;
   images.clear();
   dirty();
   inspect(null);
   meshes.replaceChildren();
   materials.replaceChildren();
+  bonesList.replaceChildren();
+  animOptions();
   if (!path) return;
   const run = ++loading;
   try {
@@ -185,16 +285,25 @@ async function open(next) {
     if (!mesh) throw new Error('noMesh');
     const skeleton = files.get(modl.skeleton_file_name.toLowerCase());
     const matlPath = modl.material_file_names.map((n) => files.get(n.toLowerCase())).find(Boolean) ?? null;
-    const [objects, matl] = await Promise.all([tessera.ssbh.meshes(mesh, skeleton), matlPath ? tessera.ssbh.read(matlPath) : null]);
+    const [objects, matl, skel] = await Promise.all([
+      tessera.ssbh.meshes(mesh, skeleton),
+      matlPath ? tessera.ssbh.read(matlPath) : null,
+      skeleton ? tessera.ssbh.read(skeleton) : null,
+    ]);
     if (run !== loading) return;
     const list = drawList(modl, matl, objects);
-    model = { modl, matl, matlPath, list, files, modlDirty: false, matlDirty: false };
+    for (const object of list) object.initial = object.visible;
+    model = { modl, matl, matlPath, list, files, skel, bind: skel && bindPose(skel), modlDirty: false, matlDirty: false };
     textureNames.replaceChildren(...entries.filter((e) => /\.nutexb$/i.test(e.name)).map((e) => new Option(e.name.replace(/\.nutexb$/i, ''))));
     box = bounds(list);
     viewer.setObjects(list, box);
     meshes.replaceChildren(...list.map(meshRow));
     materials.replaceChildren(...(matl?.entries ?? []).map(materialRow));
+    bonesList.replaceChildren(...(skel ? boneRows(skel) : []));
     show();
+    viewer.setSkeleton(skel ? skel.bones.map((b) => b.parent_index) : []);
+    applyFrame();
+    animOptions();
     await tessera.widget.setState({ path });
     await applyTextures(list.map((_, i) => i).filter((i) => list[i].texture));
     if (run === loading) say('');
@@ -205,13 +314,18 @@ async function open(next) {
 }
 
 async function refresh(wanted = path) {
-  const paths = (await walk('', [])).sort((a, b) => a.localeCompare(b));
+  const found = await walk('', { models: [], anims: [] });
+  const paths = found.models.sort((a, b) => a.localeCompare(b));
+  anims = found.anims.sort((a, b) => a.localeCompare(b));
   picker.replaceChildren(...paths.map((p) => new Option(p, p)));
   empty.hidden = paths.length > 0;
   view.hidden = paths.length === 0;
   picker.hidden = paths.length === 0;
   if (wanted !== path || !paths.includes(path)) await open(paths.includes(wanted) ? wanted : (paths[0] ?? ''));
-  else picker.value = path;
+  else {
+    picker.value = path;
+    animOptions();
+  }
 }
 
 save.addEventListener('click', async () => {
@@ -237,15 +351,27 @@ picker.addEventListener('change', () => open(picker.value));
 filter.addEventListener('input', show);
 tabs.meshes.addEventListener('click', () => select('meshes'));
 tabs.materials.addEventListener('click', () => select('materials'));
+tabs.bones.addEventListener('click', () => select('bones'));
+animPicker.addEventListener('change', () => openAnim(animPicker.value));
+play.addEventListener('click', () => setPlaying(!playing));
+slider.addEventListener('input', () => {
+  if (!motion) return;
+  setPlaying(false);
+  motion.frame = Number(slider.value);
+  applyFrame();
+});
+document.getElementById('show-bones').addEventListener('change', (event) => viewer?.setBonesVisible(event.target.checked));
 document.getElementById('close').addEventListener('click', () => inspect(null));
 document.getElementById('reset').addEventListener('click', () => {
   if (viewer && box) viewer.fit(box);
 });
 tessera.on('files.selected', ({ path: selected }) => {
   if (selected && MODEL.test(selected) && selected !== path) open(selected);
+  if (selected && ANIM.test(selected) && model?.skel && selected !== motion?.path) openAnim(selected);
 });
 tessera.on('files.dropped', ({ paths }) => {
   if (MODEL.test(paths[0])) open(paths[0]);
+  else if (ANIM.test(paths[0]) && model?.skel) openAnim(paths[0]);
   else tessera.ui.toast('warning', t('notModel', { name: paths[0] }));
 });
 

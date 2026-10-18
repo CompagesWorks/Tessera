@@ -1,6 +1,6 @@
 {
-  "description": "Views Smash Ultimate models (.numdlb, .numshb, .nusktb) in 3D with their textures and edits their materials (.numatb), like SSBH Editor.",
-  "widget.description": "3D model viewer and material editor",
+  "description": "Views Smash Ultimate models (.numdlb, .numshb) in 3D with their textures, skeleton (.nusktb) and animations (.nuanmb), and edits their materials (.numatb), like SSBH Editor.",
+  "widget.description": "3D model viewer, animations and material editor",
   "file.label": "Model",
   "reset": "Reset camera",
   "filter": "Filter",
@@ -28,5 +28,13 @@
   "group.booleans": "Booleans",
   "group.vectors": "Vectors",
   "group.blend": "Blend state",
-  "group.rasterizer": "Rasterizer state"
+  "group.rasterizer": "Rasterizer state",
+  "showBones": "Bones",
+  "tab.bones": "Bones",
+  "anim.label": "Animation",
+  "anim.none": "No animation",
+  "play": "Play",
+  "pause": "Pause",
+  "frame.label": "Frame",
+  "loadingAnim": "Loading animation…"
 }

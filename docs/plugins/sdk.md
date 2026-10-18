@@ -550,7 +550,7 @@ await tessera.ssbh.write('sources/fighter/mario/model/body/c00/model.numatb', ma
 
 #### `tessera.ssbh.meshes(path, skeleton?)`
 
-Reads a project `.numshb` and resolves to one entry per mesh object, ready for WebGL: `{ name, subindex, positions, normals, uvs, indices }`. `positions` and `normals` are `Float32Array`s of xyz, `uvs` is a `Float32Array` of the `map1` UVs (or the first UV set, `null` if none), and `indices` is a `Uint32Array` of triangles. With a `.nusktb` `skeleton`, meshes that have no bone weights are moved to their parent bone, as in game. Needs `fs.project.read`.
+Reads a project `.numshb` and resolves to one entry per mesh object, ready for WebGL: `{ name, subindex, positions, normals, uvs, indices }`. `positions` and `normals` are `Float32Array`s of xyz, `uvs` is a `Float32Array` of the `map1` UVs (or the first UV set, `null` if none), and `indices` is a `Uint32Array` of triangles. With a `.nusktb` `skeleton`, meshes that have no bone weights are moved to their parent bone, as in game, and each entry also has `bones` and `weights`: `Float32Array`s of 4 values per vertex, the skeleton bone indices and their weights (the 4 strongest, summing to 1; a mesh with no weights is bound to its parent bone). Without a skeleton they are `null`. Needs `fs.project.read`.
 
 ## Network
 

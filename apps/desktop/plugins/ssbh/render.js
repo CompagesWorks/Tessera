@@ -2,14 +2,40 @@ const VERTEX = `#version 300 es
 in vec3 position;
 in vec3 normal;
 in vec2 uv;
+in vec4 bones;
+in vec4 weights;
 uniform mat4 view;
 uniform mat4 projection;
+uniform sampler2D boneMatrices;
 out vec3 vNormal;
 out vec2 vUv;
+mat4 bone(float index) {
+  int i = int(index);
+  return mat4(texelFetch(boneMatrices, ivec2(0, i), 0), texelFetch(boneMatrices, ivec2(1, i), 0), texelFetch(boneMatrices, ivec2(2, i), 0), texelFetch(boneMatrices, ivec2(3, i), 0));
+}
 void main() {
-  vNormal = mat3(view) * normal;
+  float total = weights.x + weights.y + weights.z + weights.w;
+  mat4 skin = total > 0.0 ? bone(bones.x) * weights.x + bone(bones.y) * weights.y + bone(bones.z) * weights.z + bone(bones.w) * weights.w : mat4(1.0);
+  vNormal = mat3(view) * mat3(skin) * normal;
   vUv = uv;
+  gl_Position = projection * view * skin * vec4(position, 1.0);
+}`;
+
+const LINE_VERTEX = `#version 300 es
+in vec3 position;
+uniform mat4 view;
+uniform mat4 projection;
+void main() {
   gl_Position = projection * view * vec4(position, 1.0);
+  gl_PointSize = 5.0;
+}`;
+
+const LINE_FRAGMENT = `#version 300 es
+precision mediump float;
+uniform vec3 color;
+out vec4 outColor;
+void main() {
+  outColor = vec4(color, 1.0);
 }`;
 
 const FRAGMENT = `#version 300 es
@@ -49,12 +75,38 @@ function createViewer(canvas) {
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
     return s;
   };
-  const program = gl.createProgram();
-  gl.attachShader(program, shader(gl.VERTEX_SHADER, VERTEX));
-  gl.attachShader(program, shader(gl.FRAGMENT_SHADER, FRAGMENT));
-  gl.linkProgram(program);
+  const link = (vertex, fragment) => {
+    const p = gl.createProgram();
+    gl.attachShader(p, shader(gl.VERTEX_SHADER, vertex));
+    gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fragment));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    return p;
+  };
+  const program = link(VERTEX, FRAGMENT);
+  const lines = link(LINE_VERTEX, LINE_FRAGMENT);
   const at = (name) => gl.getAttribLocation(program, name);
   const uniform = (name) => gl.getUniformLocation(program, name);
+  const lineUniform = (name) => gl.getUniformLocation(lines, name);
+  gl.vertexAttrib4f(at('weights'), 0, 0, 0, 0);
+  const boneTexture = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, boneTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 4, 1, 0, gl.RGBA, gl.FLOAT, new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
+  gl.activeTexture(gl.TEXTURE0);
+  const lineVao = gl.createVertexArray();
+  const lineBuffer = gl.createBuffer();
+  gl.bindVertexArray(lineVao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
+  gl.enableVertexAttribArray(gl.getAttribLocation(lines, 'position'));
+  gl.vertexAttribPointer(gl.getAttribLocation(lines, 'position'), 3, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let parents = [];
+  let lineCount = 0;
+  let jointCount = 0;
+  let showBones = false;
   const white = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, white);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([200, 200, 200, 255]));
@@ -87,14 +139,29 @@ function createViewer(canvas) {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
+    const viewMatrix = orbitView(camera.yaw, camera.pitch, camera.distance, camera.target);
+    const projectionMatrix = perspective(0.8, width / height, camera.radius / 100, camera.distance + camera.radius * 4);
     gl.useProgram(program);
-    gl.uniformMatrix4fv(uniform('view'), false, orbitView(camera.yaw, camera.pitch, camera.distance, camera.target));
-    gl.uniformMatrix4fv(uniform('projection'), false, perspective(0.8, width / height, camera.radius / 100, camera.distance + camera.radius * 4));
+    gl.uniform1i(uniform('color'), 0);
+    gl.uniform1i(uniform('boneMatrices'), 1);
+    gl.uniformMatrix4fv(uniform('view'), false, viewMatrix);
+    gl.uniformMatrix4fv(uniform('projection'), false, projectionMatrix);
     for (const draw of draws) {
       if (!draw.visible) continue;
       gl.bindVertexArray(draw.vao);
       gl.bindTexture(gl.TEXTURE_2D, draw.texture ?? white);
       gl.drawElements(gl.TRIANGLES, draw.count, gl.UNSIGNED_INT, 0);
+    }
+    if (showBones && jointCount) {
+      gl.disable(gl.DEPTH_TEST);
+      gl.useProgram(lines);
+      gl.uniformMatrix4fv(lineUniform('view'), false, viewMatrix);
+      gl.uniformMatrix4fv(lineUniform('projection'), false, projectionMatrix);
+      gl.bindVertexArray(lineVao);
+      gl.uniform3f(lineUniform('color'), 0.35, 0.65, 1);
+      gl.drawArrays(gl.LINES, 0, lineCount);
+      gl.uniform3f(lineUniform('color'), 1, 1, 1);
+      gl.drawArrays(gl.POINTS, lineCount, jointCount);
     }
     gl.bindVertexArray(null);
   }
@@ -110,6 +177,8 @@ function createViewer(canvas) {
       attribute('position', object.positions, 3);
       attribute('normal', object.normals, 3);
       attribute('uv', object.uvs, 2);
+      attribute('bones', object.bones, 4);
+      attribute('weights', object.weights, 4);
       buffer(gl.ELEMENT_ARRAY_BUFFER, object.indices);
       gl.bindVertexArray(null);
       return { vao, count: object.indices.length, visible: object.visible !== false, texture: null };
@@ -133,6 +202,34 @@ function createViewer(canvas) {
       uploaded.set(image, texture);
     }
     for (const i of index) draws[i].texture = image ? uploaded.get(image) : null;
+    redraw();
+  }
+
+  function setSkeleton(next) {
+    parents = next;
+    jointCount = 0;
+    redraw();
+  }
+
+  function setPose({ skin, joints }) {
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, boneTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 4, skin.length / 16, 0, gl.RGBA, gl.FLOAT, skin);
+    gl.activeTexture(gl.TEXTURE0);
+    const segments = [];
+    parents.forEach((parent, i) => parent !== null && segments.push(...joints.subarray(i * 3, i * 3 + 3), ...joints.subarray(parent * 3, parent * 3 + 3)));
+    lineCount = segments.length / 3;
+    jointCount = joints.length / 3;
+    const data = new Float32Array(segments.length + joints.length);
+    data.set(segments);
+    data.set(joints, segments.length);
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    redraw();
+  }
+
+  function setBonesVisible(visible) {
+    showBones = visible;
     redraw();
   }
 
@@ -170,5 +267,5 @@ function createViewer(canvas) {
   }, { passive: false });
   new ResizeObserver(redraw).observe(canvas);
 
-  return { setObjects, setTexture, setVisible, fit };
+  return { setObjects, setTexture, setVisible, setSkeleton, setPose, setBonesVisible, fit };
 }

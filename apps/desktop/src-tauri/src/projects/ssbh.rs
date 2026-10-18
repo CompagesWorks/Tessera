@@ -17,6 +17,8 @@ pub struct MeshBuffers {
     pub normals: String,
     pub uvs: Option<String>,
     pub indices: String,
+    pub bones: Option<String>,
+    pub weights: Option<String>,
 }
 
 fn parse<T: SsbhData + Serialize>(bytes: &[u8]) -> Result<Value> {
@@ -69,6 +71,37 @@ fn vec3(data: &VectorData) -> Vec<[f32; 3]> {
     }
 }
 
+fn skin(object: &ssbh_data::mesh_data::MeshObjectData, skel: &SkelData, count: usize) -> (String, String) {
+    let index = |name: &str| skel.bones.iter().position(|b| b.name == name);
+    let mut influences = vec![Vec::<(usize, f32)>::new(); count];
+    if object.bone_influences.is_empty() {
+        if let Some(parent) = index(&object.parent_bone_name) {
+            influences.iter_mut().for_each(|v| v.push((parent, 1.0)));
+        }
+    }
+    for influence in &object.bone_influences {
+        let Some(bone) = index(&influence.bone_name) else { continue };
+        for w in &influence.vertex_weights {
+            if let Some(v) = influences.get_mut(w.vertex_index as usize) {
+                v.push((bone, w.vertex_weight));
+            }
+        }
+    }
+    let mut bones = Vec::with_capacity(count * 4);
+    let mut weights = Vec::with_capacity(count * 4);
+    for mut v in influences {
+        v.sort_by(|a, b| b.1.total_cmp(&a.1));
+        v.truncate(4);
+        let total: f32 = v.iter().map(|(_, w)| w).sum();
+        for k in 0..4 {
+            let (bone, weight) = v.get(k).copied().unwrap_or((0, 0.0));
+            bones.push(bone as f32);
+            weights.push(if total > 0.0 { weight / total } else { 0.0 });
+        }
+    }
+    (floats(bones.into_iter()), floats(weights.into_iter()))
+}
+
 fn apply(m: &[[f32; 4]; 4], p: [f32; 3], w: f32) -> [f32; 3] {
     std::array::from_fn(|i| m[0][i] * p[0] + m[1][i] * p[1] + m[2][i] * p[2] + m[3][i] * w)
 }
@@ -93,7 +126,10 @@ pub fn mesh_buffers(bytes: &[u8], skeleton: Option<&[u8]>) -> Result<Vec<MeshBuf
                 VectorData::Vector3(v) => floats(v.iter().flat_map(|u| [u[0], u[1]])),
                 VectorData::Vector4(v) => floats(v.iter().flat_map(|u| [u[0], u[1]])),
             });
+            let (bones, weights) = skel.as_ref().map(|s| skin(object, s, positions.len())).unzip();
             MeshBuffers {
+                bones,
+                weights,
                 name: object.name.clone(),
                 subindex: object.subindex,
                 positions: floats(positions.iter().flat_map(|&p| transform(p, 1.0))),
@@ -159,8 +195,55 @@ mod tests {
         assert_eq!(read_ssbh(&written, "model.numatb").unwrap()["entries"][0]["textures"][0]["data"], "new_col");
         assert!(write_ssbh(serde_json::json!({ "entries": 3 }), "model.numatb").unwrap_err().to_string().starts_with("invalid ssbh data"));
         assert!(write_ssbh(serde_json::json!({}), "model.txt").is_err());
+        use ssbh_data::anim_data::{AnimData, GroupData, NodeData, TrackData, TrackValues, TransformFlags};
+        let anim = AnimData {
+            major_version: 2,
+            minor_version: 0,
+            final_frame_index: 0.0,
+            groups: vec![GroupData {
+                group_type: ssbh_data::anim_data::GroupType::Visibility,
+                nodes: vec![NodeData {
+                    name: "EyeN_VIS_O_OBJ".into(),
+                    tracks: vec![TrackData { name: "Visibility".into(), compensate_scale: false, transform_flags: TransformFlags::default(), values: TrackValues::Boolean(vec![true]) }],
+                }],
+            }],
+        };
+        let value = read_ssbh(&bytes(&anim), "a.nuanmb").unwrap();
+        assert_eq!(value["groups"][0]["group_type"], "Visibility");
+        assert_eq!(value["groups"][0]["nodes"][0]["tracks"][0]["values"], serde_json::json!({ "Boolean": [true] }));
+        assert_eq!(value["groups"][0]["nodes"][0]["tracks"][0]["transform_flags"]["override_translation"], false);
         assert!(read_ssbh(b"nope", "model.numdlb").is_err());
         assert!(read_ssbh(&bytes(&modl), "model.txt").is_err());
+    }
+
+    #[test]
+    fn keeps_the_four_strongest_weights() {
+        use ssbh_data::mesh_data::{BoneInfluence, VertexWeight};
+        let names = ["A", "B", "C", "D", "E"];
+        let object = MeshObjectData {
+            name: "body".into(),
+            vertex_indices: vec![0, 0, 0],
+            positions: vec![AttributeData { name: "Position0".into(), data: VectorData::Vector3(vec![[0.0; 3]]) }],
+            bone_influences: names
+                .iter()
+                .zip([0.1, 0.4, 0.2, 0.2, 0.1])
+                .map(|(n, w)| BoneInfluence { bone_name: (*n).into(), vertex_weights: vec![VertexWeight { vertex_index: 0, vertex_weight: w }] })
+                .chain([BoneInfluence { bone_name: "missing".into(), vertex_weights: vec![VertexWeight { vertex_index: 0, vertex_weight: 0.9 }] }])
+                .collect(),
+            ..Default::default()
+        };
+        let identity = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]];
+        let skel = SkelData {
+            major_version: 1,
+            minor_version: 0,
+            bones: names.iter().map(|n| BoneData { name: (*n).into(), transform: identity, parent_index: None, billboard_type: BillboardType::Disabled }).collect(),
+        };
+        let mesh = MeshData { major_version: 1, minor_version: 10, objects: vec![object] };
+        let out = mesh_buffers(&bytes(&mesh), Some(&bytes(&skel))).unwrap();
+        assert_eq!(decode(out[0].bones.as_deref().unwrap()), [1.0, 2.0, 3.0, 0.0]);
+        let weights = decode(out[0].weights.as_deref().unwrap());
+        assert!((weights.iter().sum::<f32>() - 1.0).abs() < 1e-6);
+        assert!((weights[0] - 0.4 / 0.9).abs() < 1e-6);
     }
 
     #[test]
@@ -182,6 +265,10 @@ mod tests {
         assert_eq!(decode(&out[0].positions)[..6], [0.0, 10.0, 0.0, 1.0, 10.0, 0.0]);
         assert_eq!(decode(&out[0].normals)[..3], [0.0, 0.0, 1.0]);
         assert_eq!(decode(out[0].uvs.as_deref().unwrap())[..2], [0.5, 0.25]);
-        assert_eq!(decode(&mesh_buffers(&bytes(&mesh), None).unwrap()[0].positions)[4], 0.0);
+        assert_eq!(decode(out[0].bones.as_deref().unwrap())[..4], [0.0; 4]);
+        assert_eq!(decode(out[0].weights.as_deref().unwrap())[..4], [1.0, 0.0, 0.0, 0.0]);
+        let unskinned = mesh_buffers(&bytes(&mesh), None).unwrap();
+        assert_eq!(decode(&unskinned[0].positions)[4], 0.0);
+        assert!(unskinned[0].bones.is_none());
     }
 }

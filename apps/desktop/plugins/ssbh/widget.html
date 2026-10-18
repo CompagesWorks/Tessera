@@ -9,6 +9,7 @@
     <header>
       <select id="file" class="atrium-input" data-i18n-label="file.label"></select>
       <button id="reset" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="reset" data-i18n-label="reset"><i class="bi bi-arrows-fullscreen"></i></button>
+      <label class="toggle"><input id="show-bones" type="checkbox" /> <span data-i18n="showBones"></span></label>
       <button id="save" class="atrium-btn atrium-btn-primary" type="button" disabled data-i18n="save"></button>
     </header>
     <main id="view" hidden>
@@ -16,15 +17,25 @@
         <div class="tabs" role="tablist">
           <button id="tab-meshes" class="tab" type="button" role="tab" aria-selected="true" aria-controls="meshes" data-i18n="tab.meshes"></button>
           <button id="tab-materials" class="tab" type="button" role="tab" aria-selected="false" aria-controls="materials" data-i18n="tab.materials"></button>
+          <button id="tab-bones" class="tab" type="button" role="tab" aria-selected="false" aria-controls="bones" data-i18n="tab.bones"></button>
         </div>
         <input id="filter" class="atrium-input" type="search" data-i18n-placeholder="filter" data-i18n-label="filter.label" />
         <ul id="meshes" class="list" role="tabpanel" aria-labelledby="tab-meshes"></ul>
         <ul id="materials" class="list" role="tabpanel" aria-labelledby="tab-materials" hidden></ul>
+        <ul id="bones" class="list" role="tabpanel" aria-labelledby="tab-bones" hidden></ul>
       </aside>
-      <div class="stage">
-        <canvas id="canvas" data-i18n-label="canvas.label"></canvas>
-        <p id="status" class="status" hidden></p>
-        <p class="hint" data-i18n="controls"></p>
+      <div class="center">
+        <div class="stage">
+          <canvas id="canvas" data-i18n-label="canvas.label"></canvas>
+          <p id="status" class="status" hidden></p>
+          <p class="hint" data-i18n="controls"></p>
+        </div>
+        <div class="timeline">
+          <select id="anim" class="atrium-input" data-i18n-label="anim.label"></select>
+          <button id="play" class="atrium-btn atrium-btn-secondary" type="button" disabled data-i18n-title="play" data-i18n-label="play"><i class="bi bi-play-fill"></i></button>
+          <input id="frame" type="range" min="0" max="0" value="0" step="1" disabled data-i18n-label="frame.label" />
+          <span id="frame-label">0 / 0</span>
+        </div>
       </div>
       <section id="inspector" hidden>
         <div class="inspector-head">
@@ -40,6 +51,7 @@
     <datalist id="texture-names"></datalist>
     <p id="empty" class="atrium-empty" hidden data-i18n="empty"></p>
     <script src="model.js"></script>
+    <script src="anim.js"></script>
     <script src="render.js"></script>
     <script src="materials.js"></script>
     <script src="widget.js"></script>

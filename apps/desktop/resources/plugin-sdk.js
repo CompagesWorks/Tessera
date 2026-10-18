@@ -343,6 +343,8 @@
             normals: new Float32Array(fromBase64(o.normals).buffer),
             uvs: o.uvs === null ? null : new Float32Array(fromBase64(o.uvs).buffer),
             indices: new Uint32Array(fromBase64(o.indices).buffer),
+            bones: o.bones === null ? null : new Float32Array(fromBase64(o.bones).buffer),
+            weights: o.weights === null ? null : new Float32Array(fromBase64(o.weights).buffer),
           })),
         ),
     }),
