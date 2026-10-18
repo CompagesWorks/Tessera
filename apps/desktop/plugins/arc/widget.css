@@ -2,26 +2,33 @@
   display: none !important;
 }
 
+html,
 body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
   margin: 0;
-  padding: 8px;
   font-family: var(--atrium-font-family, system-ui);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--atrium-text-primary);
   background: transparent;
 }
 
-body[aria-busy='true'] button,
-body[aria-busy='true'] tr {
+body[aria-busy='true'] #tree,
+body[aria-busy='true'] button {
   pointer-events: none;
   opacity: 0.6;
 }
 
-header {
+.bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--atrium-border-color);
 }
 
 #where {
@@ -29,47 +36,83 @@ header {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--atrium-font-mono, ui-monospace, monospace);
-  color: var(--atrium-text-secondary);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-td {
-  padding: 3px 6px;
-}
-
-tbody tr:hover,
-tbody tr:focus-visible {
-  background: var(--atrium-bg-tertiary);
-}
-
-.dir {
-  cursor: pointer;
-}
-
-.name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.size {
-  width: 80px;
-  text-align: right;
+  font-size: 12px;
   color: var(--atrium-text-muted);
 }
 
-.actions {
-  width: 90px;
+#tree {
+  flex: 1;
+  overflow: auto;
+  padding: 6px;
 }
 
-.actions .atrium-btn {
-  width: 100%;
-  padding: 2px 6px;
+.row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px;
+  padding-left: calc(8px + var(--depth, 0) * 16px);
+  border-radius: 6px;
+  color: var(--atrium-text-secondary);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+.row:hover {
+  background: var(--atrium-bg-hover);
+  color: var(--atrium-text-primary);
+}
+
+.row.is-dir {
+  cursor: pointer;
+}
+
+.row .folder {
+  color: #e3b341;
+}
+
+.row .bi-chevron-right {
+  font-size: 10px;
+  color: var(--atrium-text-muted);
+  transition: transform 0.2s var(--atrium-ease-out-expo);
+}
+
+.row.is-open .bi-chevron-right {
+  transform: rotate(90deg);
+}
+
+.row .spacer {
+  width: 10px;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--atrium-accent-color);
+  outline-offset: -2px;
+}
+
+.row.is-selected {
+  background: rgba(var(--atrium-accent-rgb), 0.15);
+  color: var(--atrium-text-primary);
+}
+
+.size {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 11px;
+  color: var(--atrium-text-muted);
+}
+
+.empty {
+  padding: 8px 12px;
+  padding-left: calc(28px + var(--depth, 0) * 16px);
   font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.status {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
 }

@@ -3,7 +3,6 @@
   "widget.description": "Browse data.arc",
   "intro": "Pick your data.arc. The first time, the file names (about 5 MB) are downloaded from GitHub.",
   "pick": "Open data.arc…",
-  "up": "Parent folder",
   "loading": "Loading…",
   "empty": "This folder is empty.",
   "extract": "Extract",

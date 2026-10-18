@@ -3,7 +3,6 @@
   "widget.description": "Parcourir le data.arc",
   "intro": "Choisis ton data.arc. La première fois, les noms de fichiers (environ 5 Mo) sont téléchargés depuis GitHub.",
   "pick": "Ouvrir le data.arc…",
-  "up": "Dossier parent",
   "loading": "Chargement…",
   "empty": "Ce dossier est vide.",
   "extract": "Extraire",
