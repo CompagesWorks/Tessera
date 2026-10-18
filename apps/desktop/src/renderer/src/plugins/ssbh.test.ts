@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import source from '../../../../plugins/ssbh/model.js?raw';
-const { drawList, bounds, folderOf, retexture, assignMaterial } = new Function(`${source}; return { drawList, bounds, folderOf, retexture, assignMaterial };`)();
+const { drawList, bounds, folderOf, retexture, assignMaterial, freeParams, addParam, removeParam, duplicateMaterial, renameMaterial, deleteMaterial } = new Function(
+  `${source}; return { drawList, bounds, folderOf, retexture, assignMaterial, freeParams, addParam, removeParam, duplicateMaterial, renameMaterial, deleteMaterial };`,
+)();
 
 describe('ssbh model', () => {
   const modl = {
@@ -52,6 +54,41 @@ describe('ssbh model', () => {
     expect(model.entries[2]).toEqual({ mesh_object_name: 'hat', mesh_object_subindex: 0, material_label: 'skin' });
     expect(retexture(list, materials)).toEqual([1, 2]);
     expect(retexture(list, materials)).toEqual([]);
+  });
+
+  it('duplicates, renames and deletes materials', () => {
+    const model: typeof modl = structuredClone(modl);
+    const materials: { entries: { material_label: string; textures: { param_id: string; data: string }[] }[] } = structuredClone(matl);
+    const list = drawList(model, materials, [{ name: 'body', subindex: 0 }]);
+    const copy = duplicateMaterial(materials, 'skin');
+    expect(copy.material_label).toBe('skin_copy');
+    expect(duplicateMaterial(materials, 'skin').material_label).toBe('skin_copy_2');
+    expect(materials.entries.map((e: { material_label: string }) => e.material_label)).toEqual(['skin', 'skin_copy_2', 'skin_copy', 'eye']);
+    copy.textures[0].data = 'changed';
+    expect(materials.entries[0]?.textures[0]?.data).toBe('def_nor');
+    expect(renameMaterial(materials, model, list, 'skin', 'eye')).toBe(false);
+    expect(renameMaterial(materials, model, list, 'skin', '')).toBe(false);
+    expect(renameMaterial(materials, model, list, 'skin', 'body_mat')).toBe(true);
+    expect([model.entries[0]?.material_label, list[0].material, materials.entries[0]?.material_label]).toEqual(['body_mat', 'body_mat', 'body_mat']);
+    expect(deleteMaterial(materials, model, 'body_mat')).toBe(false);
+    expect(deleteMaterial(materials, model, 'skin_copy')).toBe(true);
+    expect(materials.entries).toHaveLength(3);
+  });
+
+  it('adds and removes parameters with their sampler', () => {
+    const entry = { textures: [{ param_id: 'Texture0', data: 'a' }], samplers: [{ param_id: 'Sampler0', data: {} }], floats: [], booleans: [], vectors: [], blend_states: [], rasterizer_states: [] };
+    expect(freeParams(entry, 'textures')).toHaveLength(19);
+    expect(freeParams(entry, 'vectors')).toHaveLength(64);
+    addParam(entry, 'textures', 'Texture10');
+    addParam(entry, 'textures', 'Texture2');
+    addParam(entry, 'textures', 'Texture0');
+    expect(entry.textures.map((p) => p.param_id)).toEqual(['Texture0', 'Texture10', 'Texture2']);
+    expect(entry.samplers.map((p) => p.param_id)).toEqual(['Sampler0', 'Sampler10', 'Sampler2']);
+    expect(entry.textures[0]?.data).toBe('a');
+    addParam(entry, 'blend_states', 'BlendState0');
+    expect(freeParams(entry, 'blend_states')).toEqual([]);
+    removeParam(entry, 'textures', 'Texture2');
+    expect(entry.textures.map((p) => p.param_id)).toEqual(['Texture0', 'Texture10']);
   });
 
   it('frames the model', () => {

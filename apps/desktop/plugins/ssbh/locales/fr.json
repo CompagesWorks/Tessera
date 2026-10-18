@@ -36,5 +36,17 @@
   "play": "Lecture",
   "pause": "Pause",
   "frame.label": "Frame",
-  "loadingAnim": "Chargement de l’animation…"
+  "loadingAnim": "Chargement de l’animation…",
+  "param.new": "Nouveau paramètre",
+  "param.add": "Ajouter le paramètre",
+  "param.remove": "Retirer {{name}}",
+  "material.rename": "Renommer le matériau",
+  "material.renameConfirm": "Renommer",
+  "material.label": "Nom du matériau",
+  "material.shader": "Shader label",
+  "material.duplicate": "Dupliquer le matériau",
+  "material.delete": "Supprimer le matériau",
+  "material.taken": "Un matériau nommé « {{name}} » existe déjà",
+  "material.inUse": "{{name}} est encore utilisé par des meshes. Assigne-leur un autre matériau d’abord.",
+  "material.deleted": "{{name}} supprimé"
 }

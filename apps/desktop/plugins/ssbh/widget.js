@@ -24,6 +24,7 @@ let path = '';
 let box = null;
 let loading = 0;
 let model = null;
+let selected = null;
 let anims = [];
 let motion = null;
 let playing = false;
@@ -107,24 +108,81 @@ function materialRow(entry) {
   const li = document.createElement('li');
   li.dataset.search = `${entry.material_label}\n${entry.shader_label}`.toLowerCase();
   li.dataset.label = entry.material_label;
-  li.classList.toggle('is-selected', !inspector.hidden && document.getElementById('material-name').textContent === entry.material_label);
+  li.classList.toggle('is-selected', entry === selected);
   li.append(button);
   return li;
 }
 
+function edited() {
+  model.matlDirty = true;
+  dirty();
+}
+
+function materialsChanged() {
+  edited();
+  materials.replaceChildren(...(model.matl?.entries ?? []).map(materialRow));
+  meshes.replaceChildren(...model.list.map(meshRow));
+  show();
+  applyTextures(retexture(model.list, model.matl));
+}
+
 function inspect(entry) {
+  selected = entry;
   inspector.hidden = entry === null;
   for (const li of materials.children) li.classList.toggle('is-selected', li.dataset.label === entry?.material_label);
   if (!entry) return params.replaceChildren();
   document.getElementById('material-name').textContent = entry.material_label;
   document.getElementById('material-shader').textContent = entry.shader_label;
+  const scroll = params.scrollTop;
   params.replaceChildren(
-    ...materialEditor(entry, t, (id) => {
-      model.matlDirty = true;
-      dirty();
-      if (id.startsWith('Texture')) applyTextures(retexture(model.list, model.matl));
+    ...materialEditor(entry, t, {
+      change: (id) => {
+        edited();
+        if (id.startsWith('Texture')) applyTextures(retexture(model.list, model.matl));
+      },
+      rebuild: () => {
+        edited();
+        applyTextures(retexture(model.list, model.matl));
+        inspect(entry);
+      },
     }),
   );
+  params.scrollTop = scroll;
+}
+
+async function renameSelected() {
+  const entry = selected;
+  const values = await tessera.ui.form({
+    title: t('material.rename'),
+    icon: 'pencil',
+    confirmText: t('material.renameConfirm'),
+    fields: [
+      { type: 'text', id: 'label', label: t('material.label'), value: entry.material_label },
+      { type: 'text', id: 'shader', label: t('material.shader'), value: entry.shader_label },
+    ],
+  });
+  if (!values || selected !== entry) return;
+  const label = values.label.trim();
+  if (!renameMaterial(model.matl, model.modl, model.list, entry.material_label, label)) return tessera.ui.toast('warning', t('material.taken', { name: label }));
+  if (values.shader.trim()) entry.shader_label = values.shader.trim();
+  if (model.modl.entries.some((e) => e.material_label === label)) model.modlDirty = true;
+  materialsChanged();
+  inspect(entry);
+}
+
+function duplicateSelected() {
+  const copy = duplicateMaterial(model.matl, selected.material_label);
+  materialsChanged();
+  select('materials');
+  inspect(copy);
+}
+
+function deleteSelected() {
+  const label = selected.material_label;
+  if (!deleteMaterial(model.matl, model.modl, label)) return tessera.ui.toast('warning', t('material.inUse', { name: label }));
+  inspect(null);
+  materialsChanged();
+  tessera.ui.toast('info', t('material.deleted', { name: label }));
 }
 
 function showMesh(index, visible) {
@@ -362,6 +420,9 @@ slider.addEventListener('input', () => {
 });
 document.getElementById('show-bones').addEventListener('change', (event) => viewer?.setBonesVisible(event.target.checked));
 document.getElementById('close').addEventListener('click', () => inspect(null));
+document.getElementById('rename').addEventListener('click', () => selected && renameSelected().catch(failed));
+document.getElementById('duplicate').addEventListener('click', () => selected && duplicateSelected());
+document.getElementById('delete').addEventListener('click', () => selected && deleteSelected());
 document.getElementById('reset').addEventListener('click', () => {
   if (viewer && box) viewer.fit(box);
 });

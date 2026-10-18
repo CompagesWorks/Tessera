@@ -74,54 +74,68 @@ function fieldRow(label, ...inputs) {
   return row;
 }
 
-function group(title, rows) {
-  if (rows.length === 0) return [];
-  const details = document.createElement('details');
-  details.open = true;
-  const summary = document.createElement('summary');
-  summary.textContent = title;
-  details.append(summary, ...rows);
-  return [details];
+function iconButton(icon, label, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'icon-btn';
+  button.title = label;
+  button.setAttribute('aria-label', label);
+  button.append(Object.assign(document.createElement('i'), { className: `bi bi-${icon}` }));
+  button.addEventListener('click', onClick);
+  return button;
 }
 
-function structRows(params, fields, onChange) {
-  return params.flatMap((param) => [
-    Object.assign(document.createElement('h4'), { textContent: param.param_id }),
-    ...fields.map(([key, label, kind]) =>
-      fieldRow(label, control(param.data[key], kind, `${param.param_id} ${label}`, (value) => {
-        param.data[key] = value;
-        onChange(param.param_id);
-      })),
-    ),
-  ]);
+function adder(entry, kind, t, rebuild) {
+  const free = freeParams(entry, kind);
+  if (free.length === 0) return [];
+  const select = document.createElement('select');
+  select.className = 'atrium-input';
+  select.setAttribute('aria-label', t('param.new'));
+  select.append(...free.map((id) => new Option(id, id)));
+  const row = document.createElement('div');
+  row.className = 'adder';
+  row.append(select, iconButton('plus-lg', t('param.add'), () => {
+    addParam(entry, kind, select.value);
+    rebuild();
+  }));
+  return [row];
 }
 
-function materialEditor(entry, t, onChange) {
-  const simple = (params, kind) =>
-    params.map((param) =>
-      fieldRow(param.param_id, control(param.data, kind, param.param_id, (value) => {
-        param.data = value;
-        onChange(param.param_id);
-      })),
-    );
+function materialEditor(entry, t, { change, rebuild }) {
+  const remove = (kind, param) =>
+    iconButton('dash-lg', t('param.remove', { name: param.param_id }), () => {
+      removeParam(entry, kind, param.param_id);
+      rebuild();
+    });
+  const set = (param, apply) => (value) => {
+    apply(value);
+    change(param.param_id);
+  };
+  const simple = (kind, type) =>
+    entry[kind].map((param) => fieldRow(param.param_id, control(param.data, type, param.param_id, set(param, (v) => (param.data = v))), remove(kind, param)));
   const vectors = entry.vectors.map((param) =>
-    fieldRow(
-      param.param_id,
-      ...['x', 'y', 'z', 'w'].map((axis) =>
-        control(param.data[axis], 'number', `${param.param_id} ${axis}`, (value) => {
-          param.data[axis] = value;
-          onChange(param.param_id);
-        }),
-      ),
-    ),
+    fieldRow(param.param_id, ...['x', 'y', 'z', 'w'].map((axis) => control(param.data[axis], 'number', `${param.param_id} ${axis}`, set(param, (v) => (param.data[axis] = v)))), remove('vectors', param)),
   );
+  const structs = (kind, fields) =>
+    entry[kind].flatMap((param) => [
+      fieldRow(param.param_id, remove(kind, param)),
+      ...fields.map(([key, label, type]) => fieldRow(label, control(param.data[key], type, `${param.param_id} ${label}`, set(param, (v) => (param.data[key] = v))))),
+    ]);
+  const group = (kind, title, rows) => {
+    const details = document.createElement('details');
+    details.open = rows.length > 0;
+    const summary = document.createElement('summary');
+    summary.textContent = `${title} (${entry[kind].length})`;
+    details.append(summary, ...rows, ...adder(entry, kind, t, rebuild));
+    return details;
+  };
   return [
-    ...group(t('group.textures'), simple(entry.textures, 'text')),
-    ...group(t('group.samplers'), structRows(entry.samplers, SAMPLER, onChange)),
-    ...group(t('group.floats'), simple(entry.floats, 'number')),
-    ...group(t('group.booleans'), simple(entry.booleans, 'bool')),
-    ...group(t('group.vectors'), vectors),
-    ...group(t('group.blend'), structRows(entry.blend_states, BLEND, onChange)),
-    ...group(t('group.rasterizer'), structRows(entry.rasterizer_states, RASTERIZER, onChange)),
+    group('textures', t('group.textures'), simple('textures', 'text')),
+    group('samplers', t('group.samplers'), structs('samplers', SAMPLER)),
+    group('floats', t('group.floats'), simple('floats', 'number')),
+    group('booleans', t('group.booleans'), simple('booleans', 'bool')),
+    group('vectors', t('group.vectors'), vectors),
+    group('blend_states', t('group.blend'), structs('blend_states', BLEND)),
+    group('rasterizer_states', t('group.rasterizer'), structs('rasterizer_states', RASTERIZER)),
   ];
 }

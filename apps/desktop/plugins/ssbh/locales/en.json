@@ -36,5 +36,17 @@
   "play": "Play",
   "pause": "Pause",
   "frame.label": "Frame",
-  "loadingAnim": "Loading animation…"
+  "loadingAnim": "Loading animation…",
+  "param.new": "New parameter",
+  "param.add": "Add parameter",
+  "param.remove": "Remove {{name}}",
+  "material.rename": "Rename material",
+  "material.renameConfirm": "Rename",
+  "material.label": "Material name",
+  "material.shader": "Shader label",
+  "material.duplicate": "Duplicate material",
+  "material.delete": "Delete material",
+  "material.taken": "A material named “{{name}}” already exists",
+  "material.inUse": "{{name}} is still used by meshes. Assign them another material first.",
+  "material.deleted": "{{name}} deleted"
 }

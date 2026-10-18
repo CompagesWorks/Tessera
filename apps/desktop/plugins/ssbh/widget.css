@@ -304,3 +304,48 @@ canvas:active {
   bottom: 8px;
   font-size: 11px;
 }
+
+.actions {
+  display: flex;
+  gap: 2px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--atrium-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  color: var(--atrium-text-primary);
+  background: var(--atrium-bg-tertiary);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--atrium-accent-color);
+  outline-offset: 1px;
+}
+
+.values .icon-btn {
+  flex: none;
+}
+
+.adder {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0 8px;
+}
+
+.adder .atrium-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+}
