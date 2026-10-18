@@ -141,7 +141,7 @@ function textureField(value, label, onInput) {
   const browse = iconButton('folder2-open', t('texture.choose', { name: label }), () => choose());
   const choose = () => {
     const names = [...textureNames.options].map((o) => o.value);
-    openMenu(browse, [...new Set([input.value, ...names])].map((name) => ({ value: name, label: name, swatch: textureSwatch(name) })), input.value, apply);
+    openMenu(browse, [...new Set([input.value, ...names, ...Object.keys(DEFAULT_TEXTURES)])].map((name) => ({ value: name, label: name.replace('/common/shader/', ''), swatch: textureSwatch(name) })), input.value, apply);
   };
   preview.append(textureSwatch(value));
   preview.title = value;
@@ -455,6 +455,16 @@ function image(name) {
   const key = name.toLowerCase();
   if (!images.has(key)) {
     const file = model.files.get(`${key}.nutexb`);
+    const color = DEFAULT_TEXTURES[key];
+    if (color) {
+      const canvas = Object.assign(document.createElement('canvas'), { width: 4, height: 4 });
+      const context = canvas.getContext('2d');
+      context.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3] / 255})`;
+      context.fillRect(0, 0, 4, 4);
+      const img = Object.assign(new Image(), { src: canvas.toDataURL(), info: { width: 4, height: 4, format: 'Rgba8Unorm', mipmaps: 1 } });
+      images.set(key, img.decode().then(() => img));
+      return images.get(key);
+    }
     const load = async () => {
       const { data, width, height, format, mipmaps } = await tessera.textures.preview(file);
       const img = new Image();

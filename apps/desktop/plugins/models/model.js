@@ -1,6 +1,26 @@
 const MODEL = /\.numdlb$/i;
 const EXPRESSION = /_VIS_/i;
 const NEUTRAL = /N_VIS_/;
+const DEFAULT_TEXTURES = {
+  '/common/shader/sfxpbs/default_black': [0, 0, 0, 255],
+  '/common/shader/sfxpbs/default_color': [255, 255, 255, 255],
+  '/common/shader/sfxpbs/default_color2': [255, 255, 255, 255],
+  '/common/shader/sfxpbs/default_color3': [255, 255, 255, 255],
+  '/common/shader/sfxpbs/default_color4': [255, 255, 255, 255],
+  '/common/shader/sfxpbs/default_diffuse2': null,
+  '/common/shader/sfxpbs/default_gray': [123, 121, 123, 255],
+  '/common/shader/sfxpbs/default_metallicbg': [0, 255, 255, 58],
+  '/common/shader/sfxpbs/default_normal': [132, 120, 255, 255],
+  '/common/shader/sfxpbs/default_params': [0, 255, 255, 58],
+  '/common/shader/sfxpbs/default_params_r000_g025_b100': [0, 65, 255, 255],
+  '/common/shader/sfxpbs/default_params_r100_g025_b100': [255, 65, 255, 255],
+  '/common/shader/sfxpbs/default_params2': [255, 255, 255, 255],
+  '/common/shader/sfxpbs/default_params3': [0, 117, 255, 58],
+  '/common/shader/sfxpbs/default_white': [255, 255, 255, 255],
+  '/common/shader/sfxpbs/fighter/default_normal': [128, 128, 255, 255],
+  '/common/shader/sfxpbs/fighter/default_params': [0, 255, 255, 58],
+  '#replace_cubemap': null,
+};
 
 function folderOf(path) {
   return path.slice(0, path.lastIndexOf('/') + 1);
@@ -10,7 +30,7 @@ function colorTextures(matl) {
   const textures = new Map();
   for (const entry of matl?.entries ?? []) {
     const color = entry.textures.find((t) => t.param_id === 'Texture0') ?? entry.textures[0];
-    if (color && !color.data.startsWith('#') && !color.data.startsWith('/')) textures.set(entry.material_label, color.data);
+    if (color && (DEFAULT_TEXTURES[color.data] || !/^[#/]/.test(color.data))) textures.set(entry.material_label, color.data);
   }
   return textures;
 }

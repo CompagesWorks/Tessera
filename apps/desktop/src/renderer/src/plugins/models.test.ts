@@ -26,7 +26,7 @@ describe('ssbh model', () => {
     ]);
     expect(list.map((o: { material: string | null; texture: string | null }) => [o.material, o.texture])).toEqual([
       ['skin', 'def_col'],
-      ['eye', null],
+      ['eye', '/common/shader/sfxpbs/default_white'],
       [null, null],
     ]);
     expect(
