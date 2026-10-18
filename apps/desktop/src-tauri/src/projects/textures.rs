@@ -6,7 +6,7 @@ use base64::Engine;
 use image::{ImageFormat as FileFormat, RgbaImage};
 use serde::Serialize;
 use image_dds::ddsfile::Dds;
-use image_dds::{dds_image_format, image_from_dds, ImageFormat, Mipmaps, Quality, SurfaceRgba8};
+use image_dds::{dds_image_format, image_from_dds, mip_dimension, ImageFormat, Mipmaps, Quality, Surface, SurfaceRgba8};
 use nutexb::NutexbFile;
 
 use super::bntx::{new_bntx_texture, read_bntx, read_bntx_texture, replace_bntx_texture, IDENTITY_CHANNELS};
@@ -94,12 +94,30 @@ fn kind(path: &str) -> Result<Kind> {
     }
 }
 
+fn clamp_mipmaps(dds: Dds) -> Result<Dds> {
+    let surface = Surface::from_dds(&dds).map_err(bad)?;
+    let max = u32::BITS - surface.width.max(surface.height).max(surface.depth).leading_zeros();
+    if surface.mipmaps <= max {
+        return Ok(dds);
+    }
+    // Some game nutexbs declare one mip past 1x1, which image_dds refuses.
+    let mut data = Vec::new();
+    for layer in 0..surface.layers {
+        for mipmap in 0..max {
+            for depth in 0..mip_dimension(surface.depth, mipmap) {
+                data.extend_from_slice(surface.get(layer, depth, mipmap).ok_or_else(|| bad("truncated texture"))?);
+            }
+        }
+    }
+    Surface { width: surface.width, height: surface.height, depth: surface.depth, layers: surface.layers, mipmaps: max, image_format: surface.image_format, data }.to_dds().map_err(bad)
+}
+
 fn read(bytes: &[u8], kind: Kind) -> Result<Source> {
     Ok(match kind {
         Kind::Image(format) => Source::Image(image::load_from_memory_with_format(bytes, format).map_err(bad)?.to_rgba8()),
-        Kind::Dds => Source::Dds(Dds::read(Cursor::new(bytes)).map_err(bad)?),
+        Kind::Dds => Source::Dds(clamp_mipmaps(Dds::read(Cursor::new(bytes)).map_err(bad)?)?),
         Kind::Bntx => Source::Dds(read_bntx(bytes)?),
-        Kind::Nutexb => Source::Dds(NutexbFile::read(&mut Cursor::new(bytes)).map_err(bad)?.to_dds().map_err(bad)?),
+        Kind::Nutexb => Source::Dds(clamp_mipmaps(NutexbFile::read(&mut Cursor::new(bytes)).map_err(bad)?.to_dds().map_err(bad)?)?),
     })
 }
 
@@ -237,6 +255,18 @@ mod tests {
         let mut out = Cursor::new(Vec::new());
         image.write_to(&mut out, FileFormat::Png).unwrap();
         out.into_inner()
+    }
+
+    #[test]
+    fn previews_textures_that_declare_too_many_mipmaps() {
+        let surface = Surface { width: 4, height: 4, depth: 1, layers: 1, mipmaps: 3, image_format: ImageFormat::Rgba8Unorm, data: vec![200u8; 84] };
+        let mut dds = surface.to_dds().unwrap();
+        dds.header.mip_map_count = Some(4);
+        dds.data.extend_from_slice(&[0; 4]);
+        let mut bytes = Vec::new();
+        dds.write(&mut bytes).unwrap();
+        let preview = preview_texture(&bytes, "a.dds", None).unwrap();
+        assert_eq!((preview.width, preview.height, preview.mipmaps), (4, 4, 3));
     }
 
     fn convert(source: &[u8], from: &str, to: &str, existing: Option<&[u8]>) -> Vec<u8> {
