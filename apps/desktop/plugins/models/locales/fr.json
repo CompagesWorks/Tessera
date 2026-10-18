@@ -54,5 +54,7 @@
   "loop": "Boucle",
   "mipmaps": "{{count}} mipmaps",
   "warn.blocks": "{{width}}×{{height}} n’est pas un multiple de 4 : les textures compressées par blocs peuvent mal s’afficher en jeu",
-  "warn.unreadable": "Cette texture est illisible"
+  "warn.unreadable": "Cette texture est illisible",
+  "resize": "Redimensionner le panneau matériau",
+  "texture.choose": "Choisir la texture de {{name}}"
 }

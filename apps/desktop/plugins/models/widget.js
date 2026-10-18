@@ -99,9 +99,12 @@ function meshRow(object, index) {
 }
 
 function swatch(label) {
+  return textureSwatch(label ? colorTextures(model.matl).get(label) : null);
+}
+
+function textureSwatch(texture) {
   const box = document.createElement('span');
   box.className = 'swatch';
-  const texture = label ? colorTextures(model.matl).get(label) : null;
   if (texture) {
     image(texture).then((img) => {
       if (img) box.style.backgroundImage = `url(${img.src})`;
@@ -121,29 +124,61 @@ function materialButton(label) {
   return button;
 }
 
-let closeMenu = null;
+function textureField(value, label, onInput) {
+  const field = document.createElement('div');
+  field.className = 'texture-field';
+  const preview = document.createElement('button');
+  preview.type = 'button';
+  preview.className = 'texture-preview';
+  preview.setAttribute('aria-label', t('texture.choose', { name: label }));
+  const apply = (next) => {
+    input.value = next;
+    preview.replaceChildren(textureSwatch(next));
+    preview.title = next;
+    onInput(next);
+  };
+  const input = control(value, 'text', label, apply);
+  const browse = iconButton('folder2-open', t('texture.choose', { name: label }), () => choose());
+  const choose = () => {
+    const names = [...textureNames.options].map((o) => o.value);
+    openMenu(browse, [...new Set([input.value, ...names])].map((name) => ({ value: name, label: name, swatch: textureSwatch(name) })), input.value, apply);
+  };
+  preview.append(textureSwatch(value));
+  preview.title = value;
+  preview.addEventListener('click', choose);
+  field.append(preview, input, browse);
+  return field;
+}
+
 function openMaterialMenu(anchor, current, choose) {
+  openMenu(anchor, labels().map((label) => ({ value: label, label, swatch: swatch(label) })), current, choose);
+}
+
+let closeMenu = null;
+function openMenu(anchor, items, current, choose) {
   closeMenu?.();
   const menu = document.createElement('div');
   menu.className = 'material-menu';
   menu.role = 'listbox';
-  for (const label of labels()) {
+  for (const { value, label, swatch: box } of items) {
     const option = document.createElement('button');
     option.type = 'button';
     option.role = 'option';
-    option.setAttribute('aria-selected', String(label === current));
+    option.setAttribute('aria-selected', String(value === current));
     const name = document.createElement('span');
     name.textContent = label;
-    option.append(swatch(label), name);
+    name.title = label;
+    option.append(box, name);
     option.addEventListener('click', () => {
       closeMenu();
-      if (label !== current) choose(label);
+      if (value !== current) choose(value);
     });
     menu.append(option);
   }
   const box = anchor.getBoundingClientRect();
   const below = innerHeight - box.bottom;
-  Object.assign(menu.style, { left: `${box.left}px`, width: `${Math.max(box.width, 180)}px` });
+  const width = Math.max(box.width, 180);
+  Object.assign(menu.style, { left: `${Math.max(4, Math.min(box.left, innerWidth - width - 4))}px`, width: `${width}px` });
   if (below < 220 && box.top > below) Object.assign(menu.style, { bottom: `${innerHeight - box.top + 2}px`, maxHeight: `${box.top - 8}px` });
   else Object.assign(menu.style, { top: `${box.bottom + 2}px`, maxHeight: `${below - 8}px` });
   document.body.append(menu);
@@ -207,7 +242,7 @@ function materialsChanged() {
 
 function inspect(entry) {
   selected = entry;
-  inspector.hidden = entry === null;
+  inspector.hidden = splitter.hidden = entry === null;
   for (const li of materials.children) li.classList.toggle('is-selected', li.dataset.label === entry?.material_label);
   if (!entry) return params.replaceChildren();
   document.getElementById('material-name').textContent = entry.material_label;
@@ -224,6 +259,7 @@ function inspect(entry) {
         applyTextures(retexture(model.list, model.matl));
         inspect(entry);
       },
+      texture: textureField,
     }),
   );
   params.scrollTop = scroll;
@@ -503,7 +539,7 @@ async function open(next) {
     viewer.setSkeleton(skel ? skel.bones.map((b) => b.parent_index) : []);
     applyFrame();
     animOptions();
-    await tessera.widget.setState({ path });
+    await tessera.widget.setState({ path, inspector: inspectorWidth });
     await applyTextures(list.map((_, i) => i).filter((i) => list[i].texture));
     if (run === loading) say('');
   } catch (error) {
@@ -575,6 +611,30 @@ canvas.addEventListener('pointerdown', (event) => {
 });
 canvas.addEventListener('pointerleave', () => viewer?.setHighlight(picked));
 addEventListener('keyup', (event) => event.key === 'Control' && viewer?.setHighlight(picked));
+const splitter = document.getElementById('splitter');
+let inspectorWidth = 280;
+function resizeInspector(width) {
+  inspectorWidth = Math.round(Math.max(220, Math.min(width, view.clientWidth * 0.7 || width)));
+  inspector.style.width = `${inspectorWidth}px`;
+}
+const saveLayout = () => tessera.widget.setState({ path, inspector: inspectorWidth });
+splitter.addEventListener('pointerdown', (event) => {
+  splitter.setPointerCapture(event.pointerId);
+  const start = event.clientX;
+  const from = inspector.getBoundingClientRect().width;
+  const move = (e) => resizeInspector(from + start - e.clientX);
+  splitter.addEventListener('pointermove', move);
+  splitter.addEventListener('pointerup', () => {
+    splitter.removeEventListener('pointermove', move);
+    saveLayout();
+  }, { once: true });
+});
+splitter.addEventListener('keydown', (event) => {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  resizeInspector(inspectorWidth + (event.key === 'ArrowLeft' ? 24 : -24));
+  saveLayout();
+});
 document.getElementById('show-bones').addEventListener('change', (event) => viewer?.setBonesVisible(event.target.checked));
 document.getElementById('close').addEventListener('click', () => inspect(null));
 document.getElementById('rename').addEventListener('click', () => selected && renameSelected().catch(failed));
@@ -599,5 +659,9 @@ tessera.files.watch(() => {
   pending = setTimeout(() => refresh().catch(() => {}), 300);
 });
 tessera.ready
-  .then(async () => refresh((await tessera.widget.getState())?.path))
+  .then(async () => {
+    const state = await tessera.widget.getState();
+    if (typeof state?.inspector === 'number') resizeInspector(state.inspector);
+    await refresh(state?.path);
+  })
   .catch(failed);

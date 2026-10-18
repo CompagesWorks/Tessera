@@ -101,7 +101,7 @@ function adder(entry, kind, t, rebuild) {
   return [row];
 }
 
-function materialEditor(entry, t, { change, rebuild }) {
+function materialEditor(entry, t, { change, rebuild, texture }) {
   const remove = (kind, param) => {
     const button = iconButton('trash', t('param.remove', { name: param.param_id }), () => {
       removeParam(entry, kind, param.param_id);
@@ -133,7 +133,7 @@ function materialEditor(entry, t, { change, rebuild }) {
     return details;
   };
   return [
-    group('textures', t('group.textures'), simple('textures', 'text')),
+    group('textures', t('group.textures'), entry.textures.map((param) => fieldRow(param.param_id, texture(param.data, param.param_id, set(param, (v) => (param.data = v))), remove('textures', param)))),
     group('samplers', t('group.samplers'), structs('samplers', SAMPLER)),
     group('floats', t('group.floats'), simple('floats', 'number')),
     group('booleans', t('group.booleans'), simple('booleans', 'bool')),

@@ -54,5 +54,7 @@
   "loop": "Loop",
   "mipmaps": "{{count}} mipmaps",
   "warn.blocks": "{{width}}×{{height}} is not a multiple of 4: block-compressed textures can look wrong in game",
-  "warn.unreadable": "This texture cannot be read"
+  "warn.unreadable": "This texture cannot be read",
+  "resize": "Resize the material panel",
+  "texture.choose": "Choose the texture for {{name}}"
 }

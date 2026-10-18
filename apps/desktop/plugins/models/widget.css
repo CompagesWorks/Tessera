@@ -140,6 +140,7 @@ input[type='checkbox'] {
 .material-menu {
   position: fixed;
   z-index: 10;
+  box-sizing: border-box;
   overflow: hidden auto;
   padding: 4px;
   border: 1px solid var(--atrium-border-color);
@@ -221,10 +222,55 @@ input[type='checkbox'] {
 
 #inspector {
   display: flex;
+  flex: none;
   flex-direction: column;
   width: 280px;
   min-width: 220px;
   min-height: 0;
+}
+
+.splitter {
+  flex: none;
+  width: 6px;
+  margin: 0 -5px;
+  border-radius: 3px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.splitter:hover,
+.splitter:focus-visible {
+  outline: none;
+  background: rgba(var(--atrium-accent-rgb), 0.5);
+}
+
+.texture-field {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.texture-preview {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.texture-preview .swatch {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+}
+
+.texture-preview:focus-visible {
+  outline: 2px solid var(--atrium-accent-color);
+  outline-offset: 1px;
+  border-radius: 4px;
 }
 
 .inspector-head {
