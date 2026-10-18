@@ -209,7 +209,7 @@ function boneRows(skel) {
 function applyFrame() {
   if (!model?.skel) return;
   const frame = motion ? motion.frame : 0;
-  const p = pose(model.skel, model.bind, motion?.anim ?? null, frame);
+  const p = pose(model.skel, model.bind, motion?.anim ?? null, frame, model.hlpb);
   viewer.setPose(p);
   model.list.forEach((object, i) => {
     const visible = motion ? visibleBy(p.visibility, object.name) : object.initial;
@@ -343,15 +343,17 @@ async function open(next) {
     if (!mesh) throw new Error('noMesh');
     const skeleton = files.get(modl.skeleton_file_name.toLowerCase());
     const matlPath = modl.material_file_names.map((n) => files.get(n.toLowerCase())).find(Boolean) ?? null;
-    const [objects, matl, skel] = await Promise.all([
+    const helpers = entries.find((e) => /\.nuhlpb$/i.test(e.name))?.path;
+    const [objects, matl, skel, hlpb] = await Promise.all([
       tessera.ssbh.meshes(mesh, skeleton),
       matlPath ? tessera.ssbh.read(matlPath) : null,
       skeleton ? tessera.ssbh.read(skeleton) : null,
+      skeleton && helpers ? tessera.ssbh.read(helpers).catch(() => null) : null,
     ]);
     if (run !== loading) return;
     const list = drawList(modl, matl, objects);
     for (const object of list) object.initial = object.visible;
-    model = { modl, matl, matlPath, list, files, skel, bind: skel && bindPose(skel), modlDirty: false, matlDirty: false };
+    model = { modl, matl, matlPath, list, files, skel, hlpb, bind: skel && bindPose(skel), modlDirty: false, matlDirty: false };
     textureNames.replaceChildren(...entries.filter((e) => /\.nutexb$/i.test(e.name)).map((e) => new Option(e.name.replace(/\.nutexb$/i, ''))));
     box = bounds(list);
     viewer.setObjects(list, box);
