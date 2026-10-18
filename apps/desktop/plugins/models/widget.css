@@ -2,26 +2,6 @@
   display: none !important;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track,
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: var(--atrium-border-color) padding-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--atrium-border-hover) padding-box;
-}
-
 html,
 body {
   height: 100%;
@@ -283,7 +263,6 @@ details h4 {
 #frame {
   flex: 1;
   min-width: 80px;
-  accent-color: var(--atrium-accent-color);
 }
 
 #frame-label {

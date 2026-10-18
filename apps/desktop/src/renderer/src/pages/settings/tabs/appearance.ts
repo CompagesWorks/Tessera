@@ -35,6 +35,7 @@ function scale({ settings, update }: TabContext): HTMLElement {
   wrap.className = 'tessera-set-range';
   const input = document.createElement('input');
   input.type = 'range';
+  input.className = 'atrium-range';
   input.min = String(UI_SCALE_MIN);
   input.max = String(UI_SCALE_MAX);
   input.step = '5';

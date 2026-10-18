@@ -277,9 +277,10 @@
 
 .tessera-activity {
   max-width: 640px;
+  max-height: 330px;
   border: 1px solid var(--atrium-border-color);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: hidden auto;
 }
 
 .tessera-activity-row {

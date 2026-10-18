@@ -2,6 +2,30 @@
   display: none !important;
 }
 
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--atrium-border-hover) padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--atrium-text-muted) padding-box;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
 body > .atrium-titlebar {
   box-shadow: none;
 }

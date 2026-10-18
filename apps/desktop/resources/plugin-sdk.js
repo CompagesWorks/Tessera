@@ -14,6 +14,15 @@
     document.head.prepend(link);
   }
 
+  const scrollbars = document.createElement('style');
+  scrollbars.textContent =
+    '::-webkit-scrollbar{width:10px;height:10px}' +
+    '::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}' +
+    '::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:10px;background:var(--atrium-border-hover) padding-box}' +
+    '::-webkit-scrollbar-thumb:hover{background:var(--atrium-text-muted) padding-box}' +
+    '::-webkit-scrollbar-button{display:none}';
+  document.head.prepend(scrollbars);
+
   function emit(event, payload) {
     for (const listener of listeners.get(event) ?? []) {
       try {
