@@ -270,6 +270,7 @@ const methods: Record<string, Method> = {
   'textures.add': forward('textures.add', () => 'fs.project.write'),
   'ssbh.read': forward('ssbh.read', () => 'fs.project.read'),
   'ssbh.meshes': forward('ssbh.meshes', () => 'fs.project.read'),
+  'ssbh.write': forward('ssbh.write', () => 'fs.project.write'),
   'net.fetch': forward('net.fetch', () => 'net'),
   'secrets.get': forward('secrets.get', () => 'secrets'),
   'secrets.set': forward('secrets.set', () => 'secrets'),

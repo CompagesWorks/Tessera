@@ -538,6 +538,16 @@ const modl = await tessera.ssbh.read('sources/fighter/mario/model/body/c00/model
 modl.entries[0]; // { mesh_object_name, mesh_object_subindex, material_label }
 ```
 
+#### `tessera.ssbh.write(path, data)`
+
+Writes `data`, in the shape `tessera.ssbh.read` gives, back to a project SSBH file of the same type (picked from the extension). Invalid data fails with `invalid ssbh data: …` and leaves the file untouched. The change goes to the project history. Needs `fs.project.read` and `fs.project.write`.
+
+```js
+const matl = await tessera.ssbh.read('sources/fighter/mario/model/body/c00/model.numatb');
+matl.entries[0].textures[0].data = 'def_mario_001_col_alt';
+await tessera.ssbh.write('sources/fighter/mario/model/body/c00/model.numatb', matl);
+```
+
 #### `tessera.ssbh.meshes(path, skeleton?)`
 
 Reads a project `.numshb` and resolves to one entry per mesh object, ready for WebGL: `{ name, subindex, positions, normals, uvs, indices }`. `positions` and `normals` are `Float32Array`s of xyz, `uvs` is a `Float32Array` of the `map1` UVs (or the first UV set, `null` if none), and `indices` is a `Uint32Array` of triangles. With a `.nusktb` `skeleton`, meshes that have no bone weights are moved to their parent bone, as in game. Needs `fs.project.read`.

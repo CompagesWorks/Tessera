@@ -477,6 +477,15 @@ fn api_reads_ssbh_files_inside_the_project() {
     assert!(f.call("ssbh.read", Some(json!({ "path": "sources/model.numdlb", "skeleton": "a.nusktb" }))).is_err());
     assert!(f.call("ssbh.meshes", Some(json!({ "path": "../model.numshb" }))).is_err());
     assert!(f.call("ssbh.meshes", Some(json!({ "path": "sources/model.numdlb" }))).is_err());
+    assert_eq!(err(f.call("ssbh.write", Some(json!({ "path": "sources/model.numdlb", "data": {} })))), "permission denied: fs.project.write");
+    let w = ApiFixture::new(json!(["fs.project.read", "fs.project.write"]), &[Permission::FsProjectRead, Permission::FsProjectWrite], Decision::Deny);
+    modl.write_to_file(w.project.join("sources/model.numdlb")).unwrap();
+    let mut data = w.call("ssbh.read", Some(json!({ "path": "sources/model.numdlb" }))).unwrap();
+    data["mesh_file_name"] = json!("other.numshb");
+    w.call("ssbh.write", Some(json!({ "path": "sources/model.numdlb", "data": data }))).unwrap();
+    assert_eq!(w.call("ssbh.read", Some(json!({ "path": "sources/model.numdlb" }))).unwrap()["mesh_file_name"], "other.numshb");
+    assert!(w.call("ssbh.write", Some(json!({ "path": "sources/model.numdlb", "data": { "entries": 1 } }))).is_err());
+    assert_eq!(w.call("ssbh.read", Some(json!({ "path": "sources/model.numdlb" }))).unwrap()["mesh_file_name"], "other.numshb");
 }
 
 #[test]

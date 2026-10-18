@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import source from '../../../../plugins/ssbh/model.js?raw';
-const { drawList, bounds, folderOf } = new Function(`${source}; return { drawList, bounds, folderOf };`)();
+const { drawList, bounds, folderOf, retexture, assignMaterial } = new Function(`${source}; return { drawList, bounds, folderOf, retexture, assignMaterial };`)();
 
 describe('ssbh model', () => {
   const modl = {
@@ -33,6 +33,25 @@ describe('ssbh model', () => {
       ),
     ).toEqual([true, true, false]);
     expect(drawList(modl, null, [{ name: 'body', subindex: 0 }])[0].texture).toBe(null);
+  });
+
+  it('follows material edits and reassignments', () => {
+    const model = structuredClone(modl);
+    const materials = structuredClone(matl);
+    const list = drawList(model, materials, [
+      { name: 'body', subindex: 0 },
+      { name: 'eye', subindex: 0 },
+      { name: 'hat', subindex: 0 },
+    ]);
+    materials.entries[0]!.textures[1]!.data = 'alt_col';
+    expect(retexture(list, materials)).toEqual([0]);
+    expect(list[0]!.texture).toBe('alt_col');
+    assignMaterial(model, list[1], 'skin');
+    assignMaterial(model, list[2], 'skin');
+    expect(model.entries[1]!.material_label).toBe('skin');
+    expect(model.entries[2]).toEqual({ mesh_object_name: 'hat', mesh_object_subindex: 0, material_label: 'skin' });
+    expect(retexture(list, materials)).toEqual([1, 2]);
+    expect(retexture(list, materials)).toEqual([]);
   });
 
   it('frames the model', () => {

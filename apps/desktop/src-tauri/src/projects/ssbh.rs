@@ -37,6 +37,26 @@ pub fn read_ssbh(bytes: &[u8], path: &str) -> Result<Value> {
     }
 }
 
+fn write<T: SsbhData + serde::de::DeserializeOwned>(data: Value) -> Result<Vec<u8>> {
+    let data: T = serde_json::from_value(data).map_err(|e| Error::new(format!("invalid ssbh data: {e}")))?;
+    let mut out = Cursor::new(Vec::new());
+    data.write(&mut out).map_err(|e| Error::new(format!("invalid ssbh data: {e}")))?;
+    Ok(out.into_inner())
+}
+
+pub fn write_ssbh(data: Value, path: &str) -> Result<Vec<u8>> {
+    match path.rsplit('.').next().unwrap_or("").to_ascii_lowercase().as_str() {
+        "numdlb" | "nusrcmdlb" => write::<ssbh_data::modl_data::ModlData>(data),
+        "numatb" => write::<ssbh_data::matl_data::MatlData>(data),
+        "nusktb" => write::<SkelData>(data),
+        "nuhlpb" => write::<ssbh_data::hlpb_data::HlpbData>(data),
+        "nuanmb" => write::<ssbh_data::anim_data::AnimData>(data),
+        "numshexb" => write::<ssbh_data::meshex_data::MeshExData>(data),
+        "adjb" => write::<ssbh_data::adj_data::AdjData>(data),
+        _ => Err(Error::new("unsupported ssbh file")),
+    }
+}
+
 fn floats(values: impl Iterator<Item = f32>) -> String {
     base64::engine::general_purpose::STANDARD.encode(values.flat_map(f32::to_le_bytes).collect::<Vec<_>>())
 }
@@ -133,6 +153,12 @@ mod tests {
             }],
         };
         assert_eq!(read_ssbh(&bytes(&matl), "model.numatb").unwrap()["entries"][0]["textures"][0], serde_json::json!({ "param_id": "Texture0", "data": "def_col" }));
+        let mut edited = read_ssbh(&bytes(&matl), "model.numatb").unwrap();
+        edited["entries"][0]["textures"][0]["data"] = "new_col".into();
+        let written = write_ssbh(edited, "model.numatb").unwrap();
+        assert_eq!(read_ssbh(&written, "model.numatb").unwrap()["entries"][0]["textures"][0]["data"], "new_col");
+        assert!(write_ssbh(serde_json::json!({ "entries": 3 }), "model.numatb").unwrap_err().to_string().starts_with("invalid ssbh data"));
+        assert!(write_ssbh(serde_json::json!({}), "model.txt").is_err());
         assert!(read_ssbh(b"nope", "model.numdlb").is_err());
         assert!(read_ssbh(&bytes(&modl), "model.txt").is_err());
     }

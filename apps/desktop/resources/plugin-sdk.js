@@ -334,6 +334,7 @@
     }),
     ssbh: Object.freeze({
       read: (path) => call('ssbh.read', { path }),
+      write: (path, data) => call('ssbh.write', { path, data }),
       meshes: (path, skeleton) =>
         call('ssbh.meshes', skeleton === undefined ? { path } : { path, skeleton }).then((objects) =>
           objects.map((o) => ({

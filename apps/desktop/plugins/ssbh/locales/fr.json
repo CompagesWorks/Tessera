@@ -1,6 +1,6 @@
 {
-  "description": "Affiche les modèles de Smash Ultimate (.numdlb, .numshb, .numatb, .nusktb) en 3D avec leurs textures, comme SSBH Editor.",
-  "widget.description": "Visualiseur de modèles 3D",
+  "description": "Affiche les modèles de Smash Ultimate (.numdlb, .numshb, .nusktb) en 3D avec leurs textures et modifie leurs matériaux (.numatb), comme SSBH Editor.",
+  "widget.description": "Visualiseur 3D et éditeur de matériaux",
   "file.label": "Modèle",
   "reset": "Recadrer la caméra",
   "filter": "Filtrer",
@@ -12,5 +12,21 @@
   "empty": "Aucun modèle .numdlb dans le projet.",
   "notModel": "{{name}} n’est pas un modèle .numdlb",
   "error.noMesh": "Le fichier .numshb indiqué par ce modèle est introuvable",
-  "error.webgl2": "WebGL 2 n’est pas disponible"
+  "error.webgl2": "WebGL 2 n’est pas disponible",
+  "save": "Enregistrer",
+  "saveFirst": "Enregistre tes changements avant d’ouvrir un autre modèle",
+  "saved": "Modèle enregistré",
+  "tab.meshes": "Meshes",
+  "tab.materials": "Matériaux",
+  "close": "Fermer",
+  "visible": "Afficher {{name}}",
+  "material.for": "Matériau de {{name}}",
+  "usedBy": "Utilisé par {{count}} meshes",
+  "group.textures": "Textures",
+  "group.samplers": "Samplers",
+  "group.floats": "Floats",
+  "group.booleans": "Booléens",
+  "group.vectors": "Vecteurs",
+  "group.blend": "Blend state",
+  "group.rasterizer": "Rasterizer state"
 }

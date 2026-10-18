@@ -46,7 +46,31 @@ aside {
   min-width: 140px;
 }
 
-#meshes {
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--atrium-bg-tertiary);
+}
+
+.tab {
+  flex: 1;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  color: var(--atrium-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  color: var(--atrium-text-primary);
+  background: var(--atrium-bg-secondary);
+}
+
+.list {
   flex: 1;
   margin: 0;
   padding: 0;
@@ -54,28 +78,141 @@ aside {
   list-style: none;
 }
 
-#meshes label {
-  display: flex;
+.mesh {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 6px;
-  padding: 3px 4px;
+  gap: 2px 6px;
+  padding: 4px;
   border-radius: 4px;
-  cursor: pointer;
 }
 
-#meshes label:hover {
+.mesh:hover {
   background: var(--atrium-bg-tertiary);
 }
 
-#meshes span {
+.mesh select {
+  grid-column: 2;
+  min-width: 0;
+  font-size: 11px;
+}
+
+.mesh span,
+.material span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-#meshes small {
+.material {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.material:hover {
+  background: var(--atrium-bg-tertiary);
+}
+
+.is-selected .material {
+  color: var(--atrium-accent-color);
+  background: rgba(var(--atrium-accent-rgb), 0.12);
+}
+
+.material small {
   margin-left: auto;
   color: var(--atrium-text-muted);
+}
+
+#inspector {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  min-width: 220px;
+  min-height: 0;
+}
+
+.inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.inspector-head h3 {
+  margin: 0;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.inspector-head p {
+  margin: 2px 0 0;
+  font-family: var(--atrium-font-mono, monospace);
+  font-size: 10.5px;
+  color: var(--atrium-text-muted);
+  word-break: break-all;
+}
+
+#params {
+  flex: 1;
+  overflow: auto;
+}
+
+details {
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--atrium-border-color);
+}
+
+summary {
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--atrium-text-secondary);
+  cursor: pointer;
+}
+
+details h4 {
+  margin: 8px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--atrium-text-muted);
+}
+
+.field {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.field > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--atrium-text-secondary);
+}
+
+.values {
+  display: flex;
+  gap: 3px;
+  min-width: 0;
+}
+
+.values .atrium-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
 }
 
 .stage {

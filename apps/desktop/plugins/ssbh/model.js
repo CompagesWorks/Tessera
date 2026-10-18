@@ -39,3 +39,21 @@ function bounds(objects) {
   const center = min.map((v, k) => (v + max[k]) / 2);
   return { center, radius: Math.max(Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2, 0.01) };
 }
+
+function retexture(list, matl) {
+  const textures = colorTextures(matl);
+  const changed = [];
+  list.forEach((object, i) => {
+    const texture = object.material === null ? null : (textures.get(object.material) ?? null);
+    if (texture !== object.texture) changed.push(i);
+    object.texture = texture;
+  });
+  return changed;
+}
+
+function assignMaterial(modl, object, label) {
+  const entry = modl.entries.find((e) => e.mesh_object_name === object.name && e.mesh_object_subindex === object.subindex);
+  if (entry) entry.material_label = label;
+  else modl.entries.push({ mesh_object_name: object.name, mesh_object_subindex: object.subindex, material_label: label });
+  object.material = label;
+}

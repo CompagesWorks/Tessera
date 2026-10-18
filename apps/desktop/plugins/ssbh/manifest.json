@@ -9,7 +9,8 @@
     "tessera": "^0.1.0"
   },
   "permissions": [
-    "fs.project.read"
+    "fs.project.read",
+    "fs.project.write"
   ],
   "contributes": {
     "widgets": [

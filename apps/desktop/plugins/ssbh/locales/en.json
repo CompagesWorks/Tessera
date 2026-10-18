@@ -1,6 +1,6 @@
 {
-  "description": "Views Smash Ultimate models (.numdlb, .numshb, .numatb, .nusktb) in 3D with their textures, like SSBH Editor.",
-  "widget.description": "3D model viewer",
+  "description": "Views Smash Ultimate models (.numdlb, .numshb, .nusktb) in 3D with their textures and edits their materials (.numatb), like SSBH Editor.",
+  "widget.description": "3D model viewer and material editor",
   "file.label": "Model",
   "reset": "Reset camera",
   "filter": "Filter",
@@ -12,5 +12,21 @@
   "empty": "No .numdlb model in the project.",
   "notModel": "{{name}} is not a .numdlb model",
   "error.noMesh": "The .numshb file named by this model is missing",
-  "error.webgl2": "WebGL 2 is not available"
+  "error.webgl2": "WebGL 2 is not available",
+  "save": "Save",
+  "saveFirst": "Save your changes before opening another model",
+  "saved": "Model saved",
+  "tab.meshes": "Meshes",
+  "tab.materials": "Materials",
+  "close": "Close",
+  "visible": "Show {{name}}",
+  "material.for": "Material of {{name}}",
+  "usedBy": "Used by {{count}} meshes",
+  "group.textures": "Textures",
+  "group.samplers": "Samplers",
+  "group.floats": "Floats",
+  "group.booleans": "Booleans",
+  "group.vectors": "Vectors",
+  "group.blend": "Blend state",
+  "group.rasterizer": "Rasterizer state"
 }

@@ -12,7 +12,7 @@ use crate::projects::export::deploy_project;
 use crate::projects::files::TESSERA_DIR;
 use crate::projects::history::{HistoryService, Meta};
 use crate::projects::service::ProjectService;
-use crate::projects::ssbh::{mesh_buffers, read_ssbh};
+use crate::projects::ssbh::{mesh_buffers, read_ssbh, write_ssbh};
 use crate::projects::textures::{add_texture, convert_texture, export_texture, preview_texture, replace_texture, Options};
 use crate::schema::check;
 use crate::schema::plugins::{Permission, MAX_BINARY_BYTES};
@@ -135,6 +135,13 @@ struct PreviewParams {
 struct SsbhParams {
     path: String,
     skeleton: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SsbhWriteParams {
+    path: String,
+    data: Value,
 }
 
 #[derive(Deserialize)]
@@ -640,6 +647,25 @@ impl PluginApi {
                         }
                         let skeleton = p.skeleton.as_ref().map(|s| scoped_fs::scoped_read_bytes(&scope, s)).transpose()?;
                         to_value(mesh_buffers(&bytes, skeleton.as_deref())?)
+                    }),
+                )
+            }
+            "ssbh.write" => {
+                let p: SsbhWriteParams = object(params)?;
+                plugin_path(&p.path, 1)?;
+                let target = format!("project:{}", p.path);
+                prepared(
+                    Permission::FsProjectWrite,
+                    "ssbh.write",
+                    target,
+                    Box::new(move || {
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsProjectRead) {
+                            return Err(Error::new("permission denied: fs.project.read"));
+                        }
+                        let scope = self.scope_of(ctx, FsScope::Project)?;
+                        let data = write_ssbh(p.data, &p.path)?;
+                        self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.path.clone(), &[&p.path], || scoped_fs::scoped_write_bytes(&scope, &p.path, &data))?;
+                        Ok(Value::Null)
                     }),
                 )
             }
