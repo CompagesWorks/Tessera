@@ -6,7 +6,7 @@
   "filter": "Filter",
   "filter.label": "Filter meshes and materials",
   "canvas.label": "3D view of the model",
-  "controls": "Drag to rotate · Shift or right drag to pan · Wheel to zoom",
+  "controls": "Drag to rotate · Shift or right drag to pan · Wheel to zoom · Hold Ctrl and click to pick a mesh",
   "loading": "Loading model…",
   "textures": "Loading textures {{done}}/{{total}}…",
   "empty": "No .numdlb model in the project.",

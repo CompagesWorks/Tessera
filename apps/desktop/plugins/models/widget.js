@@ -32,6 +32,7 @@ let anims = [];
 let motion = null;
 let playing = false;
 let last = 0;
+let picked = null;
 
 function failed(error) {
   const key = `error.${error.message}`;
@@ -94,9 +95,9 @@ function meshRow(object, index) {
   });
   li.append(check, name, material);
   li.addEventListener('pointerenter', () => viewer?.setHighlight(index));
-  li.addEventListener('pointerleave', () => viewer?.setHighlight(null));
+  li.addEventListener('pointerleave', () => viewer?.setHighlight(picked));
   li.addEventListener('focusin', () => viewer?.setHighlight(index));
-  li.addEventListener('focusout', () => viewer?.setHighlight(null));
+  li.addEventListener('focusout', () => viewer?.setHighlight(picked));
   return li;
 }
 
@@ -190,6 +191,20 @@ function deleteSelected() {
   inspect(null);
   materialsChanged();
   tessera.ui.toast('info', t('material.deleted', { name: label }));
+}
+
+function pickMesh(index) {
+  picked = index;
+  viewer.setHighlight(index);
+  [...meshes.children].forEach((li, i) => li.classList.toggle('is-selected', i === index));
+  if (index === null) return;
+  const li = meshes.children[index];
+  if (li.hidden) {
+    filter.value = '';
+    show();
+  }
+  select('meshes');
+  li.scrollIntoView({ block: 'nearest' });
 }
 
 function showMesh(index, visible) {
@@ -371,6 +386,7 @@ async function open(next) {
   path = next;
   picker.value = path;
   model = null;
+  picked = null;
   setPlaying(false);
   motion = null;
   images.clear();
@@ -472,6 +488,21 @@ slider.addEventListener('input', () => {
   motion.frame = Number(slider.value);
   applyFrame();
 });
+const canvas = document.getElementById('canvas');
+let hovering = 0;
+canvas.addEventListener('pointermove', (event) => {
+  if (!event.ctrlKey || event.buttons || !model || hovering) return;
+  const { clientX, clientY } = event;
+  hovering = requestAnimationFrame(() => {
+    hovering = 0;
+    viewer.setHighlight(viewer.pick(clientX, clientY) ?? picked);
+  });
+});
+canvas.addEventListener('pointerdown', (event) => {
+  if (event.ctrlKey && event.button === 0 && model) pickMesh(viewer.pick(event.clientX, event.clientY));
+});
+canvas.addEventListener('pointerleave', () => viewer?.setHighlight(picked));
+addEventListener('keyup', (event) => event.key === 'Control' && viewer?.setHighlight(picked));
 document.getElementById('show-bones').addEventListener('change', (event) => viewer?.setBonesVisible(event.target.checked));
 document.getElementById('close').addEventListener('click', () => inspect(null));
 document.getElementById('rename').addEventListener('click', () => selected && renameSelected().catch(failed));

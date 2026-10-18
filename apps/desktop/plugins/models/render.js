@@ -140,11 +140,7 @@ function createViewer(canvas) {
     gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
   };
 
-  function render() {
-    frame = 0;
-    const width = Math.max(1, Math.round(canvas.clientWidth * devicePixelRatio));
-    const height = Math.max(1, Math.round(canvas.clientHeight * devicePixelRatio));
-    if (canvas.width !== width || canvas.height !== height) Object.assign(canvas, { width, height });
+  function begin(width, height) {
     gl.viewport(0, 0, width, height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
@@ -158,6 +154,15 @@ function createViewer(canvas) {
     gl.uniformMatrix4fv(uniform('projection'), false, projectionMatrix);
     gl.uniform2f(uniform('outline'), 0, 0);
     gl.uniform4f(uniform('tint'), 0, 0, 0, 0);
+    return { viewMatrix, projectionMatrix };
+  }
+
+  function render() {
+    frame = 0;
+    const width = Math.max(1, Math.round(canvas.clientWidth * devicePixelRatio));
+    const height = Math.max(1, Math.round(canvas.clientHeight * devicePixelRatio));
+    if (canvas.width !== width || canvas.height !== height) Object.assign(canvas, { width, height });
+    const { viewMatrix, projectionMatrix } = begin(width, height);
     for (const draw of draws) {
       if (!draw.visible) continue;
       gl.bindVertexArray(draw.vao);
@@ -263,6 +268,38 @@ function createViewer(canvas) {
     redraw();
   }
 
+  let target = null;
+  function pick(clientX, clientY) {
+    const { width, height } = canvas;
+    if (!target || target.width !== width || target.height !== height) {
+      if (target) gl.deleteFramebuffer(target.buffer);
+      const buffer = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, buffer);
+      for (const [format, attachment] of [[gl.RGBA8, gl.COLOR_ATTACHMENT0], [gl.DEPTH_COMPONENT16, gl.DEPTH_ATTACHMENT]]) {
+        const storage = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, storage);
+        gl.renderbufferStorage(gl.RENDERBUFFER, format, width, height);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, attachment, gl.RENDERBUFFER, storage);
+      }
+      target = { buffer, width, height };
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.buffer);
+    begin(width, height);
+    draws.forEach((draw, i) => {
+      if (!draw.visible) return;
+      gl.uniform4f(uniform('tint'), ((i + 1) & 255) / 255, ((i + 1) >> 8) / 255, 0, 1);
+      gl.bindVertexArray(draw.vao);
+      gl.drawElements(gl.TRIANGLES, draw.count, gl.UNSIGNED_INT, 0);
+    });
+    gl.bindVertexArray(null);
+    const box = canvas.getBoundingClientRect();
+    const pixel = new Uint8Array(4);
+    gl.readPixels(Math.floor(((clientX - box.left) / box.width) * width), Math.floor(((box.bottom - clientY) / box.height) * height), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const id = pixel[0] + pixel[1] * 256;
+    return id ? id - 1 : null;
+  }
+
   function setHighlight(index) {
     highlight = index;
     redraw();
@@ -275,6 +312,7 @@ function createViewer(canvas) {
 
   let drag = null;
   canvas.addEventListener('pointerdown', (event) => {
+    if (event.ctrlKey) return;
     drag = { x: event.clientX, y: event.clientY, pan: event.button !== 0 || event.shiftKey };
     canvas.setPointerCapture(event.pointerId);
   });
@@ -302,5 +340,5 @@ function createViewer(canvas) {
   }, { passive: false });
   new ResizeObserver(redraw).observe(canvas);
 
-  return { setObjects, setTexture, setVisible, setHighlight, setSkeleton, setPose, setBonesVisible, fit };
+  return { setObjects, setTexture, setVisible, setHighlight, pick, setSkeleton, setPose, setBonesVisible, fit };
 }

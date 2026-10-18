@@ -6,7 +6,7 @@
   "filter": "Filtrer",
   "filter.label": "Filtrer les meshes et matériaux",
   "canvas.label": "Vue 3D du modèle",
-  "controls": "Glisser pour tourner · Maj ou clic droit pour déplacer · Molette pour zoomer",
+  "controls": "Glisser pour tourner · Maj ou clic droit pour déplacer · Molette pour zoomer · Maintenir Ctrl et cliquer pour choisir un mesh",
   "loading": "Chargement du modèle…",
   "textures": "Chargement des textures {{done}}/{{total}}…",
   "empty": "Aucun modèle .numdlb dans le projet.",
