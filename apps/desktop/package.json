@@ -14,10 +14,19 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-xml": "^6.1.0",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/legacy-modes": "^6.5.5",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.14",
+    "@lezer/highlight": "^1.2.5",
     "@tauri-apps/api": "^2.12.3",
     "@tessera/protocol": "0.1.0",
     "atrium-ui": "github:CompagesWorks/Atrium-UI",
     "bootstrap-icons": "^1.11.3",
+    "codemirror": "^6.0.2",
     "dompurify": "^3.4.16",
     "marked": "^18.1.0",
     "zod": "^4.1.0"

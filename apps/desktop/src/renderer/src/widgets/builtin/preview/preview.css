@@ -13,8 +13,7 @@
 .tessera-preview-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
   font-size: 12px;
   color: var(--atrium-text-secondary);
 }
@@ -58,6 +57,60 @@
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
   white-space: pre;
   tab-size: 2;
+}
+
+.tessera-preview-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tessera-preview.is-dirty .tessera-preview-name::after {
+  content: ' ●';
+  color: var(--atrium-accent-color);
+}
+
+.tessera-preview.is-editing .tessera-preview-content {
+  height: 320px;
+}
+
+.tessera-preview.is-widget.is-editing .tessera-preview-content {
+  height: auto;
+}
+
+.tessera-code-editor {
+  overflow: hidden;
+  border: 1px solid var(--atrium-border-color);
+}
+
+.tessera-preview {
+  --tessera-code-background: #1e1e1e;
+  --tessera-code-active-line: rgba(255, 255, 255, 0.04);
+  --tessera-code-selection: rgba(38, 79, 120, 0.85);
+  --tessera-code-keyword: #569cd6;
+  --tessera-code-string: #ce9178;
+  --tessera-code-number: #b5cea8;
+  --tessera-code-property: #9cdcfe;
+  --tessera-code-comment: #6a9955;
+  --tessera-code-type: #4ec9b0;
+  --tessera-code-punctuation: #d4d4d4;
+  --tessera-code-invalid: #f44747;
+}
+
+html[data-atrium-theme='light'] .tessera-preview {
+  --tessera-code-background: #ffffff;
+  --tessera-code-active-line: rgba(0, 0, 0, 0.04);
+  --tessera-code-selection: #add6ff;
+  --tessera-code-keyword: #0000ff;
+  --tessera-code-string: #a31515;
+  --tessera-code-number: #098658;
+  --tessera-code-property: #0451a5;
+  --tessera-code-comment: #008000;
+  --tessera-code-type: #267f99;
+  --tessera-code-punctuation: #383a42;
+  --tessera-code-invalid: #cd3131;
 }
 
 .tessera-preview.is-loading .tessera-preview-content {

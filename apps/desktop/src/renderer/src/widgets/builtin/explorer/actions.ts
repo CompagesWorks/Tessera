@@ -11,7 +11,7 @@ export const parentOf = (path: string) => path.slice(0, Math.max(path.lastIndexO
 const nameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 const validName = (value: string) => (value.trim() && !/[\\/:*?"<>|]/.test(value) && value.trim() !== '..' ? null : t('widget.explorer.badName'));
 
-function toBase64(file: File) {
+export function toBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result).slice(String(reader.result).indexOf(',') + 1));
