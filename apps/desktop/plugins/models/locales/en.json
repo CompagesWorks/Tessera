@@ -48,5 +48,11 @@
   "material.delete": "Delete material",
   "material.taken": "A material named “{{name}}” already exists",
   "material.inUse": "{{name}} is still used by meshes. Assign them another material first.",
-  "material.deleted": "{{name}} deleted"
+  "material.deleted": "{{name}} deleted",
+  "tab.files": "Files",
+  "speed": "Speed",
+  "loop": "Loop",
+  "mipmaps": "{{count}} mipmaps",
+  "warn.blocks": "{{width}}×{{height}} is not a multiple of 4: block-compressed textures can look wrong in game",
+  "warn.unreadable": "This texture cannot be read"
 }

@@ -16,8 +16,11 @@ const animPicker = document.getElementById('anim');
 const play = document.getElementById('play');
 const slider = document.getElementById('frame');
 const frameLabel = document.getElementById('frame-label');
-const tabs = { meshes: document.getElementById('tab-meshes'), materials: document.getElementById('tab-materials'), bones: document.getElementById('tab-bones') };
-const panels = { meshes, materials, bones: bonesList };
+const speed = document.getElementById('speed');
+const loop = document.getElementById('loop');
+const filesList = document.getElementById('files');
+const tabs = { meshes: document.getElementById('tab-meshes'), materials: document.getElementById('tab-materials'), bones: document.getElementById('tab-bones'), files: document.getElementById('tab-files') };
+const panels = { meshes, materials, bones: bonesList, files: filesList };
 const images = new Map();
 let viewer = null;
 let path = '';
@@ -192,6 +195,45 @@ function showMesh(index, visible) {
   viewer.setVisible(index, visible);
 }
 
+const FILE_ICONS = { numshb: 'triangle', numdlb: 'triangle', numshexb: 'triangle', nusktb: 'diagram-3', nuhlpb: 'bezier2', numatb: 'circle-half', nuanmb: 'film' };
+
+function textureWarning({ width, height, format }) {
+  return /^BC/.test(format ?? '') && (width % 4 || height % 4) ? t('warn.blocks', { width, height }) : '';
+}
+
+function fileRow(entry) {
+  const li = document.createElement('li');
+  li.className = 'file';
+  li.title = entry.name;
+  li.dataset.search = entry.name.toLowerCase();
+  const ext = entry.name.split('.').pop().toLowerCase();
+  const icon = document.createElement('i');
+  icon.className = `bi bi-${FILE_ICONS[ext] ?? 'file-earmark'}`;
+  const name = document.createElement('span');
+  name.textContent = entry.name;
+  li.append(icon, name);
+  if (ext === 'nutexb') {
+    const run = loading;
+    image(entry.name.replace(/\.nutexb$/i, '')).then((img) => {
+      if (run !== loading) return;
+      if (!img) {
+        icon.className = 'bi bi-exclamation-triangle warn';
+        li.title = `${entry.name}\n${t('warn.unreadable')}`;
+        return;
+      }
+      const thumb = img.cloneNode();
+      thumb.className = 'thumb';
+      thumb.alt = '';
+      icon.replaceWith(thumb);
+      const { width, height, format, mipmaps } = img.info;
+      const warning = textureWarning(img.info);
+      li.title = `${entry.name}\n${width}×${height} · ${format ?? ''} · ${t('mipmaps', { count: mipmaps })}${warning ? `\n⚠ ${warning}` : ''}`;
+      if (warning) li.append(Object.assign(document.createElement('i'), { className: 'bi bi-exclamation-triangle warn' }));
+    });
+  }
+  return li;
+}
+
 function boneRows(skel) {
   const depth = [];
   const level = (i) => (depth[i] ??= skel.bones[i].parent_index === null ? 0 : level(skel.bones[i].parent_index) + 1);
@@ -225,6 +267,7 @@ function setPlaying(next) {
   play.title = t(playing ? 'pause' : 'play');
   play.setAttribute('aria-label', play.title);
   if (playing) {
+    if (!loop.checked && motion.frame >= motion.frames - 1) motion.frame = 0;
     last = performance.now();
     requestAnimationFrame(tick);
   }
@@ -232,9 +275,11 @@ function setPlaying(next) {
 
 function tick(now) {
   if (!playing || !motion) return;
-  motion.frame = (motion.frame + (Math.max(now - last, 0) / 1000) * 60) % motion.frames;
+  const next = motion.frame + (Math.max(now - last, 0) / 1000) * 60 * (Number(speed.value) || 1);
   last = now;
+  motion.frame = loop.checked ? next % motion.frames : Math.min(next, motion.frames - 1);
   applyFrame();
+  if (!loop.checked && motion.frame >= motion.frames - 1) return setPlaying(false);
   requestAnimationFrame(tick);
 }
 
@@ -272,7 +317,7 @@ async function openAnim(next) {
 
 function show() {
   const query = filter.value.trim().toLowerCase();
-  for (const list of [meshes, materials, bonesList]) for (const li of list.children) li.hidden = query !== '' && !li.dataset.search.includes(query);
+  for (const list of [meshes, materials, bonesList, filesList]) for (const li of list.children) li.hidden = query !== '' && !li.dataset.search.includes(query);
 }
 
 function select(tab) {
@@ -285,11 +330,11 @@ function image(name) {
   if (!images.has(key)) {
     const file = model.files.get(`${key}.nutexb`);
     const load = async () => {
-      const { data } = await tessera.textures.preview(file);
+      const { data, width, height, format, mipmaps } = await tessera.textures.preview(file);
       const img = new Image();
       img.src = `data:image/png;base64,${data}`;
       await img.decode();
-      return img;
+      return Object.assign(img, { info: { width, height, format, mipmaps } });
     };
     images.set(key, file ? load().catch(() => null) : Promise.resolve(null));
   }
@@ -330,6 +375,7 @@ async function open(next) {
   meshes.replaceChildren();
   materials.replaceChildren();
   bonesList.replaceChildren();
+  filesList.replaceChildren();
   animOptions();
   if (!path) return;
   const run = ++loading;
@@ -360,6 +406,7 @@ async function open(next) {
     meshes.replaceChildren(...list.map(meshRow));
     materials.replaceChildren(...(matl?.entries ?? []).map(materialRow));
     bonesList.replaceChildren(...(skel ? boneRows(skel) : []));
+    filesList.replaceChildren(...entries.filter((e) => e.kind !== 'dir').map(fileRow));
     show();
     viewer.setSkeleton(skel ? skel.bones.map((b) => b.parent_index) : []);
     applyFrame();
@@ -412,6 +459,7 @@ filter.addEventListener('input', show);
 tabs.meshes.addEventListener('click', () => select('meshes'));
 tabs.materials.addEventListener('click', () => select('materials'));
 tabs.bones.addEventListener('click', () => select('bones'));
+tabs.files.addEventListener('click', () => select('files'));
 animPicker.addEventListener('change', () => openAnim(animPicker.value));
 play.addEventListener('click', () => setPlaying(!playing));
 slider.addEventListener('input', () => {
