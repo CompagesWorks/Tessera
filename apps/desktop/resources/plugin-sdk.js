@@ -357,6 +357,10 @@
           })),
         ),
     }),
+    arc: Object.freeze({
+      list: (path = '') => call('arc.list', { path }),
+      extract: (path) => call('arc.extract', { path }),
+    }),
     net: Object.freeze({
       fetch: (url, options = {}) =>
         call('net.fetch', {

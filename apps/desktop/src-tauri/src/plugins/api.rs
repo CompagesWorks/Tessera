@@ -8,8 +8,9 @@ use base64::Engine;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
+use crate::projects::arc::{list_arc, mod_path, open_arc, read_arc, walk_arc};
 use crate::projects::export::deploy_project;
-use crate::projects::files::TESSERA_DIR;
+use crate::projects::files::{SOURCES_DIR, TESSERA_DIR};
 use crate::projects::history::{HistoryService, Meta};
 use crate::projects::service::ProjectService;
 use crate::projects::ssbh::{mesh_buffers, read_ssbh, write_ssbh};
@@ -128,6 +129,13 @@ struct RenameParams {
 struct PreviewParams {
     path: String,
     name: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArcParams {
+    #[serde(default)]
+    path: String,
 }
 
 #[derive(Deserialize)]
@@ -348,6 +356,11 @@ impl PluginApi {
         let private = root.join(TESSERA_DIR).join("plugins").join(&ctx.plugin_id);
         fs::create_dir_all(&private)?;
         Ok(Scope { root: private, hidden: None, trash: Some(self.trash()) })
+    }
+
+    fn open_arc(&self, ctx: &Ctx) -> Result<Arc<smash_arc::ArcFile>> {
+        let folder = self.plugins.external_of(&ctx.plugin_id).ok_or_else(|| Error::new("no folder picked"))?;
+        open_arc(Path::new(&folder), &self.plugins.cache_dir())
     }
 
     fn tracked(&self, ctx: &Ctx, scope: FsScope, kind: HistoryKind, target: String, rels: &[&str], run: impl FnOnce() -> Result<()>) -> Result<()> {
@@ -666,6 +679,42 @@ impl PluginApi {
                         let data = write_ssbh(p.data, &p.path)?;
                         self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.path.clone(), &[&p.path], || scoped_fs::scoped_write_bytes(&scope, &p.path, &data))?;
                         Ok(Value::Null)
+                    }),
+                )
+            }
+            "arc.list" => {
+                let p: ArcParams = object(params)?;
+                let target = format!("arc:{}", p.path);
+                prepared(Permission::FsExternal, "arc.list", target, Box::new(move || to_value(list_arc(&*self.open_arc(ctx)?, &p.path)?)))
+            }
+            "arc.extract" => {
+                let p: ArcParams = object(params)?;
+                let target = format!("arc:{}", p.path);
+                prepared(
+                    Permission::FsProjectWrite,
+                    "arc.extract",
+                    target,
+                    Box::new(move || {
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsExternal) {
+                            return Err(Error::new("permission denied: fs.external"));
+                        }
+                        let arc = self.open_arc(ctx)?;
+                        let scope = self.scope_of(ctx, FsScope::Project)?;
+                        let mut paths = Vec::new();
+                        walk_arc(&arc, &p.path, &mut paths);
+                        let (mut written, mut skipped, mut failed) = (0, 0, 0);
+                        for path in paths {
+                            let rel = format!("{SOURCES_DIR}/{}", mod_path(&path));
+                            if plugin_path(&rel, 1).is_err() || scope.root.join(&rel).exists() {
+                                skipped += 1;
+                                continue;
+                            }
+                            match read_arc(&arc, &path).and_then(|data| scoped_fs::write(&scope, &rel, &data)) {
+                                Ok(()) => written += 1,
+                                Err(_) => failed += 1,
+                            }
+                        }
+                        Ok(json!({ "written": written, "skipped": skipped, "failed": failed }))
                     }),
                 )
             }

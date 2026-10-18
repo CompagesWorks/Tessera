@@ -1,0 +1,27 @@
+{
+  "id": "compagesworks.arc",
+  "name": "ARC Explorer",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "hdd-stack",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.external",
+    "fs.project.write"
+  ],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "arc",
+        "title": "ARC Explorer",
+        "description": "%widget.description%",
+        "icon": "hdd-stack",
+        "category": "files",
+        "entry": "widget.html"
+      }
+    ]
+  }
+}

@@ -1,3 +1,4 @@
+pub mod arc;
 pub mod bntx;
 pub mod bntx_file;
 pub mod export;

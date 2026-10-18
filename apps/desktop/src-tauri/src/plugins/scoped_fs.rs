@@ -113,7 +113,7 @@ pub fn scoped_read_bytes(scope: &Scope, path: &str) -> Result<Vec<u8>> {
     Ok(fs::read(&real)?)
 }
 
-fn write(scope: &Scope, path: &str, data: &[u8]) -> Result<()> {
+pub fn write(scope: &Scope, path: &str, data: &[u8]) -> Result<()> {
     let located = locate(scope, path, false)?;
     if let Ok(info) = fs::symlink_metadata(&located.target) {
         if !info.is_file() {

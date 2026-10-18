@@ -1,0 +1,75 @@
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  padding: 8px;
+  font-family: var(--atrium-font-family, system-ui);
+  font-size: 12.5px;
+  color: var(--atrium-text-primary);
+  background: transparent;
+}
+
+body[aria-busy='true'] button,
+body[aria-busy='true'] tr {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#where {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--atrium-font-mono, ui-monospace, monospace);
+  color: var(--atrium-text-secondary);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+td {
+  padding: 3px 6px;
+}
+
+tbody tr:hover,
+tbody tr:focus-visible {
+  background: var(--atrium-bg-tertiary);
+}
+
+.dir {
+  cursor: pointer;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.size {
+  width: 80px;
+  text-align: right;
+  color: var(--atrium-text-muted);
+}
+
+.actions {
+  width: 90px;
+}
+
+.actions .atrium-btn {
+  width: 100%;
+  padding: 2px 6px;
+  font-size: 12px;
+}

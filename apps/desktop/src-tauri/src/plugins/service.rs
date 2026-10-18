@@ -404,6 +404,10 @@ impl PluginService {
         self.manifest_of(id).map(|m| m.name).unwrap_or_else(|| id.to_string())
     }
 
+    pub fn cache_dir(&self) -> PathBuf {
+        self.plugins_dir.with_file_name("cache")
+    }
+
     pub fn external_of(&self, id: &str) -> Option<String> {
         self.state.lock().unwrap().registry.plugins.iter().find(|p| p.id == id).and_then(|p| p.external.clone())
     }
