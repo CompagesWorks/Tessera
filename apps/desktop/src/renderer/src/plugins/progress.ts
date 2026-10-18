@@ -9,6 +9,7 @@ export const ProgressSchema = z
     title: z.string().trim().min(1).max(60),
     message: z.string().max(300).optional(),
     percent: z.number().min(0).max(100).optional(),
+    background: z.boolean().optional(),
   })
   .strict();
 export type ProgressSpec = z.infer<typeof ProgressSchema>;
@@ -99,7 +100,7 @@ export function showProgress(ui: UiProvider, owner: string, pluginName: string, 
   chip.addEventListener('click', () => openModal(ui, task));
   tray()?.append(chip);
   tasks.set(owner, task);
-  openModal(ui, task);
+  if (!spec.background) openModal(ui, task);
 }
 
 export function closeProgress(owner: string) {

@@ -58,7 +58,8 @@ async function busy(message, action) {
 }
 
 async function extract(entry) {
-  const done = await busy(t('extracting', { name: entry.name }), () => tessera.arc.extract(entry.path));
+  const progress = await tessera.ui.progress(t('extracting', { name: entry.name }).slice(0, 60), entry.path.slice(0, 300), { background: true });
+  const done = await busy(t('extracting', { name: entry.name }), () => tessera.arc.extract(entry.path)).finally(() => progress.close());
   say('');
   tessera.ui.toast(done.failed ? 'warning' : 'success', t('extracted', done));
 }

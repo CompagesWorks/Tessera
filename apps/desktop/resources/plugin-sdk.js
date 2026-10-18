@@ -286,8 +286,8 @@
         });
       },
       form: (spec) => call('ui.form', spec),
-      async progress(title, message) {
-        await call('ui.progress', { title, message });
+      async progress(title, message, options = {}) {
+        await call('ui.progress', { title, message, ...(options.background ? { background: true } : {}) });
         return Object.freeze({
           update: (next, percent) => call('ui.progress', { title, message: next, percent }),
           close: () => call('ui.progress.close'),

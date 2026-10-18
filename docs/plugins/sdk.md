@@ -240,9 +240,9 @@ row.addEventListener('contextmenu', async (event) => {
 
 No permission is needed to open a menu. Adding entries to other plugins' menus needs [`ui.menus`](permissions.md#uimenus).
 
-### `tessera.ui.progress(title, message?)`
+### `tessera.ui.progress(title, message?, options?)`
 
-Shows a Tessera modal with a spinner, your `title`, an optional `message` and the elapsed time, for long work such as running a program. Resolves with a handle:
+Shows a Tessera modal with a spinner, your `title`, an optional `message` and the elapsed time, for long work such as running a program. With `{ background: true }` the modal stays closed and only the status bar entry shows (clicking it opens the modal). Resolves with a handle:
 
 | | |
 | --- | --- |
