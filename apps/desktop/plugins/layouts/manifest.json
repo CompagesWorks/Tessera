@@ -1,0 +1,27 @@
+{
+  "id": "compagesworks.layouts",
+  "name": "Layouts",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "layout-wtf",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write"
+  ],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "layouts",
+        "title": "Layouts",
+        "description": "%widget.description%",
+        "icon": "layout-wtf",
+        "category": "media",
+        "entry": "widget.html"
+      }
+    ]
+  }
+}

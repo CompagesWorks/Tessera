@@ -264,6 +264,12 @@ const methods: Record<string, Method> = {
   'external.info': forward('external.info', () => 'fs.external'),
   'export.deploy': forward('export.deploy', () => 'fs.external'),
   'textures.convert': forward('textures.convert', () => 'fs.project.write'),
+  'textures.preview': forward('textures.preview', () => 'fs.project.read'),
+  'textures.replace': forward('textures.replace', () => 'fs.project.write'),
+  'textures.export': forward('textures.export', () => 'fs.project.write'),
+  'textures.add': forward('textures.add', () => 'fs.project.write'),
+  'ssbh.read': forward('ssbh.read', () => 'fs.project.read'),
+  'ssbh.meshes': forward('ssbh.meshes', () => 'fs.project.read'),
   'net.fetch': forward('net.fetch', () => 'net'),
   'secrets.get': forward('secrets.get', () => 'secrets'),
   'secrets.set': forward('secrets.set', () => 'secrets'),
@@ -425,6 +431,12 @@ export function whenFramesReady(timeout: number): Promise<void> {
 export function broadcastDrag(projectId: string, paths: string[] | null) {
   for (const frame of frames) {
     if (frame.project.id === projectId && hasGrant(frame.pluginId, 'fs.project.read')) post(frame, { event: 'drag', payload: { paths } });
+  }
+}
+
+export function broadcastSelection(projectId: string, path: string | null) {
+  for (const frame of frames) {
+    if (frame.project.id === projectId && hasGrant(frame.pluginId, 'fs.project.read')) post(frame, { event: 'files.selected', payload: { path } });
   }
 }
 

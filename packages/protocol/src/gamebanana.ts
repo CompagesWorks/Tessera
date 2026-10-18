@@ -87,6 +87,13 @@ export interface GbMember {
   session: boolean;
 }
 
+export interface GbAnalytics {
+  dates: string[];
+  series: { title: string; color: string | null; values: number[] }[];
+}
+
+export const GbModRefSchema = z.object({ modId: z.number().int().positive() }).strict();
+
 export const GbPostsSchema = z.union([z.object({ modId: z.number().int().positive() }).strict(), z.object({ postId: z.number().int().positive() }).strict()]);
 
 export interface GbStampChoice {

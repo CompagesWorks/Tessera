@@ -11,10 +11,21 @@
   "permissions": [
     "fs.project.read",
     "fs.project.write",
-    "ui.menus"
+    "ui.menus",
+    { "id": "exec.system", "programs": ["editor"] }
   ],
   "contributes": {
     "host": "host.html",
+    "settings": [
+      {
+        "id": "editorName",
+        "type": "string",
+        "title": "%editor.name%",
+        "description": "%editor.name.description%",
+        "default": "Editor",
+        "maxLength": 40
+      }
+    ],
     "widgets": [
       {
         "id": "textures",
@@ -44,6 +55,12 @@
           "tif",
           "tiff"
         ]
+      },
+      {
+        "id": "edit-external",
+        "title": "%editor.action%",
+        "icon": "pencil-square",
+        "extensions": ["png", "jpg", "jpeg", "webp", "gif", "bmp", "tga", "tif", "tiff", "ico", "dds", "nutexb", "bntx"]
       }
     ]
   }

@@ -24,6 +24,7 @@ interface Tessera {
   on(event: 'theme', listener: (payload: ThemePayload) => void): () => void;
   on(event: 'files.changed', listener: (payload: { paths: string[] }) => void): () => void;
   on(event: 'files.dropped', listener: (payload: { paths: string[] }) => void): () => void;
+  on(event: 'files.selected', listener: (payload: { path: string | null }) => void): () => void;
 
   ui: {
     toast(kind: 'success' | 'info' | 'warning' | 'error', message: string): Promise<void>;
@@ -192,6 +193,7 @@ Subscribes `listener` to an event. Returns a function that unsubscribes it.
 | `files.changed` | `{ paths }` | a project file changed, while [`tessera.files.watch`](#tesserafileswatchlistener) is active |
 | `fileAction` | `{ id, paths }` | the user picked one of your [file actions](manifest.md#file-actions) in the Explorer (host page only) |
 | `files.dropped` | `{ paths }` | the user dragged files from the Explorer and dropped them on your widget; needs `fs.project.read`. Listening is enough to accept the drop |
+| `files.selected` | `{ path }` | the user selected a file in the Explorer (`null` when nothing is selected); needs `fs.project.read` |
 | `titlebar` | `{ id }` | the user clicked one of your [titlebar buttons](manifest.md#titlebar-buttons) (host page only) |
 
 ```js
@@ -483,6 +485,32 @@ Needs `fs.external` **and** `fs.project.read`. Exports the open project (like th
 
 A previous copy is replaced only if Tessera deployed it (it leaves a `.tessera-deploy` file inside). Any other folder with the same name is left alone and the call fails with `… already exists in the mods folder and was not deployed by Tessera`.
 
+#### `tessera.textures.preview(path, name?)`
+
+Decodes a project texture (`.bntx`, `.nutexb`, `.dds` or an image) and resolves to `{ data, width, height, format, mipmaps }`. `data` is a base64 PNG of the first mip, shrunk to 512 px on its longest side; `width` and `height` are the original size. For a `.bntx` holding several textures, `name` picks one (the first otherwise), and its channel selectors are applied, so a BC4 mask comes out white with the mask in alpha. Needs `fs.project.read`.
+
+```js
+const { data } = await tessera.textures.preview('sources/layout_arc/timg/__Combined.bntx', 'com_white32^u');
+image.src = `data:image/png;base64,${data}`;
+```
+
+#### `tessera.textures.replace(path, name, data)`
+
+Replaces the pixels of one texture inside a project `.bntx` (`name` picks it in a multi-texture file like `__Combined.bntx`; `undefined` takes the first). `data` is the new image as bytes (`Uint8Array`): PNG, JPEG, WebP, BMP, TGA, TIFF or DDS. The texture keeps its format, size and mip count: the image is resized to fit and re-encoded, and the channel selectors are reversed so a mask stays a mask. Needs `fs.project.read` and `fs.project.write`.
+
+#### `tessera.textures.add(path, name, format, data)`
+
+Adds a new texture named `name` to a project `.bntx` (like `timg/__Combined.bntx`). `data` is the image as bytes (PNG, JPEG, WebP, BMP, TGA, TIFF or DDS), kept at its own size with one mip level. `format` is one of the [`format` values of `convert`](#tesseratexturesconvertfrom-to-options), for example `BC7RgbaUnormSrgb`. `BC4RUnorm` is stored as a white mask (alpha from the image) and `BC5RgUnorm` as luminance + alpha, like Smash's `^s` and `^t` textures. Fails if the name is already taken. The file is rewritten with a new name dictionary and relocation table. Needs `fs.project.read` and `fs.project.write`.
+
+#### `tessera.textures.export(path, name, to)`
+
+Writes one texture of a project texture file to `to` as a full-size PNG, channel selectors applied. Needs `fs.project.read` and `fs.project.write`.
+
+```js
+await tessera.textures.export('sources/layout_arc/timg/__Combined.bntx', 'com_white32^u', 'sources/layout_arc_textures/com_white32^u.png');
+await tessera.textures.replace('sources/layout_arc/timg/__Combined.bntx', 'com_white32^u', new Uint8Array(await file.arrayBuffer()));
+```
+
 #### `tessera.textures.convert(from, to, options?)`
 
 Needs `fs.project.write` **and** `fs.project.read`. Converts a texture inside the project, picked from the extensions of `from` and `to`. `from` can be `.nutexb`, `.bntx`, `.dds`, `.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tga` or `.tiff`; `to` can be `.nutexb`, `.dds` or `.png`. Works the same on Windows, macOS and Linux.
@@ -500,6 +528,19 @@ Needs `fs.project.write` **and** `fs.project.read`. Converts a texture inside th
 await tessera.textures.convert('sources/fighter/mario/model/body/c00/def_mario_001_col.nutexb', 'def_mario_001_col.png');
 await tessera.textures.convert('def_mario_001_nor.png', 'sources/fighter/mario/model/body/c00/def_mario_001_nor.nutexb', { format: 'BC7RgbaUnorm' });
 ```
+
+#### `tessera.ssbh.read(path)`
+
+Reads a Smash Ultimate SSBH file from the project with [ssbh_data](https://docs.rs/ssbh_data) and resolves to its data as JSON: `.numdlb` and `.nusrcmdlb` (model), `.numatb` (materials), `.nusktb` (skeleton), `.nuhlpb` (helper bones), `.nuanmb` (animation), `.numshexb` and `.adjb`. Field names are the ones of ssbh_data (`entries`, `material_label`, `param_id`...). Needs `fs.project.read`.
+
+```js
+const modl = await tessera.ssbh.read('sources/fighter/mario/model/body/c00/model.numdlb');
+modl.entries[0]; // { mesh_object_name, mesh_object_subindex, material_label }
+```
+
+#### `tessera.ssbh.meshes(path, skeleton?)`
+
+Reads a project `.numshb` and resolves to one entry per mesh object, ready for WebGL: `{ name, subindex, positions, normals, uvs, indices }`. `positions` and `normals` are `Float32Array`s of xyz, `uvs` is a `Float32Array` of the `map1` UVs (or the first UV set, `null` if none), and `indices` is a `Uint32Array` of triangles. With a `.nusktb` `skeleton`, meshes that have no bone weights are moved to their parent bone, as in game. Needs `fs.project.read`.
 
 ## Network
 
@@ -572,6 +613,8 @@ const result = await tessera.exec.runSystem('git', ['add', '-A']);
 ```
 
 `{ detach: true }` starts the program and returns `null` right away, without waiting or killing it at the timeout. Use it to launch an app such as an emulator.
+
+`{ projectFile: 'images/icon.png' }` appends that existing project file's absolute path as the last argument. It requires `fs.project.read` and keeps the file inside the project scope. For example, `tessera.exec.runSystem('editor', [], { detach: true, projectFile: 'images/icon.png' })` opens an image in a selected editor.
 
 `{ onOutput(line, kind) }` receives the program's output line by line while it runs (`kind` is `'stdout'` or `'stderr'`), for example to show progress with [`tessera.ui.progress`](#tesserauiprogresstitle-message). The full output is still in the result. Works with `exec.run` too.
 

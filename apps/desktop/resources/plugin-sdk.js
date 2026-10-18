@@ -104,12 +104,41 @@
     return btoa(binary);
   }
 
-  function call(method, params) {
+  const sent = [];
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  let gate = Promise.resolve();
+
+  function pace() {
+    gate = gate.then(async () => {
+      for (;;) {
+        const now = performance.now();
+        while (sent.length && now - sent[0] >= 1000) sent.shift();
+        if (sent.length < 35) return void sent.push(now);
+        await sleep(1000 - (now - sent[0]) + 5);
+      }
+    });
+    return gate;
+  }
+
+  function send(method, params) {
     return new Promise((resolve, reject) => {
       const id = ++seq;
       pending.set(id, { resolve, reject });
       window.parent.postMessage({ tessera: 1, id, method, params }, '*');
     });
+  }
+
+  async function call(method, params) {
+    for (let attempt = 0; ; attempt++) {
+      await pace();
+      try {
+        return await send(method, params);
+      } catch (error) {
+        if (error.message !== 'rate limited' || attempt >= 3) throw error;
+        await sleep(1000);
+      }
+    }
   }
 
   let streams = 0;
@@ -298,6 +327,23 @@
     textures: Object.freeze({
       convert: (from, to, options = {}) =>
         call('textures.convert', { from, to, format: options.format, mipmaps: options.mipmaps, quality: options.quality, gammaFix: options.gammaFix }),
+      preview: (path, name) => call('textures.preview', name === undefined ? { path } : { path, name }),
+      replace: (path, name, data) => call('textures.replace', { path, ...(name === undefined ? {} : { name }), data: toBase64(data) }),
+      add: (path, name, format, data) => call('textures.add', { path, name, format, data: toBase64(data) }),
+      export: (path, name, to) => call('textures.export', { path, ...(name === undefined ? {} : { name }), to }),
+    }),
+    ssbh: Object.freeze({
+      read: (path) => call('ssbh.read', { path }),
+      meshes: (path, skeleton) =>
+        call('ssbh.meshes', skeleton === undefined ? { path } : { path, skeleton }).then((objects) =>
+          objects.map((o) => ({
+            ...o,
+            positions: new Float32Array(fromBase64(o.positions).buffer),
+            normals: new Float32Array(fromBase64(o.normals).buffer),
+            uvs: o.uvs === null ? null : new Float32Array(fromBase64(o.uvs).buffer),
+            indices: new Uint32Array(fromBase64(o.indices).buffer),
+          })),
+        ),
     }),
     net: Object.freeze({
       fetch: (url, options = {}) =>
@@ -318,7 +364,7 @@
     exec: Object.freeze({
       run: (args = [], options = {}) => streamed(options.onOutput, (stream) => call('exec.run', { args, timeout: options.timeout, stream })),
       runSystem: (program, args = [], options = {}) =>
-        streamed(options.onOutput, (stream) => call('exec.runSystem', { program, args, timeout: options.timeout, detach: options.detach, stream })),
+        streamed(options.onOutput, (stream) => call('exec.runSystem', { program, args, timeout: options.timeout, detach: options.detach, projectFile: options.projectFile, stream })),
       pickSystem: (program) => call('exec.pickSystem', { program }),
       systemInfo: () => call('exec.systemInfo'),
     }),

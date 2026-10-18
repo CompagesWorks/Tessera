@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="/__tessera/sdk.js"></script>
+    <link rel="stylesheet" href="widget.css" />
+  </head>
+  <body>
+    <header>
+      <select id="file" class="atrium-input" data-i18n-label="file.label"></select>
+      <button id="reset" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="reset" data-i18n-label="reset"><i class="bi bi-arrows-fullscreen"></i></button>
+    </header>
+    <main id="view" hidden>
+      <aside>
+        <input id="filter" class="atrium-input" type="search" data-i18n-placeholder="filter" data-i18n-label="filter.label" />
+        <ul id="meshes"></ul>
+      </aside>
+      <div class="stage">
+        <canvas id="canvas" data-i18n-label="canvas.label"></canvas>
+        <p id="status" class="status" hidden></p>
+        <p class="hint" data-i18n="controls"></p>
+      </div>
+    </main>
+    <p id="empty" class="atrium-empty" hidden data-i18n="empty"></p>
+    <script src="model.js"></script>
+    <script src="render.js"></script>
+    <script src="widget.js"></script>
+  </body>
+</html>

@@ -344,3 +344,52 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.tessera-gbp-analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: min(520px, 80vw);
+}
+
+.tessera-gbp-analytics h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-gbp-charts {
+  display: grid;
+  gap: 14px;
+}
+
+.tessera-gbp-chart-head,
+.tessera-gbp-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-gbp-chart-head b {
+  color: var(--atrium-text-primary);
+}
+
+.tessera-gbp-chart svg {
+  display: block;
+  width: 100%;
+  height: 64px;
+  color: var(--atrium-accent-color);
+  overflow: visible;
+}
+
+.tessera-gbp-chart polyline {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.tessera-gbp-analytics > .atrium-btn {
+  align-self: flex-start;
+}

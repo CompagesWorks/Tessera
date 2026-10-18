@@ -9,7 +9,8 @@ use image_dds::ddsfile::Dds;
 use image_dds::{dds_image_format, image_from_dds, ImageFormat, Mipmaps, Quality, SurfaceRgba8};
 use nutexb::NutexbFile;
 
-use super::bntx::read_bntx;
+use super::bntx::{new_bntx_texture, read_bntx, read_bntx_texture, replace_bntx_texture, IDENTITY_CHANNELS};
+use super::bntx_file::BntxFile;
 use crate::util::{Error, Result};
 
 const PREVIEW_SIZE: u32 = 512;
@@ -109,19 +110,77 @@ fn format_of(bytes: &[u8], kind: Kind) -> Option<ImageFormat> {
     }
 }
 
-pub fn preview_texture(bytes: &[u8], path: &str) -> Result<Preview> {
-    let (image, format, mipmaps) = match read(bytes, kind(path)?)? {
+fn remap(image: &mut RgbaImage, channels: [u8; 4]) {
+    for pixel in image.pixels_mut() {
+        let source = pixel.0;
+        pixel.0 = channels.map(|c| match c {
+            0 => 0,
+            1 => 255,
+            _ => source[(c - 2) as usize],
+        });
+    }
+}
+
+fn decode(bytes: &[u8], path: &str, name: Option<&str>) -> Result<(RgbaImage, Option<String>, u32)> {
+    let kind = kind(path)?;
+    let (source, channels) = match kind {
+        Kind::Bntx => {
+            let texture = read_bntx_texture(bytes, name)?;
+            (Source::Dds(texture.dds), texture.channels)
+        }
+        _ => (read(bytes, kind)?, IDENTITY_CHANNELS),
+    };
+    let (mut image, format, mipmaps) = match source {
         Source::Image(image) => (image, None, 1),
         Source::Dds(dds) => (image_from_dds(&dds, 0).map_err(bad)?, dds_image_format(&dds).ok().map(|f| f.to_string()), dds.get_num_mipmap_levels()),
     };
+    if channels != IDENTITY_CHANNELS {
+        remap(&mut image, channels);
+    }
+    Ok((image, format, mipmaps))
+}
+
+fn png(image: image::DynamicImage) -> Result<Vec<u8>> {
+    let mut out = Cursor::new(Vec::new());
+    image.write_to(&mut out, FileFormat::Png).map_err(bad)?;
+    Ok(out.into_inner())
+}
+
+pub fn preview_texture(bytes: &[u8], path: &str, name: Option<&str>) -> Result<Preview> {
+    let (image, format, mipmaps) = decode(bytes, path, name)?;
     let (width, height) = image.dimensions();
     let mut thumbnail = image::DynamicImage::ImageRgba8(image);
     if width.max(height) > PREVIEW_SIZE {
         thumbnail = thumbnail.thumbnail(PREVIEW_SIZE, PREVIEW_SIZE);
     }
-    let mut png = Cursor::new(Vec::new());
-    thumbnail.write_to(&mut png, FileFormat::Png).map_err(bad)?;
-    Ok(Preview { data: base64::engine::general_purpose::STANDARD.encode(png.into_inner()), width, height, format, mipmaps })
+    Ok(Preview { data: base64::engine::general_purpose::STANDARD.encode(png(thumbnail)?), width, height, format, mipmaps })
+}
+
+pub fn export_texture(bytes: &[u8], path: &str, name: Option<&str>) -> Result<Vec<u8>> {
+    png(image::DynamicImage::ImageRgba8(decode(bytes, path, name)?.0))
+}
+
+fn load_image(image: &[u8]) -> Result<RgbaImage> {
+    Ok(if image.starts_with(b"DDS ") {
+        image_from_dds(&Dds::read(Cursor::new(image)).map_err(bad)?, 0).map_err(bad)?
+    } else {
+        image::load_from_memory(image).map_err(bad)?.to_rgba8()
+    })
+}
+
+pub fn replace_texture(bntx: &[u8], name: Option<&str>, image: &[u8]) -> Result<Vec<u8>> {
+    replace_bntx_texture(bntx, name, &load_image(image)?)
+}
+
+pub fn add_texture(bntx: &[u8], name: &str, format: &str, image: &[u8]) -> Result<Vec<u8>> {
+    if name.is_empty() || name.len() > 200 || name.chars().any(char::is_control) {
+        return Err(Error::new("invalid texture name"));
+    }
+    let format = ImageFormat::from_str(format).map_err(|_| Error::new(format!("unknown format {format}")))?;
+    let mut file = BntxFile::parse(bntx)?;
+    let template = file.textures.first().map(|t| t.info.clone()).unwrap_or_else(|| vec![0; 0xa0]);
+    file.add(new_bntx_texture(&template, name, &load_image(image)?, format)?)?;
+    Ok(file.write())
 }
 
 pub fn convert_texture(source: &[u8], from: &str, to: &str, existing: Option<&[u8]>, options: &Options) -> Result<Vec<u8>> {
@@ -217,7 +276,7 @@ mod tests {
     #[test]
     fn previews_a_small_copy_with_texture_info() {
         let nutexb = convert(&png(1024, 256), "a.png", "a.nutexb", None);
-        let preview = preview_texture(&nutexb, "a.nutexb").unwrap();
+        let preview = preview_texture(&nutexb, "a.nutexb", None).unwrap();
         assert_eq!((preview.width, preview.height, preview.format.as_deref(), preview.mipmaps), (1024, 256, Some("BC7RgbaUnormSrgb"), 11));
         let data = base64::engine::general_purpose::STANDARD.decode(preview.data).unwrap();
         assert_eq!(image::load_from_memory(&data).unwrap().dimensions(), (512, 128));
@@ -231,7 +290,7 @@ mod tests {
             let source = if format == FileFormat::Jpeg { image::DynamicImage::ImageRgb8(image.to_rgb8()) } else { image.clone() };
             source.write_to(&mut bytes, format).unwrap();
             let path = format!("a.{}", format.extensions_str()[0]);
-            assert_eq!(preview_texture(bytes.get_ref(), &path).unwrap().width, 8, "{path}");
+            assert_eq!(preview_texture(bytes.get_ref(), &path, None).unwrap().width, 8, "{path}");
             convert(bytes.get_ref(), &path, "a.nutexb", None);
         }
         assert!(convert_texture(&png(4, 4), "a.png", "a.webp", None, &Options::default()).is_err());

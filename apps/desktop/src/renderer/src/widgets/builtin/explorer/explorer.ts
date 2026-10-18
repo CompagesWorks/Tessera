@@ -1,9 +1,10 @@
 import type { DirEntry } from '@tessera/protocol';
 import { t } from '../../../i18n';
 import type { WidgetDefinition } from '../../types';
-import { broadcastDrag } from '../../../plugins/bridge';
+import { broadcastDrag, broadcastSelection } from '../../../plugins/bridge';
+import { pluginFileActions } from '../../../plugins/hosts';
 import { fileActions, parentOf, PATH_TYPE } from './actions';
-import { canPreview, createPreview, hasPreviewWidget, onSelection, selectFile } from '../preview/preview';
+import { createPreview, hasPreviewWidget, onSelection, selectFile } from '../preview/preview';
 import './explorer.css';
 
 const FILE_ICONS: Record<string, string> = {
@@ -80,6 +81,7 @@ export const explorerWidget: WidgetDefinition = {
       selected = path;
       for (const row of tree.querySelectorAll<HTMLElement>('.tessera-explorer-row')) row.classList.toggle('is-selected', row.dataset['path'] === path);
       selectFile(project.id, path);
+      broadcastSelection(project.id, path);
       showInline();
     }
 
@@ -189,8 +191,12 @@ export const explorerWidget: WidgetDefinition = {
           size.textContent = formatSize(entry.size);
           row.append(size);
           interactive(row, entry);
-          row.addEventListener('click', () => select(canPreview(entry.path) ? entry.path : null));
-          row.addEventListener('dblclick', () => void actions.open(entry.path));
+          row.addEventListener('click', () => select(entry.path));
+          row.addEventListener('dblclick', () => {
+            const action = pluginFileActions(entry.path).find((a) => a.default);
+            if (action) action.run();
+            else void actions.open(entry.path);
+          });
           container.append(row);
         }
       }

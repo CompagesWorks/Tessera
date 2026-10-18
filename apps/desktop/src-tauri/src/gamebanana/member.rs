@@ -9,10 +9,13 @@ use super::api::{client, SMASH_ULTIMATE};
 use crate::util::{Error, Result};
 
 const API: &str = "https://gamebanana.com/apiv11";
+const API13: &str = "https://gamebanana.com/apiv13";
 const COMMENTED_MODS: usize = 8;
 const MAX_COMMENTS: usize = 30;
 static TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]*>").unwrap());
 static SPACE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
+static HSL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^hsl\(\d{1,3},\d{1,3}%,\d{1,3}%\)$").unwrap());
+static DAY: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap());
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct GbOwnMod {
@@ -70,6 +73,19 @@ pub struct GbComment {
     pub mod_id: u64,
     pub mod_name: String,
     pub url: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct GbSeries {
+    pub title: String,
+    pub color: Option<String>,
+    pub values: Vec<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct GbAnalytics {
+    pub dates: Vec<String>,
+    pub series: Vec<GbSeries>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -183,13 +199,34 @@ pub fn parse_stamp_ids(value: &Value) -> Vec<u64> {
     list.as_array().map(|a| a.iter().filter_map(stamp_id).collect()).unwrap_or_default()
 }
 
+pub fn parse_analytics(value: &Value) -> Result<GbAnalytics> {
+    if let Some(code) = value.get("_sErrorCode").and_then(Value::as_str) {
+        return Err(Error::new(format!("gamebanana: {code}")));
+    }
+    let dates: Vec<String> = value.pointer("/_aConfig/_aDateRange").and_then(Value::as_array).ok_or_else(|| Error::new("gamebanana: invalid answer"))?.iter().filter_map(Value::as_str).filter(|d| DAY.is_match(d)).map(String::from).collect();
+    let types = value.pointer("/_aConfig/_aAnalyticTypes").and_then(Value::as_array).cloned().unwrap_or_default();
+    let series = types
+        .iter()
+        .filter_map(|t| {
+            let values: Vec<u64> = value.pointer(&format!("/_aAnalytics/{}", t.get("_sAlias")?.as_str()?))?.as_array()?.iter().map(|v| v.as_u64().unwrap_or(0)).collect();
+            let color = text(t, "/_sColor");
+            (values.len() == dates.len()).then(|| GbSeries { title: text(t, "/_sTitle"), color: HSL.is_match(&color).then_some(color), values })
+        })
+        .collect();
+    Ok(GbAnalytics { dates, series })
+}
+
 pub fn reply_html(text: &str) -> String {
     let escaped = text.trim().replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;");
     format!("<p>{}</p>", escaped.replace("\r\n", "\n").replace('\n', "<br>"))
 }
 
 fn get(http: &reqwest::blocking::Client, session: Option<&str>, path: &str) -> Result<Value> {
-    let mut request = http.get(format!("{API}/{path}"));
+    fetch(http, session, &format!("{API}/{path}"))
+}
+
+fn fetch(http: &reqwest::blocking::Client, session: Option<&str>, url: &str) -> Result<Value> {
+    let mut request = http.get(url);
     if let Some(cookies) = session {
         request = request.header(reqwest::header::COOKIE, cookies);
     }
@@ -212,6 +249,11 @@ pub fn member(member_id: i64, session: Option<&str>) -> Result<GbMember> {
 pub fn posts(of: &str, id: u64, session: Option<&str>) -> Result<Vec<GbPost>> {
     let http = client(Duration::from_secs(20))?;
     parse_posts(&get(&http, session, &format!("{of}/{id}/Posts?_nPage=1&_nPerpage=50&_sSort=newest"))?)
+}
+
+pub fn analytics(mod_id: u64, session: &str) -> Result<GbAnalytics> {
+    let http = client(Duration::from_secs(20))?;
+    parse_analytics(&fetch(&http, Some(session), &format!("{API13}/Mod/{mod_id}/AnalyticsPage?_akPeriod=last_7_days"))?)
 }
 
 pub fn stamp_choice(post_id: u64, session: &str) -> Result<GbStampChoice> {
@@ -277,6 +319,27 @@ mod tests {
         assert_eq!(parse_stamp_ids(&json!(["2", 7])), vec![2, 7]);
         assert_eq!(parse_stamp_ids(&json!({ "_aStampIds": ["3"] })), vec![3]);
         assert_eq!(parse_stamp_ids(&json!([{ "_idRow": 4 }])), vec![4]);
+    }
+
+    #[test]
+    fn parses_analytics() {
+        let answer = json!({
+            "_aConfig": {
+                "_aAnalyticTypes": [
+                    { "_sAlias": "views", "_sTitle": "Views", "_sColor": "hsl(0,60%,60%)" },
+                    { "_sAlias": "dls", "_sTitle": "Downloads", "_sColor": "red;background:url(x)" },
+                    { "_sAlias": "likes", "_sTitle": "Likes" }
+                ],
+                "_aDateRange": ["2026-10-16", "2026-10-17"]
+            },
+            "_aAnalytics": { "views": [586, 316], "dls": [13, 12], "likes": [1] }
+        });
+        let analytics = parse_analytics(&answer).unwrap();
+        assert_eq!(analytics.dates, vec!["2026-10-16", "2026-10-17"]);
+        assert_eq!(analytics.series.len(), 2);
+        assert_eq!((analytics.series[0].color.as_deref(), &analytics.series[0].values), (Some("hsl(0,60%,60%)"), &vec![586, 316]));
+        assert_eq!(analytics.series[1].color, None);
+        assert!(parse_analytics(&json!({ "_sErrorCode": "NOT_AUTHORIZED" })).is_err());
     }
 
     #[test]

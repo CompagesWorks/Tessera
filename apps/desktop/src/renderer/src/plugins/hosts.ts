@@ -1,4 +1,4 @@
-import type { PluginFileAction, ProjectSummary } from '@tessera/protocol';
+import type { PluginFileAction, PluginSettingValue, ProjectSummary } from '@tessera/protocol';
 import { iconElement, pluginIcon } from '../components/icon';
 import { pluginUrl } from '../bridge/schemes';
 import { attachFrame } from './bridge';
@@ -9,12 +9,14 @@ interface Host {
   pluginName: string;
   iframe: HTMLIFrameElement;
   fileActions: PluginFileAction[];
+  settings: Record<string, PluginSettingValue>;
 }
 
 export interface FileActionEntry {
   pluginName: string;
   title: string;
   icon: string;
+  default: boolean;
   run(): void;
 }
 
@@ -29,8 +31,9 @@ export function pluginFileActions(path: string, except?: string): FileActionEntr
       .filter((action) => action.extensions.includes(extension))
       .map((action) => ({
         pluginName: host.pluginName,
-        title: action.title,
+        title: action.title.replace(/\{\{([a-zA-Z][\w.-]*)\}\}/g, (_, key: string) => String(host.settings[key] ?? '').trim() || 'Editor'),
         icon: pluginIcon(host.pluginId, action.icon),
+        default: action.default,
         run: () => send(host, 'fileAction', { id: action.id, paths: [path] }),
       })),
   );
@@ -60,8 +63,14 @@ export function startPluginHosts(actions: HTMLElement, onProjectChange: (listene
       iframe.src = pluginUrl(manifest.id, entry);
       container.append(iframe);
       const detach = attachFrame({ iframe, pluginId: manifest.id, widgetId: `host:${manifest.id}`, project, onResponsive: () => {}, getState: () => ({}), setState: () => {} });
-      const host: Host = { pluginId: manifest.id, pluginName: manifest.name, iframe, fileActions };
+      const settings = Object.fromEntries(manifest.contributes.settings.map((setting) => [setting.id, setting.default]));
+      const host: Host = { pluginId: manifest.id, pluginName: manifest.name, iframe, fileActions, settings };
       hosts.push(host);
+      if (fileActions.some((action) => action.title.includes('{{'))) {
+        void window.tessera.invoke('plugins:settings-get', { id: manifest.id }).then((values) => {
+          if (hosts.includes(host)) host.settings = { ...settings, ...values };
+        }).catch(() => {});
+      }
       const buttons = titlebar.map((button) => {
         const element = document.createElement('button');
         element.type = 'button';
@@ -86,4 +95,7 @@ export function startPluginHosts(actions: HTMLElement, onProjectChange: (listene
     render();
   });
   onPluginsLoaded(render);
+  window.tessera.on('plugins:settings-changed', ({ id, values }) => {
+    for (const host of hosts) if (host.pluginId === id) host.settings = values;
+  });
 }

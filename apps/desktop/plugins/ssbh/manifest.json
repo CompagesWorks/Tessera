@@ -1,0 +1,26 @@
+{
+  "id": "compagesworks.ssbh",
+  "name": "SSBH",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "box",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read"
+  ],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "viewer",
+        "title": "SSBH",
+        "description": "%widget.description%",
+        "icon": "box",
+        "category": "media",
+        "entry": "widget.html"
+      }
+    ]
+  }
+}

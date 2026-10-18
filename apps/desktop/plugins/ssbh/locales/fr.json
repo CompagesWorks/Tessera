@@ -1,0 +1,16 @@
+{
+  "description": "Affiche les modèles de Smash Ultimate (.numdlb, .numshb, .numatb, .nusktb) en 3D avec leurs textures, comme SSBH Editor.",
+  "widget.description": "Visualiseur de modèles 3D",
+  "file.label": "Modèle",
+  "reset": "Recadrer la caméra",
+  "filter": "Filtrer",
+  "filter.label": "Filtrer les meshes et matériaux",
+  "canvas.label": "Vue 3D du modèle",
+  "controls": "Glisser pour tourner · Maj ou clic droit pour déplacer · Molette pour zoomer",
+  "loading": "Chargement du modèle…",
+  "textures": "Chargement des textures {{done}}/{{total}}…",
+  "empty": "Aucun modèle .numdlb dans le projet.",
+  "notModel": "{{name}} n’est pas un modèle .numdlb",
+  "error.noMesh": "Le fichier .numshb indiqué par ce modèle est introuvable",
+  "error.webgl2": "WebGL 2 n’est pas disponible"
+}

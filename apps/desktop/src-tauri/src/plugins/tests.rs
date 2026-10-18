@@ -448,8 +448,35 @@ fn api_converts_textures_inside_the_project() {
     f.call("textures.convert", Some(json!({ "from": "sources/col.nutexb", "to": "sources/back.png" }))).unwrap();
     assert_eq!(image::open(f.project.join("sources/back.png")).unwrap().width(), 8);
     assert_eq!(err(f.call("textures.convert", Some(json!({ "from": "sources/col.png", "to": ".tessera/x.nutexb" })))), "outside scope");
+    let preview = f.call("textures.preview", Some(json!({ "path": "sources/col.nutexb" }))).unwrap();
+    assert_eq!((preview["width"].clone(), preview["height"].clone()), (json!(8), json!(8)));
+    assert!(preview["data"].as_str().unwrap().starts_with("iVBOR"));
+    f.call("textures.export", Some(json!({ "path": "sources/col.nutexb", "to": "sources/exported.png" }))).unwrap();
+    assert_eq!(image::open(f.project.join("sources/exported.png")).unwrap().width(), 8);
     let read_only = ApiFixture::new(json!(["fs.project.read", "fs.project.write"]), &[Permission::FsProjectRead], Decision::Deny);
+    assert_eq!(err(read_only.call("textures.replace", Some(json!({ "path": "a.bntx", "data": "AA==" })))), "permission denied: fs.project.write");
+    assert!(read_only.call("textures.preview", Some(json!({ "path": "../col.png" }))).is_err());
     assert_eq!(err(read_only.call("textures.convert", Some(json!({ "from": "a.png", "to": "a.nutexb" })))), "permission denied: fs.project.write");
+}
+
+#[test]
+fn api_reads_ssbh_files_inside_the_project() {
+    let f = ApiFixture::new(json!(["fs.project.read"]), &[Permission::FsProjectRead], Decision::Deny);
+    let modl = ssbh_data::modl_data::ModlData {
+        major_version: 1,
+        minor_version: 0,
+        model_name: "model".into(),
+        skeleton_file_name: "model.nusktb".into(),
+        material_file_names: vec![],
+        animation_file_name: None,
+        mesh_file_name: "model.numshb".into(),
+        entries: vec![],
+    };
+    modl.write_to_file(f.project.join("sources/model.numdlb")).unwrap();
+    assert_eq!(f.call("ssbh.read", Some(json!({ "path": "sources/model.numdlb" }))).unwrap()["mesh_file_name"], "model.numshb");
+    assert!(f.call("ssbh.read", Some(json!({ "path": "sources/model.numdlb", "skeleton": "a.nusktb" }))).is_err());
+    assert!(f.call("ssbh.meshes", Some(json!({ "path": "../model.numshb" }))).is_err());
+    assert!(f.call("ssbh.meshes", Some(json!({ "path": "sources/model.numdlb" }))).is_err());
 }
 
 #[test]
@@ -467,6 +494,25 @@ fn api_system_programs() {
     assert!(f.host.asked.lock().unwrap()[0].ends_with(" status"));
     fs::write(&program, "evil git").unwrap();
     assert!(err(f.call("exec.runSystem", Some(json!({ "program": "git", "args": ["status"] })))).starts_with("program changed"));
+}
+
+#[test]
+fn api_system_program_project_file_stays_in_scope() {
+    let f = ApiFixture::new(
+        json!(["fs.project.read", { "id": "exec.system", "programs": ["editor"] }]),
+        &[Permission::FsProjectRead, Permission::ExecSystem],
+        Decision::Deny,
+    );
+    let program = f.dir.path().join(if cfg!(windows) { "editor.exe" } else { "editor" });
+    let image = f.project.join("image.png");
+    fs::write(&program, "fake editor").unwrap();
+    fs::write(&image, "image").unwrap();
+    f.host.picks.lock().unwrap().insert("editor".into(), program);
+    f.call("exec.pickSystem", Some(json!({ "program": "editor" }))).unwrap();
+    assert_eq!(err(f.call("exec.runSystem", Some(json!({ "program": "editor", "projectFile": "image.png", "detach": true })))), "refused by user");
+    assert!(f.host.asked.lock().unwrap()[0].contains(&image.to_string_lossy().to_string()));
+    assert!(err(f.call("exec.runSystem", Some(json!({ "program": "editor", "projectFile": "../outside.png" })))).starts_with("invalid params"));
+    assert_eq!(err(f.call("exec.runSystem", Some(json!({ "program": "editor", "projectFile": ".tessera/secret" })))), "outside scope");
 }
 
 #[test]

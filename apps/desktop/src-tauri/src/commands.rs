@@ -240,6 +240,11 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
             };
             value(crate::gamebanana::member::posts(of, id, s.accounts.gamebanana_session()?.as_deref())?)
         }
+        "gamebanana:analytics" => {
+            let r: GamebananaMod = parse(request)?;
+            let session = s.accounts.gamebanana_session()?.ok_or_else(|| Error::new("account:not-signed-in"))?;
+            value(crate::gamebanana::member::analytics(r.mod_id, &session)?)
+        }
         "gamebanana:stamps" => {
             let r: GamebananaPost = parse(request)?;
             let session = s.accounts.gamebanana_session()?.ok_or_else(|| Error::new("account:not-signed-in"))?;
@@ -392,7 +397,7 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
             let r: ProjectPath = parse(request)?;
             r.validate(1)?;
             let bytes = scoped_read_bytes(&project_scope(s, &r.id)?, &r.path)?;
-            value(preview_texture(&bytes, &r.path)?)
+            value(preview_texture(&bytes, &r.path, None)?)
         }
         "files:mkdir" => {
             let r: ProjectPath = parse(request)?;

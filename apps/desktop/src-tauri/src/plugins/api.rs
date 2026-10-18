@@ -12,7 +12,8 @@ use crate::projects::export::deploy_project;
 use crate::projects::files::TESSERA_DIR;
 use crate::projects::history::{HistoryService, Meta};
 use crate::projects::service::ProjectService;
-use crate::projects::textures::{convert_texture, Options};
+use crate::projects::ssbh::{mesh_buffers, read_ssbh};
+use crate::projects::textures::{add_texture, convert_texture, export_texture, preview_texture, replace_texture, Options};
 use crate::schema::check;
 use crate::schema::plugins::{Permission, MAX_BINARY_BYTES};
 use crate::schema::requests::PluginCall;
@@ -119,6 +120,45 @@ struct RenameParams {
     #[serde(default = "project_scope")]
     scope: FsScope,
     from: String,
+    to: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PreviewParams {
+    path: String,
+    name: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SsbhParams {
+    path: String,
+    skeleton: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReplaceParams {
+    path: String,
+    name: Option<String>,
+    data: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AddParams {
+    path: String,
+    name: String,
+    format: String,
+    data: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExportParams {
+    path: String,
+    name: Option<String>,
     to: String,
 }
 
@@ -466,6 +506,94 @@ impl PluginApi {
                     }),
                 )
             }
+            "textures.preview" => {
+                let p: PreviewParams = object(params)?;
+                plugin_path(&p.path, 1)?;
+                if p.name.as_ref().is_some_and(|n| n.len() > 200) {
+                    return Err(invalid());
+                }
+                let target = format!("project:{}", p.path);
+                prepared(
+                    Permission::FsProjectRead,
+                    "textures.preview",
+                    target,
+                    Box::new(move || {
+                        let bytes = scoped_fs::scoped_read_bytes(&self.scope_of(ctx, FsScope::Project)?, &p.path)?;
+                        to_value(preview_texture(&bytes, &p.path, p.name.as_deref())?)
+                    }),
+                )
+            }
+            "textures.replace" => {
+                let p: ReplaceParams = object(params)?;
+                plugin_path(&p.path, 1)?;
+                if p.name.as_ref().is_some_and(|n| n.len() > 200) {
+                    return Err(invalid());
+                }
+                check::base64("data", &p.data, (MAX_BINARY_BYTES as usize).div_ceil(3) * 4).map_err(|_| invalid())?;
+                let target = format!("project:{}", p.path);
+                prepared(
+                    Permission::FsProjectWrite,
+                    "textures.replace",
+                    target,
+                    Box::new(move || {
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsProjectRead) {
+                            return Err(Error::new("permission denied: fs.project.read"));
+                        }
+                        let image = base64::engine::general_purpose::STANDARD.decode(&p.data).map_err(|_| invalid())?;
+                        let scope = self.scope_of(ctx, FsScope::Project)?;
+                        let data = replace_texture(&scoped_fs::scoped_read_bytes(&scope, &p.path)?, p.name.as_deref(), &image)?;
+                        self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.path.clone(), &[&p.path], || scoped_fs::scoped_write_bytes(&scope, &p.path, &data))?;
+                        Ok(Value::Null)
+                    }),
+                )
+            }
+            "textures.add" => {
+                let p: AddParams = object(params)?;
+                plugin_path(&p.path, 1)?;
+                if p.name.len() > 200 || p.format.len() > 40 {
+                    return Err(invalid());
+                }
+                check::base64("data", &p.data, (MAX_BINARY_BYTES as usize).div_ceil(3) * 4).map_err(|_| invalid())?;
+                let target = format!("project:{} + {}", p.path, p.name);
+                prepared(
+                    Permission::FsProjectWrite,
+                    "textures.add",
+                    target,
+                    Box::new(move || {
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsProjectRead) {
+                            return Err(Error::new("permission denied: fs.project.read"));
+                        }
+                        let image = base64::engine::general_purpose::STANDARD.decode(&p.data).map_err(|_| invalid())?;
+                        let scope = self.scope_of(ctx, FsScope::Project)?;
+                        let data = add_texture(&scoped_fs::scoped_read_bytes(&scope, &p.path)?, &p.name, &p.format, &image)?;
+                        self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.path.clone(), &[&p.path], || scoped_fs::scoped_write_bytes(&scope, &p.path, &data))?;
+                        Ok(Value::Null)
+                    }),
+                )
+            }
+            "textures.export" => {
+                let p: ExportParams = object(params)?;
+                plugin_path(&p.path, 1)?;
+                plugin_path(&p.to, 1)?;
+                if p.name.as_ref().is_some_and(|n| n.len() > 200) {
+                    return Err(invalid());
+                }
+                let target = format!("project:{} -> {}", p.path, p.to);
+                prepared(
+                    Permission::FsProjectWrite,
+                    "textures.export",
+                    target,
+                    Box::new(move || {
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsProjectRead) {
+                            return Err(Error::new("permission denied: fs.project.read"));
+                        }
+                        let scope = self.scope_of(ctx, FsScope::Project)?;
+                        let data = export_texture(&scoped_fs::scoped_read_bytes(&scope, &p.path)?, &p.path, p.name.as_deref())?;
+                        self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.to.clone(), &[&p.to], || scoped_fs::scoped_write_bytes(&scope, &p.to, &data))?;
+                        Ok(Value::Null)
+                    }),
+                )
+            }
             "textures.convert" => {
                 let p: ConvertParams = object(params)?;
                 plugin_path(&p.from, 1)?;
@@ -486,6 +614,32 @@ impl PluginApi {
                         let data = convert_texture(&source, &p.from, &p.to, scoped_fs::scoped_read_bytes(&scope, &p.to).ok().as_deref(), &options)?;
                         self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.to.clone(), &[&p.to], || scoped_fs::scoped_write_bytes(&scope, &p.to, &data))?;
                         Ok(Value::Null)
+                    }),
+                )
+            }
+            "ssbh.read" | "ssbh.meshes" => {
+                let p: SsbhParams = object(params)?;
+                plugin_path(&p.path, 1)?;
+                if let Some(skeleton) = &p.skeleton {
+                    plugin_path(skeleton, 1)?;
+                }
+                let meshes = method == "ssbh.meshes";
+                if !meshes && p.skeleton.is_some() {
+                    return Err(invalid());
+                }
+                let target = format!("project:{}", p.path);
+                prepared(
+                    Permission::FsProjectRead,
+                    if meshes { "ssbh.meshes" } else { "ssbh.read" },
+                    target,
+                    Box::new(move || {
+                        let scope = self.scope_of(ctx, FsScope::Project)?;
+                        let bytes = scoped_fs::scoped_read_bytes(&scope, &p.path)?;
+                        if !meshes {
+                            return read_ssbh(&bytes, &p.path);
+                        }
+                        let skeleton = p.skeleton.as_ref().map(|s| scoped_fs::scoped_read_bytes(&scope, s)).transpose()?;
+                        to_value(mesh_buffers(&bytes, skeleton.as_deref())?)
                     }),
                 )
             }
@@ -546,8 +700,11 @@ impl PluginApi {
             }
             "exec.runSystem" => {
                 let p = ExecParams::parse(params.clone().ok_or_else(invalid)?, true).map_err(|_| invalid())?;
+                if let Some(path) = p.project_file.as_deref() { plugin_path(path, 1)?; }
                 let program = p.program.clone().unwrap_or_default();
-                let target = truncate(&format!("{} {}", program, p.args.join(" ")), 300);
+                let mut target_args = p.args.clone();
+                if let Some(path) = &p.project_file { target_args.push(path.clone()); }
+                let target = truncate(&format!("{} {}", program, target_args.join(" ")), 300);
                 prepared(
                     Permission::ExecSystem,
                     "exec.runSystem",
@@ -558,16 +715,25 @@ impl PluginApi {
                         let project = ctx.project_id.as_ref().ok_or_else(|| Error::new("no project open"))?;
                         let file = check_system_program(&picked)?;
                         let cwd = self.projects.root_of(project)?;
+                        let mut args = p.args.clone();
+                        if let Some(path) = p.project_file.as_deref() {
+                            if !self.plugins.has_grant(&ctx.plugin_id, Permission::FsProjectRead) {
+                                return Err(Error::new("permission denied: fs.project.read"));
+                            }
+                            let source = scoped_fs::scoped_reveal(&self.scope_of(ctx, FsScope::Project)?, path)?;
+                            if !source.is_file() { return Err(Error::new("not a file")); }
+                            args.push(source.to_string_lossy().into_owned());
+                        }
                         let key = format!("{}@system:{}@{}", ctx.plugin_id, program, picked.sha256);
-                        self.confirm_run(&ctx.plugin_id, &manifest.name, key, &command_line(&file.to_string_lossy(), &p.args))?;
+                        self.confirm_run(&ctx.plugin_id, &manifest.name, key, &command_line(&file.to_string_lossy(), &args))?;
                         if !self.plugins.has_grant(&ctx.plugin_id, Permission::ExecSystem) {
                             return Err(Error::new("permission denied: exec.system"));
                         }
                         if p.detach {
-                            spawn_program(&file, &p.args)?;
+                            spawn_program(&file, &args)?;
                             return Ok(Value::Null);
                         }
-                        to_value(run_program(&file, &p.args, &cwd, p.timeout, self.output_sink(ctx, p.stream.clone()))?)
+                        to_value(run_program(&file, &args, &cwd, p.timeout, self.output_sink(ctx, p.stream.clone()))?)
                     }),
                 )
             }

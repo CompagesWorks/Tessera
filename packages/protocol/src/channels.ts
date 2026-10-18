@@ -22,6 +22,7 @@ export const INVOKE_CHANNELS = [
   'gamebanana:image',
   'gamebanana:member',
   'gamebanana:posts',
+  'gamebanana:analytics',
   'gamebanana:reply',
   'gamebanana:stamps',
   'gamebanana:stamp',

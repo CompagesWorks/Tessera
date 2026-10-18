@@ -1,0 +1,54 @@
+{
+  "id": "compagesworks.archives",
+  "name": "Archives",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "archive",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write",
+    "ui.menus"
+  ],
+  "contributes": {
+    "host": "host.html",
+    "widgets": [
+      {
+        "id": "archives",
+        "title": "Archives",
+        "description": "%widget.description%",
+        "icon": "archive",
+        "category": "files",
+        "entry": "widget.html"
+      }
+    ],
+    "fileActions": [
+      {
+        "id": "extract",
+        "title": "%extract.action%",
+        "icon": "box-arrow-up",
+        "extensions": [
+          "arc",
+          "sarc",
+          "szs",
+          "pack"
+        ],
+        "default": true
+      },
+      {
+        "id": "repack",
+        "title": "%repack.action%",
+        "icon": "box-arrow-in-down",
+        "extensions": [
+          "arc",
+          "sarc",
+          "szs",
+          "pack"
+        ]
+      }
+    ]
+  }
+}

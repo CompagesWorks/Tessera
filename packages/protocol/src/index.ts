@@ -1,4 +1,4 @@
-import { GbImportSchema, GbLinkSchema, GbPostRefSchema, GbPostsSchema, GbReplySchema, GbStampSchema, type GbMember, type GbPost, type GbStamp, type GbStampChoice, type GbMod, type GbProgress } from './gamebanana';
+import { GbImportSchema, GbLinkSchema, GbModRefSchema, GbPostRefSchema, GbPostsSchema, GbReplySchema, GbStampSchema, type GbAnalytics, type GbMember, type GbPost, type GbStamp, type GbStampChoice, type GbMod, type GbProgress } from './gamebanana';
 import { z } from 'zod';
 import type { EventChannel, InvokeChannel } from './channels';
 import {
@@ -124,6 +124,7 @@ export const requestSchemas = {
   'gamebanana:image': GbLinkSchema,
   'gamebanana:member': z.undefined(),
   'gamebanana:posts': GbPostsSchema,
+  'gamebanana:analytics': GbModRefSchema,
   'gamebanana:reply': GbReplySchema,
   'gamebanana:stamps': GbPostRefSchema,
   'gamebanana:stamp': GbStampSchema,
@@ -217,6 +218,7 @@ export interface InvokeResponses {
   'gamebanana:image': string;
   'gamebanana:member': GbMember;
   'gamebanana:posts': GbPost[];
+  'gamebanana:analytics': GbAnalytics;
   'gamebanana:reply': void;
   'gamebanana:stamps': GbStampChoice;
   'gamebanana:stamp': GbStamp[];

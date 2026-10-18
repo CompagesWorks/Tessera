@@ -124,6 +124,7 @@ export const PluginFileActionSchema = z
       .array(z.string().regex(/^[a-zA-Z0-9]{1,12}$/).transform((value) => value.toLowerCase()))
       .min(1)
       .max(24),
+    default: z.boolean().default(false),
   })
   .strict();
 export type PluginFileAction = z.infer<typeof PluginFileActionSchema>;

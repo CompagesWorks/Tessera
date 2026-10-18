@@ -184,6 +184,12 @@ pub struct GamebananaPosts {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct GamebananaMod {
+    pub mod_id: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct GamebananaReply {
     pub post_id: u64,
     pub text: String,

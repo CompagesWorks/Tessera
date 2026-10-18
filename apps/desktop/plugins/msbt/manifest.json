@@ -1,0 +1,27 @@
+{
+  "id": "compagesworks.msbt",
+  "name": "MSBT",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "chat-left-text",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write"
+  ],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "msbt",
+        "title": "MSBT",
+        "description": "%widget.description%",
+        "icon": "chat-left-text",
+        "category": "editing",
+        "entry": "widget.html"
+      }
+    ]
+  }
+}

@@ -160,6 +160,25 @@ html.is-booting body > :not(.tessera-splash) {
   transition: width 0.3s var(--atrium-ease-standard);
 }
 
+[data-atrium-theme='light'] .tessera-splash-card:not(.is-wide) {
+  background: var(--atrium-bg-secondary);
+  color: var(--atrium-text-primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--atrium-border-color);
+}
+
+[data-atrium-theme='light'] .tessera-splash-version,
+[data-atrium-theme='light'] .tessera-splash-step {
+  color: var(--atrium-text-secondary);
+}
+
+[data-atrium-theme='light'] .tessera-splash-hint {
+  color: var(--atrium-text-muted);
+}
+
+[data-atrium-theme='light'] .tessera-splash-bar {
+  background: var(--atrium-bg-transparent-10);
+}
+
 @keyframes tessera-shard-fade {
   from {
     opacity: 0;

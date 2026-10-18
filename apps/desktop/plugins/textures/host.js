@@ -23,6 +23,11 @@ async function convert(path) {
 }
 
 tessera.on('fileAction', ({ id, paths }) => {
-  if (id !== 'convert') return;
-  convert(paths[0]).catch((error) => tessera.ui.toast('error', String(error.message ?? error)));
+  if (id === 'convert') convert(paths[0]).catch((error) => tessera.ui.toast('error', String(error.message ?? error)));
+  if (id === 'edit-external') {
+    (async () => {
+      if (!(await tessera.exec.systemInfo()).editor && !(await tessera.exec.pickSystem('editor'))) return;
+      await tessera.exec.runSystem('editor', [], { detach: true, projectFile: paths[0] });
+    })().catch((error) => tessera.ui.toast('error', String(error.message ?? error)));
+  }
 });

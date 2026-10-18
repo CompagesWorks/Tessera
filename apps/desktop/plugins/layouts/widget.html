@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="/__tessera/sdk.js"></script>
+    <link rel="stylesheet" href="widget.css" />
+  </head>
+  <body>
+    <header>
+      <select id="file" class="atrium-input" data-i18n-label="file.label"></select>
+      <label><input id="boxes" type="checkbox" /> <span data-i18n="showBoxes"></span></label>
+      <label><input id="hidden" type="checkbox" /> <span data-i18n="showHidden"></span></label>
+      <select id="anim" class="atrium-input" hidden data-i18n-label="anim.label"></select>
+      <button id="play" class="atrium-btn atrium-btn-secondary" type="button" hidden data-i18n-title="anim.play" data-i18n-label="anim.play"></button>
+      <input id="frame" type="range" min="0" step="1" hidden data-i18n-label="anim.frame" />
+      <button id="fit" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="fit.hint"><i class="bi bi-arrows-fullscreen"></i> <span data-i18n="fit"></span></button>
+      <button id="revert" class="atrium-btn atrium-btn-secondary" type="button" disabled data-i18n="revert"></button>
+      <button id="save" class="atrium-btn atrium-btn-primary" type="button" disabled data-i18n-title="save.hint"><i class="bi bi-floppy"></i> <span data-i18n="save"></span></button>
+    </header>
+    <p id="empty" class="atrium-empty" hidden data-i18n="empty"></p>
+    <main id="main" hidden>
+      <ul id="tree" class="tree" role="tree" data-i18n-label="tree.label"></ul>
+      <section class="side">
+        <canvas id="canvas" tabindex="0" data-i18n-label="canvas.label"></canvas>
+        <div id="side-tabs" class="tabs side-tabs" role="tablist">
+          <button type="button" class="tab" role="tab" aria-selected="true" data-side="props" data-i18n="side.properties"></button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-side="textures" data-i18n="side.textures"></button>
+        </div>
+        <div id="props"></div>
+        <ul id="texture-list" class="texture-list" hidden></ul>
+        <input id="image-picker" type="file" accept="image/*,.dds" hidden />
+      </section>
+    </main>
+    <script src="bflyt.js"></script>
+    <script src="render.js"></script>
+    <script src="editor.js"></script>
+    <script src="textures-panel.js"></script>
+    <script src="bflan.js"></script>
+    <script src="anim.js"></script>
+    <script src="widget.js"></script>
+  </body>
+</html>

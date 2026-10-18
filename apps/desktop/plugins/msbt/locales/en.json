@@ -1,0 +1,21 @@
+{
+  "description": "Edits game texts in .msbt and .xmsbt files (names, menus, descriptions), like the Switch Toolbox MSBT editor.",
+  "widget.description": "Edit .msbt and .xmsbt texts",
+  "file.label": "MSBT file",
+  "filter": "Filter",
+  "filter.label": "Filter labels and texts",
+  "save": "Save",
+  "saveCount": "Save ({{count}})",
+  "saveFirst": "Save your changes before opening another file",
+  "column.label": "Label",
+  "column.text": "Text",
+  "empty": "No .msbt or .xmsbt file in the project.",
+  "tags.hint": "Control tags look like [0.3:0a00] and [/0.3]: keep them as they are. Write [[ for a literal [.",
+  "saved": "{{name}} saved",
+  "notMsbt": "{{name}} is not an .msbt or .xmsbt file",
+  "error.not-msbt": "This file is not a valid MSBT",
+  "error.unsupported-encoding": "Only UTF-16 MSBT files are supported",
+  "error.no-text": "This MSBT has no text section",
+  "error.truncated": "This MSBT is truncated",
+  "error.not-xmsbt": "This file is not a valid XMSBT"
+}

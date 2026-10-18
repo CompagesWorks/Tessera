@@ -7,6 +7,7 @@ import type { UiProvider } from '../../ui/provider';
 import type { Page } from '../types';
 import './gamebanana.css';
 import template from './gamebanana.html?raw';
+import { showAnalytics } from './analytics';
 import { el, postCard, remoteImage } from './posts';
 
 const MAX_THUMBNAILS = 24;
@@ -21,11 +22,11 @@ function stat(icon: string, value: number) {
   return span;
 }
 
-function modCard(mod: GbOwnMod, withThumbnail: boolean) {
+function modCard(mod: GbOwnMod, withThumbnail: boolean, ui: UiProvider) {
   const card = el('button', 'tessera-gbp-mod');
   card.type = 'button';
   card.title = mod.name;
-  card.addEventListener('click', () => open(mod.url));
+  card.addEventListener('click', () => showAnalytics(mod, ui, open));
   const thumb = el('div', 'tessera-gbp-thumb');
   if (mod.thumbnail && withThumbnail) thumb.append(remoteImage(mod.thumbnail, ''));
   const meta = el('div', 'tessera-gbp-meta');
@@ -40,7 +41,7 @@ function renderOverview(body: HTMLElement, data: GbMember, ui: UiProvider, showT
   const stats = el('div', 'tessera-gbp-stats');
   stats.append(stat('box-seam', data.mods.length), stat('heart', total('likes')), stat('eye', total('views')), stat('chat', total('comments')));
   const grid = el('div', 'tessera-gbp-mods');
-  grid.append(...data.mods.map((mod, index) => modCard(mod, index < MAX_THUMBNAILS)));
+  grid.append(...data.mods.map((mod, index) => modCard(mod, index < MAX_THUMBNAILS, ui)));
   mods.append(el('h2', '', t('gbpage.mods')), stats, data.mods.length ? grid : el('p', 'tessera-gbp-empty', t('gbpage.noMods')));
   const comments = el('section', '');
   const list = el('div', 'tessera-gbp-comments');

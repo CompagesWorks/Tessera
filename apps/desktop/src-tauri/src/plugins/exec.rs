@@ -41,6 +41,8 @@ pub struct ExecParams {
     pub program: Option<String>,
     #[serde(default)]
     pub detach: bool,
+    #[serde(default, rename = "projectFile")]
+    pub project_file: Option<String>,
     #[serde(default)]
     pub stream: Option<String>,
 }
@@ -54,7 +56,7 @@ fn default_timeout() -> u64 {
 impl ExecParams {
     pub fn parse(value: Value, with_program: bool) -> Result<ExecParams> {
         let params: ExecParams = serde_json::from_value(value)?;
-        if params.args.len() > 64 || params.args.iter().any(|a| check::len(a) > 2000 || a.contains('\0')) {
+        if params.args.len() + usize::from(params.project_file.is_some()) > 64 || params.args.iter().any(|a| check::len(a) > 2000 || a.contains('\0')) {
             return Err(Error::new("invalid argument"));
         }
         if !(1000..=MAX_TIMEOUT).contains(&params.timeout) {
@@ -64,6 +66,9 @@ impl ExecParams {
             (Some(name), true) if check::PROGRAM_NAME.is_match(name) => {}
             (None, false) => {}
             _ => return Err(Error::new("invalid program")),
+        }
+        if !with_program && params.project_file.is_some() {
+            return Err(Error::new("invalid project file"));
         }
         if params.stream.as_ref().is_some_and(|s| !check::PROGRAM_NAME.is_match(s)) {
             return Err(Error::new("invalid stream"));

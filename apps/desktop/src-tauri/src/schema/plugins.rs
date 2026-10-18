@@ -136,6 +136,8 @@ pub struct FileAction {
     #[serde(default = "puzzle")]
     pub icon: String,
     pub extensions: Vec<String>,
+    #[serde(default)]
+    pub default: bool,
 }
 
 fn puzzle() -> String {
