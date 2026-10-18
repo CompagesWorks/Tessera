@@ -2,6 +2,26 @@
   display: none !important;
 }
 
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--atrium-border-color) padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--atrium-border-hover) padding-box;
+}
+
 html,
 body {
   height: 100%;
@@ -65,16 +85,33 @@ aside {
   cursor: pointer;
 }
 
+.tab:hover {
+  color: var(--atrium-text-primary);
+}
+
 .tab[aria-selected='true'] {
+  font-weight: 600;
   color: var(--atrium-text-primary);
   background: var(--atrium-bg-secondary);
+  box-shadow: 0 0 0 1px var(--atrium-border-color);
+}
+
+.tab:focus-visible,
+.material:focus-visible {
+  outline: 2px solid var(--atrium-accent-color);
+  outline-offset: -2px;
+}
+
+input[type='checkbox'] {
+  accent-color: var(--atrium-accent-color);
+  cursor: pointer;
 }
 
 .list {
   flex: 1;
   margin: 0;
   padding: 0;
-  overflow: auto;
+  overflow: hidden auto;
   list-style: none;
 }
 
@@ -108,6 +145,7 @@ aside {
   display: flex;
   align-items: center;
   gap: 6px;
+  box-sizing: border-box;
   width: 100%;
   padding: 5px 6px;
   border: 0;
@@ -165,7 +203,7 @@ aside {
 
 #params {
   flex: 1;
-  overflow: auto;
+  overflow: hidden auto;
 }
 
 details {
@@ -307,35 +345,39 @@ canvas:active {
 
 .actions {
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 
 .icon-btn {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   padding: 0;
-  border: 0;
-  border-radius: 4px;
-  color: var(--atrium-text-secondary);
-  background: transparent;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 5px;
+  color: var(--atrium-text-primary);
+  background: var(--atrium-bg-tertiary);
   cursor: pointer;
+  transition: color 120ms, background 120ms, border-color 120ms;
 }
 
 .icon-btn:hover {
-  color: var(--atrium-text-primary);
-  background: var(--atrium-bg-tertiary);
+  border-color: var(--atrium-border-hover);
+  background: var(--atrium-bg-hover);
+}
+
+.icon-btn.danger:hover {
+  border-color: rgba(var(--atrium-danger-rgb), 0.5);
+  color: var(--atrium-danger-color);
+  background: rgba(var(--atrium-danger-rgb), 0.12);
 }
 
 .icon-btn:focus-visible {
   outline: 2px solid var(--atrium-accent-color);
   outline-offset: 1px;
-}
-
-.values .icon-btn {
-  flex: none;
 }
 
 .adder {

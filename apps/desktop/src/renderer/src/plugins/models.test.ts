@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import source from '../../../../plugins/ssbh/model.js?raw';
+import source from '../../../../plugins/models/model.js?raw';
 const { drawList, bounds, folderOf, retexture, assignMaterial, freeParams, addParam, removeParam, duplicateMaterial, renameMaterial, deleteMaterial } = new Function(
   `${source}; return { drawList, bounds, folderOf, retexture, assignMaterial, freeParams, addParam, removeParam, duplicateMaterial, renameMaterial, deleteMaterial };`,
 )();

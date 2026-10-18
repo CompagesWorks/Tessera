@@ -102,11 +102,14 @@ function adder(entry, kind, t, rebuild) {
 }
 
 function materialEditor(entry, t, { change, rebuild }) {
-  const remove = (kind, param) =>
-    iconButton('dash-lg', t('param.remove', { name: param.param_id }), () => {
+  const remove = (kind, param) => {
+    const button = iconButton('trash', t('param.remove', { name: param.param_id }), () => {
       removeParam(entry, kind, param.param_id);
       rebuild();
     });
+    button.classList.add('danger');
+    return button;
+  };
   const set = (param, apply) => (value) => {
     apply(value);
     change(param.param_id);

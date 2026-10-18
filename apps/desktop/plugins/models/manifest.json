@@ -1,6 +1,6 @@
 {
-  "id": "compagesworks.ssbh",
-  "name": "SSBH",
+  "id": "compagesworks.models",
+  "name": "Models",
   "version": "1.0.0",
   "author": "Tessera",
   "description": "%description%",
@@ -16,7 +16,7 @@
     "widgets": [
       {
         "id": "viewer",
-        "title": "SSBH",
+        "title": "Models",
         "description": "%widget.description%",
         "icon": "box",
         "category": "media",

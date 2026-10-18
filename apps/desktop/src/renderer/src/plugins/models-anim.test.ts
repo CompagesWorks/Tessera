@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import source from '../../../../plugins/ssbh/anim.js?raw';
+import source from '../../../../plugins/models/anim.js?raw';
 const { pose, bindPose, compose, decompose, visibleBy, frameCount, motionFolders, toEulerZYX, fromEulerZYX } = new Function(
   `${source}; return { pose, bindPose, compose, decompose, visibleBy, frameCount, motionFolders, toEulerZYX, fromEulerZYX };`,
 )();
