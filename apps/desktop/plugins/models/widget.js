@@ -78,27 +78,98 @@ function meshRow(object, index) {
   const name = document.createElement('span');
   name.textContent = object.name;
   name.title = object.name;
-  const material = document.createElement('select');
-  material.className = 'atrium-input';
+  const material = materialButton(object.material);
   material.setAttribute('aria-label', t('material.for', { name: object.name }));
-  material.append(...[...new Set([...labels(), object.material ?? ''])].map((label) => new Option(label || '—', label)));
-  material.value = object.material ?? '';
-  material.addEventListener('change', () => {
-    if (!material.value) return;
-    assignMaterial(model.modl, object, material.value);
+  material.addEventListener('click', () => openMaterialMenu(material, object.material, (label) => {
+    assignMaterial(model.modl, object, label);
+    material.replaceChildren(...materialButton(label).childNodes);
     model.modlDirty = true;
     dirty();
     applyTextures(retexture(model.list, model.matl));
     li.dataset.search = `${object.name}\n${object.material}`.toLowerCase();
     materials.replaceChildren(...(model.matl?.entries ?? []).map(materialRow));
     show();
-  });
+  }));
   li.append(check, name, material);
   li.addEventListener('pointerenter', () => viewer?.setHighlight(index));
   li.addEventListener('pointerleave', () => viewer?.setHighlight(picked));
   li.addEventListener('focusin', () => viewer?.setHighlight(index));
   li.addEventListener('focusout', () => viewer?.setHighlight(picked));
   return li;
+}
+
+function swatch(label) {
+  const box = document.createElement('span');
+  box.className = 'swatch';
+  const texture = label ? colorTextures(model.matl).get(label) : null;
+  if (texture) {
+    image(texture).then((img) => {
+      if (img) box.style.backgroundImage = `url(${img.src})`;
+    });
+  }
+  return box;
+}
+
+function materialButton(label) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'atrium-input material-pick';
+  button.setAttribute('aria-haspopup', 'listbox');
+  const name = document.createElement('span');
+  name.textContent = label || '—';
+  button.append(swatch(label), name, Object.assign(document.createElement('i'), { className: 'bi bi-chevron-down' }));
+  return button;
+}
+
+let closeMenu = null;
+function openMaterialMenu(anchor, current, choose) {
+  closeMenu?.();
+  const menu = document.createElement('div');
+  menu.className = 'material-menu';
+  menu.role = 'listbox';
+  for (const label of labels()) {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.role = 'option';
+    option.setAttribute('aria-selected', String(label === current));
+    const name = document.createElement('span');
+    name.textContent = label;
+    option.append(swatch(label), name);
+    option.addEventListener('click', () => {
+      closeMenu();
+      if (label !== current) choose(label);
+    });
+    menu.append(option);
+  }
+  const box = anchor.getBoundingClientRect();
+  const below = innerHeight - box.bottom;
+  Object.assign(menu.style, { left: `${box.left}px`, width: `${Math.max(box.width, 180)}px` });
+  if (below < 220 && box.top > below) Object.assign(menu.style, { bottom: `${innerHeight - box.top + 2}px`, maxHeight: `${box.top - 8}px` });
+  else Object.assign(menu.style, { top: `${box.bottom + 2}px`, maxHeight: `${below - 8}px` });
+  document.body.append(menu);
+  (menu.querySelector('[aria-selected="true"]') ?? menu.firstChild)?.focus();
+  const outside = (event) => !menu.contains(event.target) && !anchor.contains(event.target) && closeMenu();
+  const keys = (event) => {
+    const options = [...menu.children];
+    const at = options.indexOf(document.activeElement);
+    if (event.key === 'Escape') {
+      closeMenu();
+      anchor.focus();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      options[(at + (event.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length]?.focus();
+    }
+  };
+  const scrolled = (event) => !menu.contains(event.target) && closeMenu();
+  addEventListener('pointerdown', outside, true);
+  addEventListener('scroll', scrolled, true);
+  menu.addEventListener('keydown', keys);
+  closeMenu = () => {
+    menu.remove();
+    removeEventListener('pointerdown', outside, true);
+    removeEventListener('scroll', scrolled, true);
+    closeMenu = null;
+  };
 }
 
 function materialRow(entry) {
@@ -385,6 +456,7 @@ async function open(next) {
   }
   path = next;
   picker.value = path;
+  closeMenu?.();
   model = null;
   picked = null;
   setPlaying(false);
