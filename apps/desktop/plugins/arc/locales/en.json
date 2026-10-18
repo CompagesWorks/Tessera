@@ -1,5 +1,5 @@
 {
-  "description": "Browses the Smash Ultimate data.arc like ArcExplorer and extracts files into the project sources.",
+  "description": "Browses the Smash Ultimate data.arc like ArcExplorer and extracts files into an extracted folder of the project.",
   "widget.description": "Browse data.arc",
   "intro": "Pick your data.arc. The first time, the file names (about 5 MB) are downloaded from GitHub.",
   "pick": "Open data.arc…",
@@ -7,7 +7,7 @@
   "empty": "This folder is empty.",
   "extract": "Extract",
   "extracting": "Extracting {{name}}…",
-  "extracted": "{{written}} extracted to sources, {{skipped}} already there, {{failed}} failed",
+  "extracted": "{{written}} extracted to extracted/, {{skipped}} already there, {{failed}} failed",
   "error.no data.arc": "This data.arc no longer exists",
   "error.no folder picked": "Pick your data.arc",
   "error.not a folder": "This folder is not in the data.arc"

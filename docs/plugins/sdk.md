@@ -562,7 +562,7 @@ Lists a folder of the picked `data.arc` (or of the `data.arc` inside a picked [o
 
 #### `tessera.arc.extract(path)`
 
-Extracts an arc file, or a folder with everything under it, to `sources/<path>` in the project (`stream:` becomes `stream;`, as ARCropolis expects). Files already in the project are kept, never overwritten. Resolves to `{ written, skipped, failed }`. Needs `fs.project.write` and `fs.external`.
+Extracts an arc file, or a folder with everything under it, to `extracted/<path>` in the project, outside `sources` so nothing extracted gets deployed (`stream:` becomes `stream;`, as ARCropolis expects). Files already in the project are kept, never overwritten. Resolves to `{ written, skipped, failed }`. Needs `fs.project.write` and `fs.external`.
 
 ## Network
 

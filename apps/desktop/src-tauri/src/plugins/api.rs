@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 
 use crate::projects::arc::{list_arc, mod_path, open_arc, read_arc, walk_arc};
 use crate::projects::export::deploy_project;
-use crate::projects::files::{SOURCES_DIR, TESSERA_DIR};
+use crate::projects::files::TESSERA_DIR;
 use crate::projects::history::{HistoryService, Meta};
 use crate::projects::service::ProjectService;
 use crate::projects::ssbh::{mesh_buffers, read_ssbh, write_ssbh};
@@ -720,7 +720,7 @@ impl PluginApi {
                         walk_arc(&arc, &p.path, &mut paths);
                         let (mut written, mut skipped, mut failed) = (0, 0, 0);
                         for path in paths {
-                            let rel = format!("{SOURCES_DIR}/{}", mod_path(&path));
+                            let rel = format!("extracted/{}", mod_path(&path));
                             if plugin_path(&rel, 1).is_err() || scope.root.join(&rel).exists() {
                                 skipped += 1;
                                 continue;
