@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="/__tessera/sdk.js"></script>
+    <link rel="stylesheet" href="widget.css" />
+  </head>
+  <body class="mask">
+    <aside>
+      <label class="field">
+        <span data-i18n="image"></span>
+        <span class="row">
+          <select id="image" class="atrium-input"></select>
+          <button id="import-image" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="import" data-i18n-label="import.image"><i class="bi bi-upload"></i></button>
+        </span>
+      </label>
+      <label class="field">
+        <span data-i18n="mask"></span>
+        <span class="row">
+          <select id="mask" class="atrium-input"></select>
+          <button id="import-mask" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="import" data-i18n-label="import.mask"><i class="bi bi-upload"></i></button>
+        </span>
+      </label>
+      <div class="modes" role="radiogroup" data-i18n-label="mode">
+        <label><input type="radio" name="mode" value="move" checked /> <i class="bi bi-arrows-move"></i> <span data-i18n="mode.move"></span></label>
+        <label><input type="radio" name="mode" value="draw" /> <i class="bi bi-brush"></i> <span data-i18n="mode.draw"></span></label>
+        <label><input type="radio" name="mode" value="erase" /> <i class="bi bi-eraser"></i> <span data-i18n="mode.erase"></span></label>
+      </div>
+      <label class="field"><span><span data-i18n="scale"></span> <output id="scale-value"></output></span><input id="scale" class="atrium-range" type="range" min="10" max="300" value="100" /></label>
+      <label class="field"><span><span data-i18n="rotation"></span> <output id="rotation-value"></output></span><input id="rotation" class="atrium-range" type="range" min="-180" max="180" value="0" /></label>
+      <label class="field"><span><span data-i18n="brush"></span> <output id="brush-value"></output></span><input id="brush" class="atrium-range" type="range" min="1" max="100" value="10" /></label>
+      <label class="field"><span><span data-i18n="opacity"></span> <output id="opacity-value"></output></span><input id="opacity" class="atrium-range" type="range" min="0" max="100" value="75" /></label>
+      <span class="row">
+        <button id="undo" class="atrium-btn atrium-btn-secondary" type="button" data-i18n="undo"></button>
+        <button id="redo" class="atrium-btn atrium-btn-secondary" type="button" data-i18n="redo"></button>
+      </span>
+      <span class="row">
+        <button id="reset-mask" class="atrium-btn atrium-btn-secondary" type="button" data-i18n="resetMask"></button>
+        <button id="reset-place" class="atrium-btn atrium-btn-secondary" type="button" data-i18n="resetPlace"></button>
+      </span>
+      <div class="spacer"></div>
+      <label class="check"><input id="overwrite" type="checkbox" /> <span data-i18n="overwrite"></span></label>
+      <button id="save" class="atrium-btn atrium-btn-primary" type="button" disabled data-i18n="saveMask"></button>
+    </aside>
+    <main id="stage" tabindex="0" data-i18n-label="stage.label">
+      <canvas id="canvas" hidden></canvas>
+      <p id="empty" class="atrium-empty" data-i18n="mask.empty"></p>
+      <footer>
+        <span id="mode-label"></span>
+        <label><span data-i18n="zoom"></span> <input id="zoom" class="atrium-range" type="range" min="25" max="800" value="100" /> <output id="zoom-value"></output></label>
+      </footer>
+    </main>
+    <script src="common.js"></script>
+    <script src="mask.js"></script>
+  </body>
+</html>

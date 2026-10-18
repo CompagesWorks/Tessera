@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="/__tessera/sdk.js"></script>
+    <link rel="stylesheet" href="widget.css" />
+  </head>
+  <body class="align">
+    <header>
+      <label>
+        <span data-i18n="reference"></span>
+        <select id="reference" class="atrium-input"></select>
+      </label>
+      <button id="import-reference" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="import" data-i18n-label="import.reference"><i class="bi bi-upload"></i></button>
+      <label>
+        <span data-i18n="targets"></span>
+        <select id="targets" class="atrium-input"></select>
+      </label>
+      <button id="import-targets" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="import" data-i18n-label="import.targets"><i class="bi bi-upload"></i></button>
+      <button id="align" class="atrium-btn atrium-btn-primary" type="button" data-i18n="align"></button>
+    </header>
+    <figure id="preview" class="preview" hidden>
+      <img id="reference-image" alt="" />
+      <figcaption id="reference-name"></figcaption>
+    </figure>
+    <ul id="grid" class="grid"></ul>
+    <p id="empty" class="atrium-empty" data-i18n="align.empty"></p>
+    <p class="hint" data-i18n="align.hint"></p>
+    <script src="common.js"></script>
+    <script src="features.js"></script>
+    <script src="align.js"></script>
+  </body>
+</html>

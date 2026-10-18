@@ -1,0 +1,35 @@
+{
+  "id": "compagesworks.portraits",
+  "name": "Portraits",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "person-bounding-box",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write"
+  ],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "align",
+        "title": "Portrait Align",
+        "description": "%align.description%",
+        "icon": "bounding-box",
+        "category": "media",
+        "entry": "align.html"
+      },
+      {
+        "id": "mask",
+        "title": "Portrait Mask",
+        "description": "%mask.description%",
+        "icon": "mask",
+        "category": "media",
+        "entry": "mask.html"
+      }
+    ]
+  }
+}
