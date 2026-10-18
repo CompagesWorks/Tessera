@@ -358,6 +358,7 @@
         ),
     }),
     arc: Object.freeze({
+      pick: () => call('arc.pick'),
       list: (path = '') => call('arc.list', { path }),
       extract: (path) => call('arc.extract', { path }),
     }),

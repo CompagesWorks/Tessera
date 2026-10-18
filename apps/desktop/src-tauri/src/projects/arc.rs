@@ -67,8 +67,8 @@ fn load_labels(cache: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn open_arc(folder: &Path, cache: &Path) -> Result<Arc<ArcFile>> {
-    let file = folder.join("data.arc");
+pub fn open_arc(picked: &Path, cache: &Path) -> Result<Arc<ArcFile>> {
+    let file = if picked.is_dir() { picked.join("data.arc") } else { picked.to_path_buf() };
     let mut open = OPEN.lock().unwrap();
     if let Some((path, arc)) = open.as_ref() {
         if path == &file {

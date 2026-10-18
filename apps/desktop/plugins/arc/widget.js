@@ -93,7 +93,7 @@ async function open(path) {
 
 up.addEventListener('click', () => open(parentOf(current)).catch(failed));
 document.getElementById('pick').addEventListener('click', () =>
-  tessera.external
+  tessera.arc
     .pick()
     .then((picked) => picked && open(''))
     .catch(failed),

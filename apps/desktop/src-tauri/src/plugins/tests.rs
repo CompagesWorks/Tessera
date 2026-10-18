@@ -354,6 +354,9 @@ impl Host for FakeHost {
     fn pick_external(&self, _plugin_name: &str) -> Option<PathBuf> {
         None
     }
+    fn pick_arc(&self, _plugin_name: &str) -> Option<PathBuf> {
+        None
+    }
     fn pick_program(&self, _plugin_name: &str, program: &str) -> Option<PathBuf> {
         self.picks.lock().unwrap().get(program).cloned()
     }

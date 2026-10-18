@@ -25,6 +25,7 @@ fn text(language: Language, key: &str) -> &'static str {
         (Language::Fr, "execOnce") => "Exécuter une fois",
         (Language::Fr, "execSession") => "Toujours pour cette session",
         (Language::Fr, "execDeny") => "Refuser",
+        (Language::Fr, "arcTitle") => "{name} : choisir le data.arc",
         (Language::Fr, "programTitle") => "{name} : choisir le programme « {program} »",
         (Language::Fr, "openTitle") => "Ouvrir un lien",
         (Language::Fr, "openMessage") => "« {name} » veut ouvrir ce lien dans ton navigateur :",
@@ -37,6 +38,7 @@ fn text(language: Language, key: &str) -> &'static str {
         (Language::En, "execOnce") => "Run once",
         (Language::En, "execSession") => "Always for this session",
         (Language::En, "execDeny") => "Deny",
+        (Language::En, "arcTitle") => "{name}: pick the data.arc",
         (Language::En, "programTitle") => "{name}: pick the program \"{program}\"",
         (Language::En, "openTitle") => "Open a link",
         (Language::En, "openMessage") => "\"{name}\" wants to open this link in your browser:",
@@ -120,6 +122,10 @@ impl Host for TauriHost {
     fn pick_external(&self, plugin_name: &str) -> Option<PathBuf> {
         let title = self.external_title(plugin_name);
         self.pick_folder(Some(&title), false)
+    }
+
+    fn pick_arc(&self, plugin_name: &str) -> Option<PathBuf> {
+        self.files().set_title(self.t("arcTitle", &[("name", plugin_name)])).add_filter("ARC", &["arc"]).blocking_pick_file().and_then(|p| p.into_path().ok())
     }
 
     fn pick_program(&self, plugin_name: &str, program: &str) -> Option<PathBuf> {

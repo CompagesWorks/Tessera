@@ -41,6 +41,7 @@ pub enum Decision {
 
 pub trait Host: Send + Sync {
     fn pick_external(&self, plugin_name: &str) -> Option<PathBuf>;
+    fn pick_arc(&self, plugin_name: &str) -> Option<PathBuf>;
     fn pick_program(&self, plugin_name: &str, program: &str) -> Option<PathBuf>;
     fn confirm_exec(&self, plugin_id: &str, plugin_name: &str, command: &str) -> Decision;
     fn confirm_open(&self, plugin_id: &str, plugin_name: &str, url: &str) -> Decision;
@@ -679,6 +680,21 @@ impl PluginApi {
                         let data = write_ssbh(p.data, &p.path)?;
                         self.tracked(ctx, FsScope::Project, HistoryKind::FileWrite, p.path.clone(), &[&p.path], || scoped_fs::scoped_write_bytes(&scope, &p.path, &data))?;
                         Ok(Value::Null)
+                    }),
+                )
+            }
+            "arc.pick" => {
+                nothing(params)?;
+                prepared(
+                    Permission::FsExternal,
+                    "arc.pick",
+                    "-".into(),
+                    Box::new(move || {
+                        let Some(file) = self.host.pick_arc(&self.plugins.name_of(&ctx.plugin_id)) else { return Ok(json!(false)) };
+                        let file = file.to_string_lossy().into_owned();
+                        self.plugins.set_external(&ctx.plugin_id, Some(file.clone()))?;
+                        self.audit.record(&ctx.plugin_id, "external.set", &file, true);
+                        Ok(json!(true))
                     }),
                 )
             }
