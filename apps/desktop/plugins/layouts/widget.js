@@ -1,5 +1,6 @@
 const t = (key, params) => tessera.i18n.t(key, params);
 const BFLYT = /\.bflyt$/i;
+const BFLAN = /\.bflan$/i;
 const ICONS = { pane: 'square', picture: 'image', text: 'fonts', window: 'window', bounding: 'bounding-box', part: 'boxes', alignment: 'align-center', scissor: 'scissors' };
 const MAX_PART_DEPTH = 4;
 
@@ -217,6 +218,15 @@ function inside(entry, x, y) {
 }
 
 function hit(x, y) {
+  const restore = pose();
+  try {
+    return hitPose(x, y);
+  } finally {
+    restore();
+  }
+}
+
+function hitPose(x, y) {
   const list = entries().filter(({ pane }) => pane.type !== 'pane' && pane !== layout.root);
   for (let i = list.length - 1; i >= 0; i--) if (inside(list[i], x, y)) return list[i].top;
   return layout.root;
@@ -316,7 +326,7 @@ async function open(next, force = false) {
   layout = null;
   parts = new Map();
   main.hidden = true;
-  loadAnimations(path);
+  animationsReady = loadAnimations(path);
   if (!path) return;
   try {
     const opened = prepare(readBflyt(await tessera.files.readBytes(path)));
@@ -445,9 +455,11 @@ saveButton.addEventListener('click', save);
 revertButton.addEventListener('click', () => open(path, true));
 tessera.on('files.selected', ({ path: chosen }) => {
   if (chosen && BFLYT.test(chosen) && chosen !== path) open(chosen);
+  else if (chosen && BFLAN.test(chosen)) openAnimation(chosen);
 });
 tessera.on('files.dropped', ({ paths }) => {
   if (BFLYT.test(paths[0])) open(paths[0]);
+  else if (BFLAN.test(paths[0])) openAnimation(paths[0]);
   else tessera.ui.toast('warning', t('notBflyt', { name: paths[0] }));
 });
 

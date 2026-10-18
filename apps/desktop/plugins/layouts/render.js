@@ -51,7 +51,7 @@ function wrap(value, mode) {
 
 function sampler(material) {
   const map = material?.maps[0];
-  const texture = map && textures.get(material.textureNames[map.texture]);
+  const texture = map && textures.get(map.name ?? material.textureNames[map.texture]);
   const black = material?.black ?? [0, 0, 0, 0];
   const white = material?.white ?? [255, 255, 255, 255];
   const srt = material?.transforms[0];
@@ -79,7 +79,7 @@ function lerp4(a, b, t) {
 }
 
 function raster(key, w, h, material, uvAt, colors) {
-  key = `${key}:${colors}:${material?.black}:${material?.white}`;
+  key = `${key}:${colors}:${material?.black}:${material?.white}:${JSON.stringify([material?.maps[0], material?.transforms[0]])}`;
   if (rasters.size > 512) rasters.clear();
   if (rasters.has(key)) return rasters.get(key);
   const scale = Math.min(1, MAX_RASTER / Math.max(Math.abs(w), Math.abs(h), 1));

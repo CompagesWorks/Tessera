@@ -12,10 +12,13 @@ function file() {
   view.setUint32(pai + 4, 0x100 - pai, true);
   view.setUint16(pai + 8, 30, true);
   bytes[pai + 10] = 1;
+  view.setUint16(pai + 12, 1, true);
   view.setUint16(pai + 14, 1, true);
-  view.setUint32(pai + 16, 0x14, true);
-  view.setUint32(pai + 0x14, 0x18, true);
-  const entry = pai + 0x18;
+  view.setUint32(pai + 16, 0x20, true);
+  view.setUint32(pai + 0x14, 4, true);
+  bytes.set([...'tex_a'].map((c) => c.charCodeAt(0)), pai + 0x18);
+  view.setUint32(pai + 0x20, 0x28, true);
+  const entry = pai + 0x28;
   bytes.set([...'P_icon'].map((c) => c.charCodeAt(0)), entry);
   bytes[entry + 28] = 2;
   view.setUint32(entry + 32, 0x28, true);
@@ -47,7 +50,7 @@ function file() {
 describe('bflan', () => {
   it('reads pane curves', () => {
     const anim = readBflan(file());
-    expect(anim).toMatchObject({ frames: 30, loop: true });
+    expect(anim).toMatchObject({ frames: 30, loop: true, textures: ['tex_a'] });
     expect(anim.entries[0]).toMatchObject({ name: 'P_icon', target: 0 });
     expect(anim.entries[0].tags.map((tag: { tag: string }) => tag.tag)).toEqual(['FLPA', 'FLVI']);
     expect(anim.entries[0].tags[0].curves[0]).toMatchObject({ target: 1, step: false, keys: [[0, 10, 0], [20, 50, 0]] });

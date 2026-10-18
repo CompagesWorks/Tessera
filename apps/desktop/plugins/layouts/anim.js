@@ -4,6 +4,7 @@ const frameSlider = document.getElementById('frame');
 let animation = null;
 let frame = 0;
 let playing = 0;
+let animationsReady = Promise.resolve();
 
 function showAnimation() {
   playButton.hidden = frameSlider.hidden = !animation;
@@ -68,10 +69,17 @@ function pose() {
           if (tag === 'FLPA' && PANE_CURVES[curve.target]) set(owner, PANE_CURVES[curve.target], value);
           else if (tag === 'FLVI') set(owner, 'visible', value !== 0);
           else if (tag === 'FLVC' && curve.target === 16) set(owner, 'alpha', value);
-          else if (tag === 'FLVC' && quad && curve.target < 16) set(quad, 'colors', quad.colors.map((color, i) => (i === curve.target >> 2 ? Object.assign(color.slice(), { [curve.target & 3]: value }) : color)));
+          else if (tag === 'FLVC' && owner.type === 'text' && curve.target < 16) {
+            const key = curve.target < 8 ? 'topColor' : 'bottomColor';
+            set(owner, key, Object.assign((owner[key] ?? [255, 255, 255, 255]).slice(), { [curve.target & 3]: value }));
+          } else if (tag === 'FLVC' && quad && curve.target < 16) set(quad, 'colors', quad.colors.map((color, i) => (i === curve.target >> 2 ? Object.assign(color.slice(), { [curve.target & 3]: value }) : color)));
           else if (tag === 'FLMC' && curve.target < 8) {
             const key = curve.target < 4 ? 'black' : 'white';
             set(owner, key, Object.assign(owner[key].slice(), { [curve.target & 3]: value }));
+          } else if (tag === 'FLTS' && owner.transforms?.[curve.index] && TEXTURE_CURVES[curve.target]) {
+            set(owner, 'transforms', owner.transforms.map((item, i) => (i === curve.index ? { ...item, [TEXTURE_CURVES[curve.target]]: value } : item)));
+          } else if (tag === 'FLTP' && owner.maps?.[curve.index] && animation.textures[value]) {
+            set(owner, 'maps', owner.maps.map((item, i) => (i === curve.index ? { ...item, name: animation.textures[value] } : item)));
           }
         }
       }
@@ -88,12 +96,30 @@ animPicker.addEventListener('change', async () => {
   frame = 0;
   try {
     if (animPicker.value) animation = readBflan(await tessera.files.readBytes(animPicker.value));
+    if (animation?.textures.length) loadTextures(animation.textures, timgFolder, scheduleDraw);
   } catch (error) {
     failed(error);
   }
   showAnimation();
   scheduleDraw();
 });
+
+async function openAnimation(file) {
+  const name = file.slice(file.lastIndexOf('/') + 1);
+  const owner = (await tessera.files.list(`${folderOf(folderOf(file))}/blyt`).catch(() => []))
+    .filter((entry) => BFLYT.test(entry.name) && name.startsWith(`${entry.name.replace(BFLYT, '')}_`))
+    .sort((a, b) => b.name.length - a.name.length)[0];
+  if (!owner) {
+    tessera.ui.toast('warning', t('anim.noLayout', { name }));
+    return;
+  }
+  if (owner.path !== path) await open(owner.path);
+  if (owner.path !== path) return;
+  await animationsReady;
+  animPicker.value = file;
+  animPicker.dispatchEvent(new Event('change'));
+}
+
 playButton.addEventListener('click', () => (playing ? stopAnimation() : animation && playAnimation()));
 frameSlider.addEventListener('input', () => {
   stopAnimation();

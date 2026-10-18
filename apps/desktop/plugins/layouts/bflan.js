@@ -1,4 +1,5 @@
 const PANE_CURVES = ['x', 'y', 'z', 'rotateX', 'rotateY', 'rotation', 'scaleX', 'scaleY', 'width', 'height'];
+const TEXTURE_CURVES = ['x', 'y', 'rotation', 'scaleX', 'scaleY'];
 
 function readBflan(input) {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
@@ -22,7 +23,7 @@ function readBflan(input) {
   };
   const tag = (at) => ({ tag: ascii(at, 4), curves: Array.from({ length: bytes[at + 4] }, (_, c) => curve(at + u32(at + 8 + c * 4))) });
   const entry = (at) => ({ name: name(at, 28), target: bytes[at + 29], tags: Array.from({ length: bytes[at + 28] }, (_, t) => tag(at + u32(at + 32 + t * 4))) });
-  const anim = { frames: 0, loop: false, entries: [] };
+  const anim = { frames: 0, loop: false, textures: [], entries: [] };
   let at = u16(6);
   for (let i = u16(0x10); i > 0 && at + 8 <= bytes.length; i--) {
     const size = u32(at + 4);
@@ -30,6 +31,7 @@ function readBflan(input) {
     if (ascii(at, 4) === 'pai1') {
       anim.frames = u16(at + 8);
       anim.loop = bytes[at + 10] === 1;
+      anim.textures = Array.from({ length: u16(at + 12) }, (_, i) => name(at + 20 + u32(at + 20 + i * 4), bytes.length));
       const table = at + u32(at + 16);
       anim.entries = Array.from({ length: u16(at + 14) }, (_, e) => entry(at + u32(table + e * 4)));
     }

@@ -138,5 +138,6 @@
   "anim.none": "Aucune animation",
   "anim.play": "Lire / mettre en pause l’animation",
   "anim.frame": "Image de l’animation",
-  "error.not-bflan": "Ce fichier n’est pas un BFLAN valide"
+  "error.not-bflan": "Ce fichier n’est pas un BFLAN valide",
+  "anim.noLayout": "Aucun layout trouvé pour {{name}} dans le dossier blyt"
 }
