@@ -141,6 +141,10 @@ fn reads_manifest_and_refuses_bad_ones() {
     assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
     f.write(manifest(json!({ "permissions": ["ui.menus"], "contributes": { "host": "host.html", "fileActions": [{ "id": "convert", "title": "Convert", "extensions": ["PNG", "nutexb"] }] } })));
     assert_eq!(read_manifest(&f.plugin_dir).unwrap().contributes.file_actions[0].extensions, vec!["png", "nutexb"]);
+    f.write(manifest(json!({ "permissions": ["ui.menus"], "contributes": { "host": "host.html", "fileActions": [{ "id": "add", "title": "Add", "extensions": ["*"] }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap().contributes.file_actions[0].extensions, vec!["*"]);
+    f.write(manifest(json!({ "permissions": ["ui.menus"], "contributes": { "host": "host.html", "fileActions": [{ "id": "add", "title": "Add", "extensions": ["*"], "default": true }] } })));
+    assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
     f.write(manifest(json!({ "contributes": { "host": "host.html", "fileActions": [{ "id": "convert", "title": "Convert", "extensions": ["png"] }] } })));
     assert_eq!(read_manifest(&f.plugin_dir).unwrap_err().code, "invalid-manifest");
     f.write(manifest(json!({ "icon": "icon.png" })));

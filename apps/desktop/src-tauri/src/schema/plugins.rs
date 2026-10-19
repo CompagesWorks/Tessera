@@ -536,9 +536,12 @@ pub fn parse_manifest(value: Value) -> Result<PluginManifest> {
         }
         for extension in action.extensions.iter_mut() {
             *extension = extension.to_ascii_lowercase();
-            if extension.is_empty() || extension.len() > 12 || !extension.chars().all(|c| c.is_ascii_alphanumeric()) {
-                return fail(&format!("{path}.extensions"), "extensions are letters and digits, without the dot");
+            if extension != "*" && (extension.is_empty() || extension.len() > 12 || !extension.chars().all(|c| c.is_ascii_alphanumeric())) {
+                return fail(&format!("{path}.extensions"), "extensions are letters and digits, without the dot, or *");
             }
+        }
+        if action.default && action.extensions.iter().any(|e| e == "*") {
+            return fail(&format!("{path}.default"), "an action for every file can't be the default");
         }
     }
     if contributes.themes.len() > 16 {

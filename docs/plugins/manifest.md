@@ -208,8 +208,8 @@ tessera.on('fileAction', async ({ id, paths }) => {
 | `id` | `a-z`, `0-9`, `-`, 40 max |
 | `title` | 1 to 40 characters |
 | `icon` | Bootstrap Icons name or image path. Default `puzzle` |
-| `extensions` | 1 to 24 extensions, letters and digits without the dot, case-insensitive |
-| `default` | `true` runs the action when the file is double-clicked in the Explorer, instead of opening it with the system app. The first matching plugin wins. Default `false` |
+| `extensions` | 1 to 24 extensions, letters and digits without the dot, case-insensitive. `*` matches every file |
+| `default` | `true` runs the action when the file is double-clicked in the Explorer, instead of opening it with the system app. The first matching plugin wins. Not allowed with `*`. Default `false` |
 
 `paths` are project paths, like the ones [`tessera.files`](sdk.md) takes.
 

@@ -1,0 +1,9 @@
+{
+  "description": "Ajoute des fichiers du projet au config.json ARCropolis du mod depuis le menu clic droit de l'Explorateur.",
+  "add.action": "Ajouter au config.json",
+  "added": "{{file}} ajouté au config.json ({{dir}})",
+  "already": "{{file}} est déjà dans le config.json",
+  "error.outside": "Seuls les fichiers du dossier sources vont dans le config.json.",
+  "error.no-dir": "Ce fichier est à la racine du mod : il n'a pas de dossier auquel l'ajouter.",
+  "error.invalid-config": "Le config.json n'est pas un JSON valide ou n'a pas la structure attendue. Corrige-le d'abord, rien n'a été modifié."
+}

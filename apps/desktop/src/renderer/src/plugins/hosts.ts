@@ -28,7 +28,7 @@ export function pluginFileActions(path: string, except?: string): FileActionEntr
   const extension = path.slice(path.lastIndexOf('.') + 1).toLowerCase();
   return hosts.filter((host) => host.pluginId !== except).flatMap((host) =>
     host.fileActions
-      .filter((action) => action.extensions.includes(extension))
+      .filter((action) => action.extensions.includes(extension) || action.extensions.includes('*'))
       .map((action) => ({
         pluginName: host.pluginName,
         title: action.title.replace(/\{\{([a-zA-Z][\w.-]*)\}\}/g, (_, key: string) => String(host.settings[key] ?? '').trim() || 'Editor'),

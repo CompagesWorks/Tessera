@@ -121,12 +121,13 @@ export const PluginFileActionSchema = z
     title: z.string().trim().min(1).max(40),
     icon: IconSchema.default('puzzle'),
     extensions: z
-      .array(z.string().regex(/^[a-zA-Z0-9]{1,12}$/).transform((value) => value.toLowerCase()))
+      .array(z.string().regex(/^(\*|[a-zA-Z0-9]{1,12})$/).transform((value) => value.toLowerCase()))
       .min(1)
       .max(24),
     default: z.boolean().default(false),
   })
-  .strict();
+  .strict()
+  .refine((action) => !(action.default && action.extensions.includes('*')), { path: ['default'] });
 export type PluginFileAction = z.infer<typeof PluginFileActionSchema>;
 
 const SettingKeySchema = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,39}$/);

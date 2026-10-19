@@ -1,0 +1,14 @@
+{
+  "id": "compagesworks.config",
+  "name": "ARCropolis Config",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "filetype-json",
+  "engines": { "tessera": "^0.1.0" },
+  "permissions": ["fs.project.read", "fs.project.write", "ui.menus"],
+  "contributes": {
+    "host": "host.html",
+    "fileActions": [{ "id": "add", "title": "%add.action%", "icon": "filetype-json", "extensions": ["*"] }]
+  }
+}
