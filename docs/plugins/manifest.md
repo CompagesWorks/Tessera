@@ -47,6 +47,7 @@
 | `contributes.host` | no | a hidden page that runs while a project is open, for logic that is not in a widget (titlebar buttons, Explorer right-click actions) | `null` |
 | `contributes.titlebar` | no | [titlebar buttons](#titlebar-buttons), 4 max. Needs `contributes.host`. | `[]` |
 | `contributes.fileActions` | no | [file actions](#file-actions) in the Explorer right-click menu and other plugins' file menus, 8 max. Needs `contributes.host` and the `ui.menus` permission. | `[]` |
+| `contributes.previews` | no | [previews](#previews): a page of the plugin shown in the Preview for some extensions, 8 max | `[]` |
 
 Unknown fields are ignored.
 
@@ -212,6 +213,16 @@ tessera.on('fileAction', async ({ id, paths }) => {
 | `default` | `true` runs the action when the file is double-clicked in the Explorer, instead of opening it with the system app. The first matching plugin wins. Not allowed with `*`. Default `false` |
 
 `paths` are project paths, like the ones [`tessera.files`](sdk.md) takes.
+
+## Previews
+
+Shows a page of the plugin in Tessera's Preview when the user selects a file with one of these extensions, for formats Tessera can't show by itself:
+
+```json
+"previews": [{ "id": "player", "extensions": ["nus3audio", "lopus", "idsp"], "entry": "preview.html" }]
+```
+
+The page runs like a widget, with the same SDK and permissions. `tessera.widget.getState()` returns `{ path }`, the selected file. It needs `fs.project.read` to be used. Built-in previews (images, audio, video, text) win over plugins.
 
 ## Settings
 

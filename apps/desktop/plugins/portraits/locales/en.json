@@ -39,5 +39,6 @@
   "saved": "{{name}} saved",
   "zoom": "Zoom",
   "stage.label": "Mask editor. Arrow keys move the mask, Ctrl+Z undoes.",
-  "mask.empty": "Choose or import an image. Aligned chara_4 images are picked first."
+  "mask.empty": "Choose or import an image. Aligned chara_4 images are picked first.",
+  "scanning": "Looking for images…"
 }

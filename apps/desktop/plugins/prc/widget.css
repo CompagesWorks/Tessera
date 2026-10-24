@@ -1,0 +1,97 @@
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  padding: 8px;
+  font-family: var(--atrium-font-family, system-ui);
+  font-size: 12.5px;
+  color: var(--atrium-text-primary);
+  background: transparent;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#file {
+  flex: 2;
+  min-width: 160px;
+}
+
+#filter {
+  flex: 1;
+  min-width: 120px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+th {
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--atrium-text-muted);
+}
+
+th:first-child {
+  width: 50%;
+}
+
+th:last-child {
+  width: 56px;
+}
+
+td {
+  padding: 3px 6px;
+  vertical-align: middle;
+}
+
+tbody tr:hover {
+  background: var(--atrium-bg-tertiary);
+}
+
+.param,
+.type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--atrium-font-mono, ui-monospace, monospace);
+  color: var(--atrium-text-secondary);
+}
+
+.type {
+  font-size: 11px;
+  color: var(--atrium-text-muted);
+}
+
+input.atrium-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 3px 6px;
+  font: inherit;
+}
+
+.is-edited {
+  border-color: var(--atrium-accent-color);
+  outline-color: var(--atrium-accent-color);
+}
+
+[aria-invalid='true'] {
+  border-color: var(--atrium-danger-color, #e5484d);
+}
+
+.hint {
+  margin: 10px 6px 0;
+  font-size: 11px;
+  color: var(--atrium-text-muted);
+}

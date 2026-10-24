@@ -56,5 +56,15 @@
   "warn.blocks": "{{width}}×{{height}} n’est pas un multiple de 4 : les textures compressées par blocs peuvent mal s’afficher en jeu",
   "warn.unreadable": "Cette texture est illisible",
   "resize": "Redimensionner le panneau matériau",
-  "texture.choose": "Choisir la texture de {{name}}"
+  "texture.choose": "Choisir la texture de {{name}}",
+  "scanning": "Recherche des modèles dans le projet…",
+  "shading": "Rendu",
+  "shading.pbr": "Rendu SSBU",
+  "shading.light": "Lumière",
+  "shading.ambient": "Ambiance",
+  "shading.specular": "Reflets",
+  "shading.bump": "Normal maps",
+  "shading.rim": "Contour",
+  "shading.exposure": "Exposition",
+  "shading.reset": "Réinitialiser"
 }

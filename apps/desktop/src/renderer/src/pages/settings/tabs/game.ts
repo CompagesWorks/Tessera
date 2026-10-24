@@ -3,7 +3,7 @@ import { t, type MessageKey } from '../../../i18n';
 import { button, group, note, pathBox, row, section, textField, toggle } from '../controls';
 import type { SettingsTab, TabContext } from './types';
 
-type PathKey = 'ryujinx' | 'sdMods' | 'mosaicMods';
+type PathKey = 'ryujinx' | 'sdMods';
 
 function folderRow(ctx: TabContext, key: PathKey, title: MessageKey, hint: MessageKey): HTMLElement {
   const { settings, update } = ctx;
@@ -48,8 +48,8 @@ export const gameTab: SettingsTab = {
       ),
       group('sd-card', t('settings.game.sd')),
       section(folderRow(ctx, 'sdMods', 'settings.game.sdMods', 'settings.game.sdModsHint')),
-      group('box-seam', t('settings.game.arcMosaic')),
-      section(row(t('settings.game.arc'), t('settings.game.arcHint'), arc), folderRow(ctx, 'mosaicMods', 'settings.game.mosaic', 'settings.game.mosaicHint')),
+      group('box-seam', t('settings.game.arcGroup')),
+      section(row(t('settings.game.arc'), t('settings.game.arcHint'), arc)),
       note(t('settings.game.note')),
     ];
   },

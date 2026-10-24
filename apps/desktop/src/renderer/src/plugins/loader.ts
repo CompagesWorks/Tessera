@@ -62,10 +62,17 @@ function widgetsOf(plugin: InstalledPlugin): WidgetDefinition[] {
       reload.textContent = t('plugins.reload');
       reload.addEventListener('click', () => {
         hung.hidden = true;
+        loading.hidden = false;
         iframe.src = iframe.src;
       });
       hung.append(message, reload);
-      element.append(iframe, hung);
+      const loading = document.createElement('div');
+      loading.className = 'tessera-plugin-loading';
+      loading.setAttribute('role', 'status');
+      loading.setAttribute('aria-label', t('plugins.loadingWidget'));
+      loading.innerHTML = '<span class="tessera-plugin-spinner"></span>';
+      iframe.addEventListener('load', () => (loading.hidden = true));
+      element.append(iframe, loading, hung);
 
       let current = state;
       const detach = attachFrame({

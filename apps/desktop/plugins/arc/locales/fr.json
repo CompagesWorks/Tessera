@@ -12,5 +12,7 @@
   "error.no folder picked": "Choisis ton data.arc",
   "error.not a folder": "Ce dossier n’est pas dans le data.arc",
   "search": "Rechercher dans l’arc…",
-  "noResults": "Aucun résultat."
+  "noResults": "Aucun résultat.",
+  "opening": "Ouverture du data.arc… La première fois, les noms de fichiers (environ 5 Mo) sont téléchargés.",
+  "searching": "Recherche de « {{query}} »…"
 }

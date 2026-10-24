@@ -1,4 +1,4 @@
-import { PACKAGE_EXTENSION, PERMISSION_RISK, type AuditEntry, type InstalledPlugin, type Settings } from '@tessera/protocol';
+import { PACKAGE_EXTENSION, PERMISSION_RISK, type AuditEntry, type InstalledPlugin, type MarketplaceEntry, type Settings } from '@tessera/protocol';
 import type { AppContext } from '../../app/context';
 import { required } from '../../components/dom';
 import { iconElement, pluginIcon } from '../../components/icon';
@@ -12,12 +12,23 @@ import { allWidgets } from '../../widgets/registry';
 import type { Page } from '../types';
 import { pluginExtras } from './extras';
 import { installDialog } from './install-dialog';
+import { mountMarketplace } from './marketplace';
 import './plugins.css';
 import template from './plugins.html?raw';
 
 const CORE = '__core__';
 
 let rerender: (() => void) | null = null;
+let browseMarket: (() => void) | null = null;
+let installEntry: ((entry: MarketplaceEntry) => Promise<void>) | null = null;
+
+export function openMarketplace() {
+  browseMarket?.();
+}
+
+export function installFromMarketplace(entry: MarketplaceEntry) {
+  return installEntry?.(entry);
+}
 
 function badge(text: string, tone: string) {
   const el = document.createElement('span');
@@ -60,16 +71,30 @@ export const pluginsPage: Page = {
     const detail = required<HTMLElement>(root, '[data-detail]');
     let selected = CORE;
     let settings: Settings | null = null;
-
-    const attempt = async (run: () => Promise<unknown>) => {
+    const busy = required<HTMLElement>(root, '[data-busy]');
+    const busyLabel = required<HTMLElement>(root, '[data-busy-label]');
+    let pending = 0;
+    const working = async <T>(label: string, run: () => Promise<T>) => {
+      pending++;
+      busyLabel.textContent = label;
+      busy.hidden = false;
       try {
-        await run();
-      } catch (error) {
-        ui.toast('error', errorMessage(error));
+        return await run();
+      } finally {
+        busy.hidden = --pending === 0;
       }
-      await loadPlugins();
-      render();
     };
+
+    const attempt = (run: () => Promise<unknown>) =>
+      working(t('plugins.working'), async () => {
+        try {
+          await run();
+        } catch (error) {
+          ui.toast('error', errorMessage(error));
+        }
+        await loadPlugins();
+        render();
+      });
 
     function row(id: string, name: string, meta: string, iconName: string, plugin?: InstalledPlugin) {
       const button = document.createElement('button');
@@ -158,6 +183,51 @@ export const pluginsPage: Page = {
       await attempt(() => window.tessera.invoke('plugins:install-package', { token: inspected.token, granted: choice.granted }));
       ui.toast('success', t('plugins.installed', { name: inspected.manifest.name }));
     }
+
+    async function installMarket(entry: MarketplaceEntry) {
+      let inspected;
+      try {
+        inspected = await working(t('plugins.downloading', { name: entry.name }), () => window.tessera.invoke('marketplace:download', { url: entry.download, sha256: entry.sha256 }));
+      } catch (error) {
+        ui.toast('error', errorMessage(error));
+        return;
+      }
+      const error = 'error' in inspected ? inspected.error : inspected.manifest.id !== entry.id ? t('marketplace.idMismatch', { id: inspected.manifest.id }) : null;
+      if (error || 'error' in inspected) {
+        await ui.atrium.modal.alert({ title: t('plugins.invalidTitle'), message: error ?? '', tone: 'danger' });
+        return;
+      }
+      const choice = await installDialog(ui, inspected.manifest, 'installed', true);
+      if (!choice) return;
+      selected = inspected.manifest.id;
+      await attempt(() => window.tessera.invoke('plugins:install-package', { token: inspected.token, granted: choice.granted }));
+      ui.toast('success', t('plugins.installed', { name: inspected.manifest.name }));
+      market.render();
+    }
+
+    const marketRoot = required<HTMLElement>(root, '[data-market]');
+    const installedRoot = required<HTMLElement>(root, '[data-installed]');
+    const marketLabel = required<HTMLElement>(root, '[data-marketplace-label]');
+    const market = mountMarketplace(marketRoot, ui, installMarket);
+    let browsing = false;
+    let fetched = false;
+    function showMarket(on: boolean) {
+      browsing = on;
+      marketRoot.hidden = !on;
+      installedRoot.hidden = on;
+      marketLabel.textContent = t(on ? 'marketplace.back' : 'marketplace.title');
+      if (on && !fetched) {
+        fetched = true;
+        void market.refresh();
+      }
+    }
+    required(root, '[data-marketplace]').addEventListener('click', () => showMarket(!browsing));
+    showMarket(false);
+    installEntry = installMarket;
+    browseMarket = () => {
+      showMarket(true);
+      void market.refresh();
+    };
 
     function activityList(entries: AuditEntry[]) {
       if (entries.length === 0) {
@@ -368,7 +438,11 @@ export const pluginsPage: Page = {
       render();
     });
 
-    rerender = render;
+    rerender = () => {
+      render();
+      showMarket(browsing);
+      market.render();
+    };
     render();
   },
   onLanguageChange(root) {

@@ -4,6 +4,7 @@ pub mod commands;
 pub mod events;
 pub mod gamebanana;
 pub mod host;
+pub mod marketplace;
 pub mod plugins;
 pub mod profile;
 pub mod projects;
@@ -16,7 +17,16 @@ pub mod updates;
 pub mod util;
 pub mod window;
 
-use tauri::Manager;
+use std::sync::Arc;
+
+use tauri::{AppHandle, Manager};
+use tauri_plugin_deep_link::DeepLinkExt;
+
+fn open_links(app: &AppHandle, urls: &[url::Url]) {
+    let Some(link) = urls.iter().find_map(marketplace::parse_link) else { return };
+    *app.state::<Arc<state::AppState>>().pending_link.lock().unwrap() = Some(link);
+    events::emit(app, "marketplace:link", ());
+}
 
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -30,6 +40,7 @@ pub fn run() {
                 let _ = window.set_focus();
             }
         }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -49,6 +60,13 @@ pub fn run() {
                 window::apply_zoom(&zoom_window, settings.ui_scale);
                 events::emit(&emitter, "settings:changed", settings.clone());
             });
+            #[cfg(any(windows, target_os = "linux"))]
+            let _ = app.deep_link().register_all();
+            let links = handle.clone();
+            app.deep_link().on_open_url(move |event| open_links(&links, &event.urls()));
+            if let Ok(Some(urls)) = app.deep_link().get_current() {
+                open_links(&handle, &urls);
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -37,10 +37,9 @@ export const GameSettingsSchema = z.object({
   launchAfterDeploy: z.boolean(),
   sdMods: PathSchema.nullable(),
   arcVersion: z.string().regex(/^(latest|\d{1,2}\.\d{1,3}(\.\d{1,3})?)$/),
-  mosaicMods: PathSchema.nullable(),
 });
 export type GameSettings = z.infer<typeof GameSettingsSchema>;
-export const DEFAULT_GAME: GameSettings = { ryujinx: null, launchAfterDeploy: false, sdMods: null, arcVersion: 'latest', mosaicMods: null };
+export const DEFAULT_GAME: GameSettings = { ryujinx: null, launchAfterDeploy: false, sdMods: null, arcVersion: 'latest' };
 
 export const UpdateSettingsSchema = z.object({ auto: z.boolean() });
 export const DEFAULT_UPDATES = { auto: true };

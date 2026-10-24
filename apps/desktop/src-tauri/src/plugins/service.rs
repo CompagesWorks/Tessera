@@ -13,6 +13,7 @@ use crate::util::paths::{inside, inside_or_same, realpath, relative_slash, resol
 use crate::util::time::mtime_ms;
 use crate::util::{json, Error, Result};
 
+use super::install::SOURCE_FILE;
 use super::package::{copy_package, hash_file, list_package, verify_package};
 
 type OnTamper = Box<dyn Fn(&str, &str) + Send + Sync>;
@@ -393,7 +394,15 @@ impl PluginService {
         if !manifest.system_programs.iter().any(|p| p == name) {
             return None;
         }
-        entry.programs.get(name).cloned()
+        let program = entry.programs.get(name)?;
+        let installed = self.programs_dir(id).join(name);
+        if inside(&installed, Path::new(&program.path)) {
+            let wanted = manifest.installs.get(name).and_then(|systems| systems.get(std::env::consts::OS)).map(|d| d.sha256.as_str());
+            if fs::read_to_string(installed.join(SOURCE_FILE)).ok().as_deref() != wanted {
+                return None;
+            }
+        }
+        Some(program.clone())
     }
 
     pub fn manifest_of(&self, id: &str) -> Option<PluginManifest> {
@@ -402,6 +411,10 @@ impl PluginService {
 
     pub fn name_of(&self, id: &str) -> String {
         self.manifest_of(id).map(|m| m.name).unwrap_or_else(|| id.to_string())
+    }
+
+    pub fn programs_dir(&self, id: &str) -> PathBuf {
+        self.plugins_dir.with_file_name("programs").join(id)
     }
 
     pub fn cache_dir(&self) -> PathBuf {
@@ -427,6 +440,7 @@ impl PluginService {
         if entry.mode == PluginMode::Installed && inside(&self.plugins_dir, Path::new(&entry.path)) {
             let _ = fs::remove_dir_all(&entry.path);
         }
+        let _ = fs::remove_dir_all(self.programs_dir(id));
         self.save(&state)?;
         Ok(())
     }

@@ -13,7 +13,7 @@ export const KIND_ICONS: Record<ProjectKind, string> = {
   other: 'box',
 };
 
-const STATUS_TONES: Record<ProjectStatus, string> = {
+export const STATUS_TONES: Record<ProjectStatus, string> = {
   draft: 'atrium-badge-neutral',
   wip: 'atrium-badge-warning',
   done: 'atrium-badge-success',

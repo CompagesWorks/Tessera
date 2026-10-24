@@ -1,4 +1,5 @@
 import type { AccountService, InvokeRequest } from '@tessera/protocol';
+import gamebananaLogo from '../../../assets/gamebanana.png';
 import '../../../components/dialogs/dialogs.css';
 import { t, type MessageKey } from '../../../i18n';
 import { errorMessage } from '../../../i18n/format';
@@ -12,6 +13,18 @@ function badge(letters: string, className: string): HTMLElement {
   const el = document.createElement('span');
   el.className = `tessera-set-badge ${className}`;
   el.textContent = letters;
+  return el;
+}
+
+function iconBadge(icon: string, className: string): HTMLElement {
+  const el = badge('', className);
+  el.append(Object.assign(document.createElement('i'), { className: `bi bi-${icon}` }));
+  return el;
+}
+
+function gamebananaBadge(): HTMLElement {
+  const el = badge('', 'is-gamebanana');
+  el.append(Object.assign(document.createElement('img'), { src: gamebananaLogo, alt: '' }));
   return el;
 }
 
@@ -105,11 +118,11 @@ export const accountsTab: SettingsTab = {
     const { github, gamebanana } = settings.accounts;
 
     const githubRow = github
-      ? connectedRow('GitHub', t('settings.accounts.githubOn', { login: github.login }), () => void disconnect(ctx, 'github'), badge('GH', 'is-github'))
+      ? connectedRow('GitHub', t('settings.accounts.githubOn', { login: github.login }), () => void disconnect(ctx, 'github'), iconBadge('github', 'is-github'))
       : (() => {
           const el = row(
             'GitHub',
-            t('settings.accounts.githubHint'),
+            t('settings.accounts.githubSoon'),
             button(t('settings.accounts.connect'), 'box-arrow-in-right', async () => {
               const token = await ui.atrium.modal.prompt({
                 title: t('settings.accounts.githubTitle'),
@@ -124,12 +137,15 @@ export const accountsTab: SettingsTab = {
             }),
             button(t('settings.accounts.createToken'), 'box-arrow-up-right', () => void window.tessera.invoke('app:open-external', { url: TOKEN_URL })),
           );
-          el.querySelector('.tessera-set-text b')?.prepend(badge('GH', 'is-github'));
+          el.querySelector('.tessera-set-text b')?.prepend(iconBadge('github', 'is-github'));
+          el.classList.add('is-unavailable');
+          el.setAttribute('aria-disabled', 'true');
+          for (const control of el.querySelectorAll('button')) control.disabled = true;
           return el;
         })();
 
     const bananaRow = gamebanana
-      ? connectedRow('GameBanana', t('settings.accounts.gamebananaOn', { name: gamebanana.name, id: gamebanana.memberId }), () => void disconnect(ctx, 'gamebanana'), badge('GB', 'is-gamebanana'))
+      ? connectedRow('GameBanana', t('settings.accounts.gamebananaOn', { name: gamebanana.name, id: gamebanana.memberId }), () => void disconnect(ctx, 'gamebanana'), gamebananaBadge())
       : (() => {
           const el = row(
             'GameBanana',
@@ -150,12 +166,12 @@ export const accountsTab: SettingsTab = {
             button(t('settings.accounts.gamebananaLogin'), 'key', () => gamebananaLogin(ctx)),
             button(t('settings.accounts.findMember'), 'box-arrow-up-right', () => void window.tessera.invoke('app:open-external', { url: GAMEBANANA_URL })),
           );
-          el.querySelector('.tessera-set-text b')?.prepend(badge('GB', 'is-gamebanana'));
+          el.querySelector('.tessera-set-text b')?.prepend(gamebananaBadge());
           return el;
         })();
 
     const discordRow = row('Discord', t('settings.accounts.discordHint'));
-    discordRow.querySelector('.tessera-set-text b')?.prepend(badge('DC', 'is-discord'));
+    discordRow.querySelector('.tessera-set-text b')?.prepend(iconBadge('discord', 'is-discord'));
 
     return [group('person-circle', t('settings.tab.accounts')), section(bananaRow, githubRow, discordRow), note(t('settings.accounts.note'))];
   },

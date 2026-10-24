@@ -24,6 +24,7 @@ use crate::util::{Error, Result};
 
 use super::audit::AuditLog;
 use super::discord::{DiscordPresence, SetActivity};
+use super::install::{download, install};
 use super::exec::{check_system_program, command_line, describe_program, resolve_program, run_program, spawn_program, ExecParams, OutputSink};
 use super::net::{check_url, plugin_fetch, FetchParams};
 use super::scoped_fs::{self, Scope, Trash};
@@ -200,6 +201,14 @@ struct KeyParams {
 #[serde(deny_unknown_fields)]
 struct ProgramParams {
     program: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct InstallParams {
+    program: String,
+    #[serde(default)]
+    stream: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -850,6 +859,35 @@ impl PluginApi {
                         let described = describe_program(&file)?;
                         self.plugins.set_program(&ctx.plugin_id, &p.program, Some(described.clone()))?;
                         self.audit.record(&ctx.plugin_id, "program.set", &format!("{} = {}", p.program, described.path), true);
+                        Ok(json!(true))
+                    }),
+                )
+            }
+            "exec.installSystem" => {
+                let p: InstallParams = object(params)?;
+                check::matches("program", &check::PROGRAM_NAME, &p.program).map_err(|_| invalid())?;
+                if let Some(stream) = &p.stream { check::matches("stream", &check::PROGRAM_NAME, stream).map_err(|_| invalid())?; }
+                let target = p.program.clone();
+                prepared(
+                    Permission::ExecInstall,
+                    "exec.installSystem",
+                    target,
+                    Box::new(move || {
+                        let manifest = self.plugins.manifest_of(&ctx.plugin_id).filter(|m| m.system_programs.contains(&p.program)).ok_or_else(|| Error::new("program not declared"))?;
+                        let source = manifest.installs.get(&p.program).and_then(|systems| systems.get(std::env::consts::OS)).cloned().ok_or_else(|| Error::new("no download for this system"))?;
+                        let key = format!("{}@install:{}@{}", ctx.plugin_id, p.program, source.sha256);
+                        self.confirm_run(&ctx.plugin_id, &manifest.name, key, &format!("download {} → {}", source.url, source.file))?;
+                        if !self.plugins.has_grant(&ctx.plugin_id, Permission::ExecInstall) {
+                            return Err(Error::new("permission denied: exec.install"));
+                        }
+                        let sink = self.output_sink(ctx, p.stream.clone());
+                        let progress = |done: u64, total: Option<u64>| {
+                            if let Some(sink) = &sink { sink("stdout", &format!("{done}/{}\n", total.unwrap_or(0))); }
+                        };
+                        let file = install(&download(&source.url, progress)?, &source, &self.plugins.programs_dir(&ctx.plugin_id).join(&p.program))?;
+                        let described = describe_program(&file)?;
+                        self.plugins.set_program(&ctx.plugin_id, &p.program, Some(described.clone()))?;
+                        self.audit.record(&ctx.plugin_id, "program.install", &format!("{} = {}", p.program, described.path), true);
                         Ok(json!(true))
                     }),
                 )

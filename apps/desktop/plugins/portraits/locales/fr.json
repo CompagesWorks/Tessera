@@ -39,5 +39,6 @@
   "saved": "{{name}} enregistré",
   "zoom": "Zoom",
   "stage.label": "Éditeur de masque. Les flèches déplacent le masque, Ctrl+Z annule.",
-  "mask.empty": "Choisis ou importe une image. Les images chara_4 alignées sont choisies en premier."
+  "mask.empty": "Choisis ou importe une image. Les images chara_4 alignées sont choisies en premier.",
+  "scanning": "Recherche des images…"
 }

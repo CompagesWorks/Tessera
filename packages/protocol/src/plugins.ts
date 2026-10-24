@@ -15,6 +15,7 @@ export const PERMISSIONS = [
   'ui.menus',
   'exec',
   'exec.system',
+  'exec.install',
   'discord.rpc',
   'clipboard.write',
   'notify.system',
@@ -36,6 +37,7 @@ export const PERMISSION_RISK: Record<Permission, PermissionRisk> = {
   'ui.menus': 'low',
   exec: 'high',
   'exec.system': 'high',
+  'exec.install': 'high',
   'discord.rpc': 'medium',
   'clipboard.write': 'low',
   'notify.system': 'low',
@@ -68,12 +70,23 @@ export const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/, 'invalid sha256')
 
 export const ProgramNameSchema = z.string().regex(/^[a-z0-9-]{1,40}$/, 'invalid program name');
 
+export const INSTALL_SYSTEMS = ['windows', 'macos', 'linux'] as const;
+
+const ProgramDownloadSchema = z
+  .object({ url: z.string().max(2000).startsWith('https://'), sha256: Sha256Schema, file: RelativePathSchema })
+  .strict();
+export type ProgramDownload = z.infer<typeof ProgramDownloadSchema>;
+
+const InstallSystemsSchema = z
+  .partialRecord(z.enum(INSTALL_SYSTEMS), ProgramDownloadSchema)
+  .refine((systems) => Object.values(systems).some(Boolean), 'no system');
+
 export interface SystemProgram {
   path: string;
   sha256: string;
 }
 
-const SimplePermissionSchema = PermissionSchema.exclude(['net', 'exec', 'exec.system', 'discord.rpc']);
+const SimplePermissionSchema = PermissionSchema.exclude(['net', 'exec', 'exec.system', 'exec.install', 'discord.rpc']);
 
 export const PermissionEntrySchema = z.union([
   SimplePermissionSchema,
@@ -81,6 +94,12 @@ export const PermissionEntrySchema = z.union([
   z.object({ id: z.literal('net'), domains: z.array(DomainSchema).min(1).max(32) }).strict(),
   z.object({ id: z.literal('exec'), program: RelativePathSchema, sha256: Sha256Schema }).strict(),
   z.object({ id: z.literal('exec.system'), programs: z.array(ProgramNameSchema).min(1).max(8) }).strict(),
+  z
+    .object({
+      id: z.literal('exec.install'),
+      programs: z.record(ProgramNameSchema, InstallSystemsSchema).refine((programs) => Object.keys(programs).length >= 1 && Object.keys(programs).length <= 8, 'invalid programs'),
+    })
+    .strict(),
   z.object({ id: z.literal('discord.rpc'), clientId: z.string().regex(/^\d{17,20}$/, 'invalid client id') }).strict(),
 ]);
 
@@ -129,6 +148,18 @@ export const PluginFileActionSchema = z
   .strict()
   .refine((action) => !(action.default && action.extensions.includes('*')), { path: ['default'] });
 export type PluginFileAction = z.infer<typeof PluginFileActionSchema>;
+
+export const PluginPreviewSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9-]{1,40}$/),
+    extensions: z
+      .array(z.string().regex(/^[a-zA-Z0-9]{1,12}$/).transform((value) => value.toLowerCase()))
+      .min(1)
+      .max(24),
+    entry: RelativePathSchema,
+  })
+  .strict();
+export type PluginPreview = z.infer<typeof PluginPreviewSchema>;
 
 const SettingKeySchema = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,39}$/);
 const SettingTextSchema = z.string().trim().min(1).max(60);
@@ -207,8 +238,9 @@ export const PluginManifestSchema = z
         host: RelativePathSchema.nullable().default(null),
         titlebar: z.array(PluginTitlebarButtonSchema).max(4).default([]),
         fileActions: z.array(PluginFileActionSchema).max(8).default([]),
+        previews: z.array(PluginPreviewSchema).max(8).default([]),
       })
-      .default({ widgets: [], themes: [], uiProvider: null, settings: [], host: null, titlebar: [], fileActions: [] }),
+      .default({ widgets: [], themes: [], uiProvider: null, settings: [], host: null, titlebar: [], fileActions: [], previews: [] }),
   })
   .superRefine((manifest, ctx) => {
     const ids = manifest.permissions.map((entry) => (typeof entry === 'string' ? entry : entry.id));
@@ -232,6 +264,14 @@ export const PluginManifestSchema = z
         ctx.addIssue({ code: 'custom', path: ['contributes', 'settings', index], message: 'min is above max' });
       }
     });
+    const system = manifest.permissions.find((entry) => typeof entry === 'object' && entry.id === 'exec.system');
+    const install = manifest.permissions.find((entry) => typeof entry === 'object' && entry.id === 'exec.install');
+    if (install && 'programs' in install && !Array.isArray(install.programs)) {
+      const declared = system && 'programs' in system && Array.isArray(system.programs) ? system.programs : [];
+      if (Object.keys(install.programs).some((name) => !declared.includes(name))) {
+        ctx.addIssue({ code: 'custom', path: ['permissions'], message: 'exec.install programs need exec.system' });
+      }
+    }
     if (manifest.contributes.titlebar.length && !manifest.contributes.host) {
       ctx.addIssue({ code: 'custom', path: ['contributes', 'titlebar'], message: 'titlebar buttons need contributes.host' });
     }
@@ -252,12 +292,14 @@ export const PluginManifestSchema = z
     let network: string[] = [];
     let exec: ExecProgram | null = null;
     let systemPrograms: string[] = [];
+    let installs: Record<string, Partial<Record<(typeof INSTALL_SYSTEMS)[number], ProgramDownload>>> = {};
     let discordClientId: string | null = null;
     for (const entry of permissions) {
       if (typeof entry !== 'object') continue;
       if (entry.id === 'net' && 'domains' in entry) network = [...new Set(entry.domains)];
       if (entry.id === 'exec' && 'program' in entry) exec = { program: entry.program, sha256: entry.sha256 };
       if (entry.id === 'exec.system' && 'programs' in entry) systemPrograms = [...new Set(entry.programs)];
+      if (entry.id === 'exec.install' && 'programs' in entry && !Array.isArray(entry.programs)) installs = entry.programs;
       if (entry.id === 'discord.rpc' && 'clientId' in entry) discordClientId = entry.clientId;
     }
     return {
@@ -266,15 +308,23 @@ export const PluginManifestSchema = z
       network,
       exec,
       systemPrograms,
+      installs,
       discordClientId,
     };
   });
 export type PluginManifest = z.output<typeof PluginManifestSchema>;
 
-export function permissionKey(manifest: Pick<PluginManifest, 'network' | 'exec' | 'systemPrograms' | 'discordClientId'>, permission: Permission): string {
+export function permissionKey(manifest: Pick<PluginManifest, 'network' | 'exec' | 'systemPrograms' | 'installs' | 'discordClientId'>, permission: Permission): string {
   if (permission === 'net') return `net[${[...manifest.network].sort().join(',')}]`;
   if (permission === 'exec' && manifest.exec) return `exec[${manifest.exec.program}@${manifest.exec.sha256}]`;
   if (permission === 'exec.system') return `exec.system[${[...manifest.systemPrograms].sort().join(',')}]`;
+  if (permission === 'exec.install') {
+    const downloads = Object.entries(manifest.installs).flatMap(([name, systems]) =>
+      Object.entries(systems).map(([system, download]) => `${name}:${system}@${download?.sha256}`),
+    );
+    downloads.sort();
+    return `exec.install[${downloads.join(',')}]`;
+  }
   if (permission === 'discord.rpc') return `discord.rpc[${manifest.discordClientId ?? ''}]`;
   return permission;
 }
@@ -310,6 +360,33 @@ export const InstallLocalSchema = z
   .strict();
 export const PACKAGE_EXTENSION = 'tessera-plugin';
 export const InstallPackageSchema = z.object({ token: z.uuid(), granted: z.array(PermissionSchema).max(16) }).strict();
+export const MarketplaceSourceSchema = z.object({ url: z.string().min(1).max(500) }).strict();
+export const MarketplaceLookupSchema = z.object({ url: z.string().min(1).max(500), id: PluginIdSchema }).strict();
+export const MarketplaceDownloadSchema = z.object({ url: z.url().max(2000), sha256: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
+
+export interface MarketplaceSource {
+  url: string;
+  official: boolean;
+}
+
+export interface MarketplaceEntry {
+  id: string;
+  name: string;
+  author: string;
+  version: string;
+  description: string;
+  icon: string | null;
+  homepage: string | null;
+  download: string;
+  sha256: string;
+}
+
+export interface MarketplaceListing extends MarketplaceSource {
+  name: string | null;
+  plugins: MarketplaceEntry[];
+  error: string | null;
+}
+
 export const InspectLocalSchema = z.object({ path: z.string().min(1).max(500).optional() }).strict().optional();
 
 export const ReadTextSchema = z

@@ -10,7 +10,7 @@ const KINDS: [PreviewKind, RegExp][] = [
   ['image', /\.(png|jpe?g|webp|gif|bmp|tga|tiff?|ico|dds|nutexb|bntx)$/i],
   ['video', /\.(mp4|m4v|webm|mov)$/i],
   ['h264', /\.h264$/i],
-  ['audio', /\.(mp3|wav|ogg|flac|m4a)$/i],
+  ['audio', /\.(mp3|wav|ogg|opus|flac|m4a|aac)$/i],
   ['markdown', /\.(md|markdown)$/i],
   ['text', /\.(txt|json|jsonc|toml|xml|prcxml|msbtxml|yml|yaml|lua|csv|tsv|log|ini|cfg|conf|html|css|js|ts|rs|py|sh|bat|ps1|motdiff|nfo)$/i],
 ];

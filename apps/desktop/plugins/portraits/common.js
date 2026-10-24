@@ -12,7 +12,15 @@ async function walk(dir, found) {
   return found;
 }
 
-const projectImages = async () => (await walk('', [])).sort((a, b) => a.localeCompare(b));
+const projectImages = async () => {
+  const scan = document.getElementById('scan');
+  scan.hidden = false;
+  try {
+    return (await walk('', [])).sort((a, b) => a.localeCompare(b));
+  } finally {
+    scan.hidden = true;
+  }
+};
 
 async function load(path) {
   const bytes = await tessera.files.readBytes(path);

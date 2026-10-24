@@ -10,8 +10,10 @@
       <select id="file" class="atrium-input" data-i18n-label="file.label"></select>
       <button id="reset" class="atrium-btn atrium-btn-secondary" type="button" data-i18n-title="reset" data-i18n-label="reset"><i class="bi bi-arrows-fullscreen"></i></button>
       <label class="toggle"><input id="show-bones" type="checkbox" /> <span data-i18n="showBones"></span></label>
+      <button id="shading-toggle" class="atrium-btn atrium-btn-secondary" type="button" aria-expanded="false" aria-controls="shading" data-i18n-title="shading" data-i18n-label="shading"><i class="bi bi-sliders"></i></button>
       <button id="save" class="atrium-btn atrium-btn-primary" type="button" disabled data-i18n="save"></button>
     </header>
+    <p id="scan" class="scan" role="status" aria-live="polite" hidden data-i18n="scanning"></p>
     <main id="view" hidden>
       <aside>
         <div class="tabs" role="tablist">
@@ -29,7 +31,17 @@
       <div class="center">
         <div class="stage">
           <canvas id="canvas" data-i18n-label="canvas.label"></canvas>
-          <p id="status" class="status" hidden></p>
+          <form id="shading" class="shading" hidden>
+            <label class="toggle"><input name="pbr" type="checkbox" checked /> <span data-i18n="shading.pbr"></span></label>
+            <label><span data-i18n="shading.light"></span><input name="lightPower" class="atrium-range" type="range" min="0" max="4" step="0.05" value="1.5" /><output>1.5</output></label>
+            <label><span data-i18n="shading.ambient"></span><input name="ambientPower" class="atrium-range" type="range" min="0" max="3" step="0.05" value="1.2" /><output>1.2</output></label>
+            <label><span data-i18n="shading.specular"></span><input name="specularPower" class="atrium-range" type="range" min="0" max="3" step="0.05" value="1" /><output>1</output></label>
+            <label><span data-i18n="shading.bump"></span><input name="bumpPower" class="atrium-range" type="range" min="0" max="2" step="0.05" value="1" /><output>1</output></label>
+            <label><span data-i18n="shading.rim"></span><input name="rimPower" class="atrium-range" type="range" min="0" max="1" step="0.05" value="0" /><output>0</output></label>
+            <label><span data-i18n="shading.exposure"></span><input name="exposure" class="atrium-range" type="range" min="0.2" max="3" step="0.05" value="1" /><output>1</output></label>
+            <button class="atrium-btn atrium-btn-secondary" type="reset" data-i18n="shading.reset"></button>
+          </form>
+          <p id="status" class="status" role="status" aria-live="polite" hidden></p>
           <p class="hint" data-i18n="controls"></p>
         </div>
         <div class="timeline">

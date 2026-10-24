@@ -1,0 +1,105 @@
+{
+  "id": "compagesworks.nus3audio",
+  "name": "NUS3AUDIO",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "music-note-beamed",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write",
+    "ui.menus",
+    {
+      "id": "exec.system",
+      "programs": [
+        "editor",
+        "vgmstream",
+        "vgaudio"
+      ]
+    },
+    {
+      "id": "exec.install",
+      "programs": {
+        "vgmstream": {
+          "windows": {
+            "url": "https://github.com/vgmstream/vgmstream/releases/download/r2117/vgmstream-win64.zip",
+            "sha256": "6c4a8a3813864fefed081bbd337dbc0ad93bf88e0b92f5db98d7ab258b22dc6c",
+            "file": "vgmstream-cli.exe"
+          },
+          "macos": {
+            "url": "https://github.com/vgmstream/vgmstream/releases/download/r2117/vgmstream-mac.zip",
+            "sha256": "cdabf633231a4556feb0048a71990c768e862f3695dd9458ae28e4d94aa50a99",
+            "file": "vgmstream-cli"
+          },
+          "linux": {
+            "url": "https://github.com/vgmstream/vgmstream/releases/download/r2117/vgmstream-linux.zip",
+            "sha256": "2f98c77f756079f63fbd119939067f1ed461d77e70993bc4cc372736d859c84a",
+            "file": "vgmstream-cli"
+          }
+        },
+        "vgaudio": {
+          "windows": {
+            "url": "https://github.com/masagrator/VGAudio/releases/download/DSP-LE/VGAudio-net451.zip",
+            "sha256": "774a0533f56acf34cc9f288416aab1fc82b00539d86ea173e0ad3c4c405ddb7c",
+            "file": "VGAudioCli.exe"
+          }
+        }
+      }
+    }
+  ],
+  "contributes": {
+    "host": "host.html",
+    "settings": [
+      {
+        "id": "editorName",
+        "type": "string",
+        "title": "%editor.name%",
+        "description": "%editor.name.description%",
+        "default": "Audacity",
+        "maxLength": 40
+      }
+    ],
+    "widgets": [
+      {
+        "id": "nus3audio",
+        "title": "NUS3AUDIO",
+        "description": "%widget.description%",
+        "icon": "music-note-beamed",
+        "category": "media",
+        "entry": "widget.html"
+      }
+    ],
+    "fileActions": [
+      {
+        "id": "edit-external",
+        "title": "%editor.action%",
+        "icon": "pencil-square",
+        "extensions": [
+          "wav",
+          "mp3",
+          "ogg",
+          "flac",
+          "m4a",
+          "opus",
+          "aac",
+          "aif",
+          "aiff"
+        ]
+      }
+    ],
+    "previews": [
+      {
+        "id": "player",
+        "extensions": [
+          "nus3audio",
+          "lopus",
+          "idsp"
+        ],
+        "entry": "preview.html"
+      }
+    ]
+  }
+}

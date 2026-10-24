@@ -1,0 +1,23 @@
+{
+  "description": "Edits game params in .prc, .stprm and .stdat files (fighter stats, items, stages), with names from ParamLabels.",
+  "widget.description": "Edit .prc params",
+  "file.label": "PRC file",
+  "filter": "Filter",
+  "filter.label": "Filter params and values",
+  "save": "Save",
+  "saveCount": "Save ({{count}})",
+  "saveFirst": "Save your changes before opening another file",
+  "column.param": "Param",
+  "column.value": "Value",
+  "column.type": "Type",
+  "empty": "No .prc, .stprm or .stdat file in the project.",
+  "more": "Showing {{shown}} of {{count}} params: refine the filter to see the others.",
+  "hash.hint": "A hash40 can be typed as text (fighter_kind_mario) or as 0x… hex.",
+  "labelsFailed": "Could not download ParamLabels: names are shown as hashes",
+  "saved": "{{name}} saved",
+  "notPrc": "{{name}} is not a .prc, .stprm or .stdat file",
+  "error.not-prc": "This file is not a valid PRC",
+  "error.truncated": "This PRC is truncated or corrupted",
+  "error.invalid-value": "A value is not valid for its type",
+  "scanning": "Looking for .prc files…"
+}

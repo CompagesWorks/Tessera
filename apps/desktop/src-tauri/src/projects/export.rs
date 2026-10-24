@@ -65,12 +65,14 @@ pub fn export_project(root: &Path, zip: bool) -> Result<PathBuf> {
     }
     let mut files = vec![];
     copy_tree(&sources, &out, &name, &mut files)?;
-    let info = info_toml(&project.name, kind);
-    fs::write(out.join("info.toml"), &info)?;
+    if !sources.join("info.toml").is_file() {
+        let info = info_toml(&project.name, kind);
+        fs::write(out.join("info.toml"), &info)?;
+        files.push(ZipSource { path: format!("{name}/info.toml"), size: info.len() as u64, mtime: 0.0 });
+    }
     if !zip {
         return Ok(out);
     }
-    files.push(ZipSource { path: format!("{name}/info.toml"), size: info.len() as u64, mtime: 0.0 });
     let archive = build.join(format!("{name}.zip"));
     let temp = build.join(format!("{name}.zip.tmp"));
     if let Err(error) = write_zip(&build, &files, &temp).and_then(|_| Ok(fs::rename(&temp, &archive)?)) {
@@ -127,6 +129,21 @@ mod tests {
         assert_eq!(fs::read_to_string(out.join("info.toml")).unwrap(), "display_name = \"Mario \\\"Classic\\\"\"\ncategory = \"Fighter\"\n");
         assert!(!out.join("body.psd").exists());
         assert!(!out.join("stale.txt").exists());
+    }
+
+    #[test]
+    fn keeps_the_project_info_toml_and_preview() {
+        let dir = project();
+        fs::write(dir.path().join("sources/info.toml"), "display_name = \"Mine\"
+").unwrap();
+        fs::write(dir.path().join("sources/preview.webp"), "webp").unwrap();
+        let archive = export_project(dir.path(), true).unwrap();
+        let out = dir.path().join("build/mario-classic");
+        assert_eq!(fs::read_to_string(out.join("info.toml")).unwrap(), "display_name = \"Mine\"
+");
+        assert!(out.join("preview.webp").is_file());
+        let paths: Vec<String> = read_zip_entries(&archive).unwrap().into_iter().map(|e| e.path).collect();
+        assert_eq!(paths.iter().filter(|p| p.ends_with("info.toml")).count(), 1);
     }
 
     #[test]

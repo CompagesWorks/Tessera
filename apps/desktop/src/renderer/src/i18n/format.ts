@@ -4,7 +4,7 @@ export function errorMessage(error: unknown): string {
   const text = error instanceof Error ? error.message : String(error);
   const remote = /gamebanana-says: (.+)$/s.exec(text)?.[1];
   if (remote) return t('error.gamebananaSays', { message: remote });
-  const code = /(?:project|account|history|plugin-settings|profile):[a-z-]+|gamebanana: [A-Z_]+/.exec(text)?.[0].replace(' ', '');
+  const code = /(?:project|account|history|plugin-settings|profile):[a-z-]+|gamebanana: (?:[A-Z_]+|unreachable|invalid answer)/.exec(text)?.[0].replace(' ', '');
   const key = code ? `error.${code}` : '';
   if (isMessageKey(key)) return t(key);
   console.error(error);

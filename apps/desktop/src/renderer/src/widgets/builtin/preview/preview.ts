@@ -1,17 +1,44 @@
+import type { InstalledPlugin, PluginPreview, ProjectSummary } from '@tessera/protocol';
+import { pluginUrl } from '../../../bridge/schemes';
 import { t } from '../../../i18n';
+import { attachFrame } from '../../../plugins/bridge';
+import { activePlugins } from '../../../plugins/loader';
+import { pluginText } from '../../../plugins/locale';
 import { errorMessage } from '../../../i18n/format';
 import type { UiProvider } from '../../../ui/provider';
 import type { WidgetDefinition } from '../../types';
 import { toBase64 } from '../explorer/actions';
 import { createCodeEditor, languageName, type CodeEditor } from './editor';
 import './preview.css';
-import { previewKind, renderPreview } from './renderers';
+import { previewKind, renderPreview, type PreviewKind } from './renderers';
 
 const selection = new Map<string, string | null>();
 const mounted = new Map<string, number>();
 const listeners = new Set<(projectId: string) => void>();
 
-export const canPreview = (path: string) => previewKind(path) !== null;
+function pluginPreview(path: string): { plugin: InstalledPlugin; preview: PluginPreview } | null {
+  const extension = path.slice(path.lastIndexOf('.') + 1).toLowerCase();
+  for (const plugin of activePlugins()) {
+    if (!plugin.granted.includes('fs.project.read')) continue;
+    const preview = plugin.manifest.contributes.previews.find((entry) => entry.extensions.includes(extension));
+    if (preview) return { plugin, preview };
+  }
+  return null;
+}
+
+function pluginFrame(project: ProjectSummary, plugin: InstalledPlugin, preview: PluginPreview, path: string) {
+  const node = document.createElement('iframe');
+  node.className = 'tessera-preview-plugin';
+  node.sandbox.add('allow-scripts');
+  node.referrerPolicy = 'no-referrer';
+  node.allow = '';
+  node.title = pluginText(plugin, plugin.manifest.name);
+  node.src = pluginUrl(plugin.manifest.id, preview.entry);
+  const dispose = attachFrame({ iframe: node, pluginId: plugin.manifest.id, widgetId: `preview:${preview.id}`, project, onResponsive: () => {}, getState: () => ({ path }), setState: () => {} });
+  return { node, info: Promise.resolve(node.title), dispose };
+}
+
+export const canPreview = (path: string) => previewKind(path) !== null || pluginPreview(path) !== null;
 
 export const hasPreviewWidget = (projectId: string) => (mounted.get(projectId) ?? 0) > 0;
 
@@ -35,7 +62,8 @@ function headButton(icon: string, label: string) {
   return button;
 }
 
-export function createPreview(projectId: string, ui: UiProvider, onClose?: () => void) {
+export function createPreview(project: ProjectSummary, ui: UiProvider, onClose?: () => void) {
+  const projectId = project.id;
   const element = document.createElement('div');
   element.className = 'tessera-preview';
   element.hidden = true;
@@ -67,6 +95,7 @@ export function createPreview(projectId: string, ui: UiProvider, onClose?: () =>
   let editor: CodeEditor | null = null;
   let dirty = false;
   let cursor = '';
+  let release = () => {};
 
   const status = () => {
     if (!editor || !shown) return;
@@ -160,14 +189,17 @@ export function createPreview(projectId: string, ui: UiProvider, onClose?: () =>
       if (!(await keep())) return;
       closeEditor();
     }
-    const kind = path === null ? null : previewKind(path);
+    const plugin = path === null || previewKind(path) ? null : pluginPreview(path);
+    const kind = path === null ? null : (previewKind(path) ?? (plugin ? 'plugin' : null));
     element.hidden = kind === null;
     if (path === null || kind === null) {
       shown = null;
+      release();
       contentBox.replaceChildren();
       return;
     }
-    if (path === shown && (kind === 'video' || kind === 'h264' || kind === 'audio')) return;
+    if (path === shown && (kind === 'video' || kind === 'h264' || kind === 'audio' || kind === 'plugin')) return;
+    release();
     const mine = ++ticket;
     shown = path;
     name.textContent = path.slice(path.lastIndexOf('/') + 1);
@@ -175,7 +207,8 @@ export function createPreview(projectId: string, ui: UiProvider, onClose?: () =>
     element.dataset['kind'] = kind;
     element.classList.add('is-loading');
     toggle.hidden = kind !== 'text' && kind !== 'markdown';
-    const rendered = renderPreview(kind, projectId, path, name.textContent);
+    const rendered = plugin ? pluginFrame(project, plugin.plugin, plugin.preview, path) : { ...renderPreview(kind as PreviewKind, projectId, path, name.textContent), dispose: () => {} };
+    release = rendered.dispose;
     contentBox.replaceChildren(rendered.node);
     try {
       const text = await rendered.info;
@@ -201,7 +234,7 @@ export const previewWidget: WidgetDefinition = {
   create({ project, ui }) {
     const element = document.createElement('div');
     element.style.height = '100%';
-    const pane = createPreview(project.id, ui);
+    const pane = createPreview(project, ui);
     pane.element.classList.add('is-widget');
     const empty = document.createElement('div');
     empty.className = 'tessera-preview-empty';

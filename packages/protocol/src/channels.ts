@@ -62,6 +62,13 @@ export const INVOKE_CHANNELS = [
   'plugins:install-local',
   'plugins:inspect-package',
   'plugins:install-package',
+  'marketplace:sources',
+  'marketplace:add-source',
+  'marketplace:remove-source',
+  'marketplace:fetch',
+  'marketplace:take-link',
+  'marketplace:lookup',
+  'marketplace:download',
   'plugins:set-enabled',
   'plugins:set-grants',
   'plugins:remove',
@@ -93,7 +100,7 @@ export const INVOKE_CHANNELS = [
 ] as const;
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number];
 
-export const EVENT_CHANNELS = ['settings:changed', 'keyboard:shortcut', 'plugins:tampered', 'plugin:files-changed', 'backups:changed', 'audit:changed', 'history:changed', 'plugins:settings-changed', 'plugins:confirm', 'plugin:exec-output', 'gamebanana:progress'] as const;
+export const EVENT_CHANNELS = ['settings:changed', 'keyboard:shortcut', 'plugins:tampered', 'plugin:files-changed', 'backups:changed', 'audit:changed', 'history:changed', 'plugins:settings-changed', 'plugins:confirm', 'plugin:exec-output', 'gamebanana:progress', 'marketplace:link'] as const;
 export type EventChannel = (typeof EVENT_CHANNELS)[number];
 
 export const ipcName = (channel: InvokeChannel | EventChannel) => `tessera:${channel}` as const;

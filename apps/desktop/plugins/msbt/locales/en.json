@@ -17,5 +17,6 @@
   "error.unsupported-encoding": "Only UTF-16 MSBT files are supported",
   "error.no-text": "This MSBT has no text section",
   "error.truncated": "This MSBT is truncated",
-  "error.not-xmsbt": "This file is not a valid XMSBT"
+  "error.not-xmsbt": "This file is not a valid XMSBT",
+  "scanning": "Looking for .msbt files…"
 }

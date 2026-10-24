@@ -18,6 +18,7 @@ export const PERMISSION_INFO: Record<Permission, PermissionInfo> = {
   'ui.menus': { icon: 'menu-button-wide', label: 'permission.uiMenus', description: 'permission.uiMenusDesc' },
   exec: { icon: 'terminal', label: 'permission.exec', description: 'permission.execDesc' },
   'exec.system': { icon: 'terminal-plus', label: 'permission.execSystem', description: 'permission.execSystemDesc' },
+  'exec.install': { icon: 'cloud-download', label: 'permission.execInstall', description: 'permission.execInstallDesc' },
   'discord.rpc': { icon: 'discord', label: 'permission.discordRpc', description: 'permission.discordRpcDesc' },
   'clipboard.write': { icon: 'clipboard-check', label: 'permission.clipboardWrite', description: 'permission.clipboardWriteDesc' },
   'notify.system': { icon: 'bell', label: 'permission.notifySystem', description: 'permission.notifySystemDesc' },
@@ -32,6 +33,10 @@ function detailOf(permission: Permission, manifest?: PluginManifest): string | n
   if (permission === 'net') return t('permission.netDomains', { list: manifest.network.join(', ') });
   if (permission === 'exec' && manifest.exec) return t('permission.execProgram', { program: manifest.exec.program, hash: manifest.exec.sha256.slice(0, 16) });
   if (permission === 'exec.system') return t('permission.execSystemPrograms', { list: manifest.systemPrograms.join(', ') });
+  if (permission === 'exec.install') {
+    const list = Object.entries(manifest.installs).flatMap(([name, systems]) => Object.values(systems).map((download) => `${name} ← ${download?.url}`));
+    return t('permission.execInstallDownloads', { list: list.join(', ') });
+  }
   if (permission === 'discord.rpc') return t('permission.discordClient', { id: manifest.discordClientId ?? '' });
   return null;
 }

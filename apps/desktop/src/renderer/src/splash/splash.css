@@ -138,6 +138,13 @@ html.is-booting body > :not(.tessera-splash) {
   color: #878787;
 }
 
+.tessera-splash-team {
+  position: absolute;
+  left: calc(var(--u) * 25);
+  top: calc(var(--u) * 630);
+  height: calc(var(--u) * 22);
+}
+
 .tessera-splash-hint kbd {
   font-size: 0.9em;
 }

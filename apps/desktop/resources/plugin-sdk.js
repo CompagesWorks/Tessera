@@ -20,7 +20,12 @@
     '::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}' +
     '::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:10px;background:var(--atrium-border-hover) padding-box}' +
     '::-webkit-scrollbar-thumb:hover{background:var(--atrium-text-muted) padding-box}' +
-    '::-webkit-scrollbar-button{display:none}';
+    '::-webkit-scrollbar-button{display:none}' +
+    '[hidden]{display:none!important}' +
+    '.scan{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:var(--atrium-text-secondary)}' +
+    '.scan::before{content:"";flex:none;width:11px;height:11px;border:2px solid var(--atrium-border-hover,currentColor);border-top-color:var(--atrium-accent-color);border-radius:50%;animation:tessera-scan .8s linear infinite}' +
+    '@keyframes tessera-scan{to{transform:rotate(360deg)}}' +
+    '@media (prefers-reduced-motion:reduce){.scan::before{animation:none}}';
   document.head.prepend(scrollbars);
 
   function emit(event, payload) {
@@ -384,6 +389,11 @@
       runSystem: (program, args = [], options = {}) =>
         streamed(options.onOutput, (stream) => call('exec.runSystem', { program, args, timeout: options.timeout, detach: options.detach, projectFile: options.projectFile, stream })),
       pickSystem: (program) => call('exec.pickSystem', { program }),
+      installSystem: (program, options = {}) =>
+        streamed(
+          typeof options.onProgress === 'function' ? (line) => options.onProgress(...line.split('/').map(Number)) : undefined,
+          (stream) => call('exec.installSystem', { program, stream }),
+        ),
       systemInfo: () => call('exec.systemInfo'),
     }),
     discord: Object.freeze({

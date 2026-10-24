@@ -80,8 +80,18 @@ async function open(next) {
   }
 }
 
+async function scanning(run) {
+  const scan = document.getElementById('scan');
+  scan.hidden = false;
+  try {
+    return await run();
+  } finally {
+    scan.hidden = true;
+  }
+}
+
 async function refresh(wanted = path) {
-  const paths = (await walk('', [])).sort((a, b) => a.localeCompare(b));
+  const paths = (await scanning(() => walk('', []))).sort((a, b) => a.localeCompare(b));
   picker.replaceChildren(...paths.map((p) => new Option(p, p)));
   empty.hidden = paths.length > 0;
   picker.hidden = paths.length === 0;

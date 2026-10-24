@@ -3,6 +3,7 @@ pub mod archive;
 pub mod audit;
 pub mod discord;
 pub mod exec;
+pub mod install;
 pub mod net;
 pub mod package;
 pub mod plugin_settings;

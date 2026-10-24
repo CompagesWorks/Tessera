@@ -18,6 +18,11 @@
       "capabilities": ["main"]
     }
   },
+  "plugins": {
+    "deep-link": {
+      "desktop": { "schemes": ["tessera"] }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["nsis"],

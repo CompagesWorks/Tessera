@@ -28,6 +28,12 @@ import {
   InspectLocalSchema,
   InstallLocalSchema,
   InstallPackageSchema,
+  MarketplaceDownloadSchema,
+  MarketplaceLookupSchema,
+  type MarketplaceEntry,
+  MarketplaceSourceSchema,
+  type MarketplaceListing,
+  type MarketplaceSource,
   PluginCallSchema,
   PluginRefSchema,
   PluginSettingsRefSchema,
@@ -164,6 +170,13 @@ export const requestSchemas = {
   'plugins:install-local': InstallLocalSchema,
   'plugins:inspect-package': InspectLocalSchema,
   'plugins:install-package': InstallPackageSchema,
+  'marketplace:sources': z.undefined(),
+  'marketplace:add-source': MarketplaceSourceSchema,
+  'marketplace:remove-source': MarketplaceSourceSchema,
+  'marketplace:fetch': z.undefined(),
+  'marketplace:take-link': z.undefined(),
+  'marketplace:lookup': MarketplaceLookupSchema,
+  'marketplace:download': MarketplaceDownloadSchema,
   'plugins:set-enabled': SetPluginEnabledSchema,
   'plugins:set-grants': SetPluginGrantsSchema,
   'plugins:remove': PluginRefSchema,
@@ -258,6 +271,13 @@ export interface InvokeResponses {
   'plugins:install-local': InstalledPlugin;
   'plugins:inspect-package': { token: string; path: string; manifest: PluginManifest } | { path: string; error: string } | null;
   'plugins:install-package': InstalledPlugin;
+  'marketplace:sources': MarketplaceSource[];
+  'marketplace:add-source': MarketplaceSource[];
+  'marketplace:remove-source': MarketplaceSource[];
+  'marketplace:fetch': MarketplaceListing[];
+  'marketplace:take-link': { url: string; plugin: string | null } | null;
+  'marketplace:lookup': MarketplaceEntry;
+  'marketplace:download': { token: string; path: string; manifest: PluginManifest } | { path: string; error: string };
   'plugins:set-enabled': InstalledPlugin;
   'plugins:set-grants': InstalledPlugin;
   'plugins:remove': void;
@@ -304,6 +324,7 @@ export interface EventPayloads {
   'settings:changed': Settings;
   'keyboard:shortcut': ShortcutInput;
   'plugins:tampered': { id: string; reason: string };
+  'marketplace:link': null;
   'plugin:files-changed': FilesChanged;
   'backups:changed': { projectId: string };
   'audit:changed': undefined;

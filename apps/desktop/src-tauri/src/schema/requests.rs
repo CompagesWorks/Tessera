@@ -275,6 +275,26 @@ pub struct InspectLocal {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct MarketplaceSource {
+    pub url: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MarketplaceLookup {
+    pub url: String,
+    pub id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MarketplaceDownload {
+    pub url: String,
+    pub sha256: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct InstallPackage {
     pub token: String,
     pub granted: Vec<Permission>,

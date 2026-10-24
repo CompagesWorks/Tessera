@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="/__tessera/sdk.js"></script>
+    <link rel="stylesheet" href="widget.css" />
+  </head>
+  <body>
+    <header>
+      <select id="file" class="atrium-input" data-i18n-label="file.label"></select>
+      <button id="create" class="atrium-btn atrium-btn-secondary" type="button"><i class="bi bi-file-earmark-plus"></i> <span data-i18n="create"></span></button>
+      <button id="add" class="atrium-btn atrium-btn-secondary" type="button" disabled><i class="bi bi-plus-lg"></i> <span data-i18n="add"></span></button>
+      <button id="save" class="atrium-btn atrium-btn-primary" type="button" disabled><i class="bi bi-floppy"></i> <span data-i18n="save"></span></button>
+    </header>
+    <p id="status" class="status" role="status" aria-live="polite" hidden></p>
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="column.id"></th>
+          <th data-i18n="column.name"></th>
+          <th data-i18n="column.format"></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
+    <p id="empty" class="atrium-empty" hidden data-i18n="empty"></p>
+    <p class="hint" data-i18n="hint"></p>
+    <script src="nus3audio.js"></script>
+    <script src="audio.js"></script>
+    <script src="widget.js"></script>
+  </body>
+</html>

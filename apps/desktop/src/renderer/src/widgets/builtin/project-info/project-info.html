@@ -1,19 +1,92 @@
 <div class="tessera-info">
-  <div class="tessera-info-head">
-    <i class="bi" data-kind></i>
-    <div>
-      <div class="tessera-info-name" data-name></div>
-      <div class="tessera-info-sub" data-sub></div>
-    </div>
+  <div class="tessera-info-scroll">
+    <header class="tessera-info-head">
+      <span class="tessera-info-icon" aria-hidden="true"><i class="bi" data-kind></i></span>
+      <div class="tessera-info-title">
+        <h2 class="tessera-info-name" data-name></h2>
+        <div class="tessera-info-sub">
+          <span data-sub></span>
+          <span class="atrium-badge" data-status></span>
+        </div>
+      </div>
+    </header>
+
+    <section class="tessera-info-section">
+      <h3 class="tessera-info-heading"><i class="bi bi-card-list" aria-hidden="true"></i><span data-i18n="widget.info.details"></span></h3>
+      <dl class="tessera-info-list">
+        <dt data-i18n="widget.info.created"></dt>
+        <dd data-created></dd>
+        <dt data-i18n="widget.info.updated"></dt>
+        <dd data-updated></dd>
+        <dt data-i18n="widget.info.folder"></dt>
+        <dd class="tessera-info-folder">
+          <span class="tessera-info-path" data-path></span>
+          <button class="atrium-icon-btn-sm" type="button" data-copy data-i18n-label="widget.explorer.copyPath" data-i18n-tooltip="widget.explorer.copyPath"><i class="bi bi-clipboard" aria-hidden="true"></i></button>
+          <button class="atrium-icon-btn-sm" type="button" data-reveal data-i18n-label="project.reveal" data-i18n-tooltip="project.reveal"><i class="bi bi-folder2-open" aria-hidden="true"></i></button>
+        </dd>
+      </dl>
+    </section>
+
+    <form class="tessera-info-section" data-form novalidate>
+      <h3 class="tessera-info-heading"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><span data-i18n="widget.info.mod"></span></h3>
+      <p class="tessera-info-note is-warning" data-unsupported hidden role="status">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i><span data-i18n="widget.info.unsupported"></span>
+      </p>
+      <fieldset class="tessera-info-fields" data-fields disabled aria-busy="true">
+        <label class="tessera-info-field is-wide">
+          <span class="atrium-label" data-i18n="widget.info.displayName"></span>
+          <input class="atrium-input" name="display_name" autocomplete="off" />
+        </label>
+        <label class="tessera-info-field is-wide">
+          <span class="atrium-label" data-i18n="widget.info.authors"></span>
+          <input class="atrium-input" name="authors" autocomplete="off" data-i18n-placeholder="widget.info.authorsPlaceholder" />
+        </label>
+        <label class="tessera-info-field">
+          <span class="atrium-label" data-i18n="widget.info.version"></span>
+          <input class="atrium-input" name="version" autocomplete="off" placeholder="1.0.0" />
+        </label>
+        <label class="tessera-info-field">
+          <span class="atrium-label" data-i18n="widget.info.category"></span>
+          <select class="atrium-input" name="category">
+            <option value="Fighter">Fighter</option>
+            <option value="Stage">Stage</option>
+            <option value="UI">UI</option>
+            <option value="Audio">Audio</option>
+            <option value="Effects">Effects</option>
+            <option value="Misc">Misc</option>
+          </select>
+        </label>
+        <label class="tessera-info-field is-wide">
+          <span class="atrium-label" data-i18n="widget.info.modDescription"></span>
+          <textarea class="atrium-input" name="description" rows="4"></textarea>
+        </label>
+      </fieldset>
+      <div class="tessera-info-actions">
+        <span class="tessera-info-state" data-state role="status" aria-live="polite"></span>
+        <button class="atrium-btn atrium-btn-secondary" type="reset" data-revert disabled data-i18n="widget.info.revert"></button>
+        <button class="atrium-btn atrium-btn-primary" type="submit" data-save disabled aria-keyshortcuts="Control+S">
+          <i class="bi bi-floppy" aria-hidden="true" data-save-icon></i><span data-i18n="widget.info.save"></span>
+        </button>
+      </div>
+    </form>
+
+    <section class="tessera-info-section">
+      <h3 class="tessera-info-heading"><i class="bi bi-image" aria-hidden="true"></i><span data-i18n="widget.info.preview"></span></h3>
+      <div class="tessera-info-drop" data-drop>
+        <span class="atrium-skeleton tessera-info-skeleton" data-preview-loading aria-hidden="true"></span>
+        <img data-preview alt="preview.webp" hidden />
+        <span class="tessera-info-empty" data-no-preview hidden>
+          <i class="bi bi-image" aria-hidden="true"></i>
+          <strong data-i18n="widget.info.noPreview"></strong>
+          <span data-i18n="widget.info.previewHint"></span>
+        </span>
+        </div>
+      <input type="file" accept="image/*" hidden data-preview-input />
+      <div class="tessera-info-actions">
+        <button class="atrium-btn atrium-btn-secondary" type="button" data-choose>
+          <i class="bi bi-upload" aria-hidden="true"></i><span data-choose-label data-i18n="widget.info.choosePreview"></span>
+        </button>
+      </div>
+    </section>
   </div>
-  <dl class="tessera-info-list">
-    <dt data-i18n="widget.info.status"></dt>
-    <dd data-status></dd>
-    <dt data-i18n="widget.info.created"></dt>
-    <dd data-created></dd>
-    <dt data-i18n="widget.info.updated"></dt>
-    <dd data-updated></dd>
-    <dt data-i18n="widget.info.folder"></dt>
-    <dd class="tessera-info-path" data-path></dd>
-  </dl>
 </div>

@@ -15,6 +15,33 @@
   position: relative;
 }
 
+.tessera-plugin-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.tessera-plugin-loading[hidden] {
+  display: none;
+}
+
+.tessera-plugin-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--atrium-accent-rgb), 0.3);
+  border-top-color: var(--atrium-accent-color);
+  animation: atrium-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tessera-plugin-spinner {
+    animation-duration: 2s;
+  }
+}
+
 .tessera-plugin-hung {
   position: absolute;
   inset: 0;

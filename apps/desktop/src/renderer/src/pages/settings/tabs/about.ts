@@ -1,5 +1,6 @@
 import type { UpdateInfo } from '@tessera/protocol';
 import { checkUpdates, openRelease, updateSummary } from '../../../app/updates';
+import { showWelcome } from '../../../app/welcome';
 import { t } from '../../../i18n';
 import { errorMessage } from '../../../i18n/format';
 import { logoImage } from '../../../shell/shell';
@@ -7,6 +8,7 @@ import { button, group, row, section, toggle } from '../controls';
 import type { SettingsTab } from './types';
 
 const ATRIUM_URL = 'https://github.com/CompagesWorks/Atrium-UI';
+const DISCORD_URL = 'https://discord.gg/2zT5Rg46bG';
 
 const LICENSES: Array<[string, string]> = [
   ['Atrium-UI', 'CompagesWorks'],
@@ -31,7 +33,9 @@ export const aboutTab: SettingsTab = {
     version.textContent = t('about.version', { version: info.version, tauri: info.tauri });
     const versions = document.createElement('small');
     versions.textContent = `WebView ${info.webview} · ${info.platform}`;
-    head.append(logoImage('tessera-about-logo'), title, version, versions);
+    const team = document.createElement('p');
+    team.textContent = t('about.team');
+    head.append(logoImage('tessera-about-logo'), title, team, version, versions);
 
     const credit = document.createElement('button');
     credit.type = 'button';
@@ -65,11 +69,14 @@ export const aboutTab: SettingsTab = {
       }
     });
 
-    return [head, credit, group('arrow-repeat', t('settings.group.updates')),
+    const discord = button(t('about.discordButton'), 'discord', () => void window.tessera.invoke('app:open-external', { url: DISCORD_URL }), 'primary');
+
+    return [head, credit, section(row(t('about.discord'), t('about.discordHint'), discord)), group('arrow-repeat', t('settings.group.updates')),
       section(
         row(t('updates.check'), status, check, view),
         row(t('updates.auto'), t('updates.autoHint'), toggle(settings.updates.auto, (on) => void update({ updates: { auto: on } }))),
       ),
+      section(row(t('welcome.replay'), t('welcome.replayHint'), button(t('welcome.replayButton'), 'stars', showWelcome))),
       group('file-earmark-text', t('settings.group.licenses')), section(...LICENSES.map(([name, license]) => row(name, license)))];
   },
 };

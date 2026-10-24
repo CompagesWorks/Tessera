@@ -21,5 +21,6 @@
   "error.unsafe-name": "This archive contains unsafe file names",
   "extract.action": "Extract",
   "repack.action": "Repack…",
-  "alreadyExtracted": "Already extracted in {{folder}}"
+  "alreadyExtracted": "Already extracted in {{folder}}",
+  "scanning": "Looking for archives…"
 }

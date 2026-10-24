@@ -26,22 +26,22 @@ function folderOf(path) {
   return path.slice(0, path.lastIndexOf('/') + 1);
 }
 
-function colorTextures(matl) {
+const SLOTS = { texture: 'Texture0', normal: 'Texture4', params: 'Texture6' };
+
+function colorTextures(matl, id = 'Texture0') {
   const textures = new Map();
   for (const entry of matl?.entries ?? []) {
-    const color = entry.textures.find((t) => t.param_id === 'Texture0') ?? entry.textures[0];
+    const color = entry.textures.find((t) => t.param_id === id) ?? (id === 'Texture0' ? entry.textures[0] : null);
     if (color && (DEFAULT_TEXTURES[color.data] || !/^[#/]/.test(color.data))) textures.set(entry.material_label, color.data);
   }
   return textures;
 }
 
 function drawList(modl, matl, objects) {
-  const textures = colorTextures(matl);
   const materials = new Map(modl.entries.map((e) => [`${e.mesh_object_name}/${e.mesh_object_subindex}`, e.material_label]));
-  return objects.map((object) => {
-    const material = materials.get(`${object.name}/${object.subindex}`) ?? null;
-    return { ...object, material, texture: material === null ? null : (textures.get(material) ?? null), visible: !EXPRESSION.test(object.name) || NEUTRAL.test(object.name) };
-  });
+  const list = objects.map((object) => ({ ...object, material: materials.get(`${object.name}/${object.subindex}`) ?? null, visible: !EXPRESSION.test(object.name) || NEUTRAL.test(object.name) }));
+  retexture(list, matl);
+  return list;
 }
 
 function bounds(objects) {
@@ -61,14 +61,16 @@ function bounds(objects) {
 }
 
 function retexture(list, matl) {
-  const textures = colorTextures(matl);
-  const changed = [];
-  list.forEach((object, i) => {
-    const texture = object.material === null ? null : (textures.get(object.material) ?? null);
-    if (texture !== object.texture) changed.push(i);
-    object.texture = texture;
-  });
-  return changed;
+  const changed = new Set();
+  for (const [slot, id] of Object.entries(SLOTS)) {
+    const textures = colorTextures(matl, id);
+    list.forEach((object, i) => {
+      const texture = object.material === null ? null : (textures.get(object.material) ?? null);
+      if (texture !== object[slot]) changed.add(i);
+      object[slot] = texture;
+    });
+  }
+  return [...changed];
 }
 
 function assignMaterial(modl, object, label) {

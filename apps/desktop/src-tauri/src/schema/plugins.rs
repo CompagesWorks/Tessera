@@ -8,7 +8,7 @@ use crate::util::{Error, Result};
 
 pub const MAX_TEXT_READ: u64 = 1024 * 1024;
 pub const MAX_TEXT_WRITE: usize = 5 * 1024 * 1024;
-pub const MAX_BINARY_BYTES: u64 = 20 * 1024 * 1024;
+pub const MAX_BINARY_BYTES: u64 = 64 * 1024 * 1024;
 pub const PLUGIN_SCHEME: &str = "tessera-plugin";
 pub const PROVIDER_SCHEME: &str = "tessera-provider";
 pub const COVER_SCHEME: &str = "tessera-cover";
@@ -36,6 +36,8 @@ pub enum Permission {
     Exec,
     #[serde(rename = "exec.system")]
     ExecSystem,
+    #[serde(rename = "exec.install")]
+    ExecInstall,
     #[serde(rename = "discord.rpc")]
     DiscordRpc,
     #[serde(rename = "clipboard.write")]
@@ -49,7 +51,7 @@ pub enum Permission {
 }
 
 impl Permission {
-    pub const ALL: [Permission; 15] = [
+    pub const ALL: [Permission; 16] = [
         Permission::FsProjectRead,
         Permission::FsProjectWrite,
         Permission::FsExternal,
@@ -60,6 +62,7 @@ impl Permission {
         Permission::UiMenus,
         Permission::Exec,
         Permission::ExecSystem,
+        Permission::ExecInstall,
         Permission::DiscordRpc,
         Permission::ClipboardWrite,
         Permission::NotifySystem,
@@ -79,6 +82,7 @@ impl Permission {
             Permission::UiMenus => "ui.menus",
             Permission::Exec => "exec",
             Permission::ExecSystem => "exec.system",
+            Permission::ExecInstall => "exec.install",
             Permission::DiscordRpc => "discord.rpc",
             Permission::ClipboardWrite => "clipboard.write",
             Permission::NotifySystem => "notify.system",
@@ -92,7 +96,7 @@ impl Permission {
     }
 
     fn simple(&self) -> bool {
-        !matches!(self, Permission::Net | Permission::Exec | Permission::ExecSystem | Permission::DiscordRpc)
+        !matches!(self, Permission::Net | Permission::Exec | Permission::ExecSystem | Permission::ExecInstall | Permission::DiscordRpc)
     }
 }
 
@@ -346,6 +350,15 @@ pub struct Contributes {
     pub titlebar: Vec<TitlebarButton>,
     #[serde(default)]
     pub file_actions: Vec<FileAction>,
+    #[serde(default)]
+    pub previews: Vec<PluginPreview>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginPreview {
+    pub id: String,
+    pub extensions: Vec<String>,
+    pub entry: String,
 }
 
 
@@ -370,8 +383,19 @@ pub struct PluginManifest {
     pub network: Vec<String>,
     pub exec: Option<ExecProgram>,
     pub system_programs: Vec<String>,
+    #[serde(default)]
+    pub installs: BTreeMap<String, BTreeMap<String, ProgramDownload>>,
     pub discord_client_id: Option<String>,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProgramDownload {
+    pub url: String,
+    pub sha256: String,
+    pub file: String,
+}
+
+pub const INSTALL_SYSTEMS: [&str; 3] = ["windows", "macos", "linux"];
 
 #[derive(Deserialize)]
 struct RawManifest {
@@ -395,6 +419,7 @@ enum Entry {
     Net(Vec<String>),
     Exec(ExecProgram),
     System(Vec<String>),
+    Install(BTreeMap<String, BTreeMap<String, ProgramDownload>>),
     Discord(String),
 }
 
@@ -405,6 +430,7 @@ impl Entry {
             Entry::Net(_) => Permission::Net,
             Entry::Exec(_) => Permission::Exec,
             Entry::System(_) => Permission::ExecSystem,
+            Entry::Install(_) => Permission::ExecInstall,
             Entry::Discord(_) => Permission::DiscordRpc,
         }
     }
@@ -460,12 +486,40 @@ fn permission_entry(path: &str, value: &Value) -> Result<Entry> {
                 _ => invalid(),
             }
         }
+        Permission::ExecInstall => match (keys_only(map, &["id", "programs"]), map.get("programs").and_then(install_programs)) {
+            (true, Some(programs)) => Ok(Entry::Install(programs)),
+            _ => invalid(),
+        },
         Permission::DiscordRpc => match map.get("clientId").and_then(Value::as_str) {
             Some(client) if keys_only(map, &["id", "clientId"]) && check::DISCORD_CLIENT.is_match(client) => Ok(Entry::Discord(client.into())),
             _ => invalid(),
         },
         _ => invalid(),
     }
+}
+
+fn install_programs(value: &Value) -> Option<BTreeMap<String, BTreeMap<String, ProgramDownload>>> {
+    let programs = value.as_object().filter(|m| (1..=8).contains(&m.len()))?;
+    programs
+        .iter()
+        .map(|(name, systems)| {
+            let systems = systems.as_object().filter(|m| !m.is_empty())?;
+            let downloads = systems
+                .iter()
+                .map(|(system, download)| {
+                    let d = download.as_object().filter(|d| keys_only(d, &["url", "sha256", "file"]))?;
+                    let text = |key: &str| d.get(key).and_then(Value::as_str).map(str::to_string);
+                    let download = ProgramDownload { url: text("url")?, sha256: text("sha256")?, file: text("file")? };
+                    let ok = INSTALL_SYSTEMS.contains(&system.as_str())
+                        && check::https_url("", &download.url, 2000).is_ok()
+                        && check::SHA256.is_match(&download.sha256)
+                        && check::relative_path("", &download.file).is_ok();
+                    ok.then(|| (system.clone(), download))
+                })
+                .collect::<Option<BTreeMap<_, _>>>()?;
+            check::PROGRAM_NAME.is_match(name).then(|| (name.clone(), downloads))
+        })
+        .collect()
 }
 
 fn unique(values: Vec<String>) -> Vec<String> {
@@ -544,6 +598,23 @@ pub fn parse_manifest(value: Value) -> Result<PluginManifest> {
             return fail(&format!("{path}.default"), "an action for every file can't be the default");
         }
     }
+    if contributes.previews.len() > 8 {
+        return fail("contributes.previews", "too many previews");
+    }
+    for (index, preview) in contributes.previews.iter_mut().enumerate() {
+        let path = format!("contributes.previews.{index}");
+        matches(&format!("{path}.id"), &check::ICON, &preview.id)?;
+        check::relative_path(&format!("{path}.entry"), &preview.entry)?;
+        if preview.extensions.is_empty() || preview.extensions.len() > 24 {
+            return fail(&format!("{path}.extensions"), "1 to 24 extensions");
+        }
+        for extension in preview.extensions.iter_mut() {
+            *extension = extension.to_ascii_lowercase();
+            if extension.is_empty() || extension.len() > 12 || !extension.chars().all(|c| c.is_ascii_alphanumeric()) {
+                return fail(&format!("{path}.extensions"), "extensions are letters and digits, without the dot");
+            }
+        }
+    }
     if contributes.themes.len() > 16 {
         return fail("contributes.themes", "too many themes");
     }
@@ -614,15 +685,20 @@ pub fn parse_manifest(value: Value) -> Result<PluginManifest> {
     let mut network = vec![];
     let mut exec = None;
     let mut system_programs = vec![];
+    let mut installs = BTreeMap::new();
     let mut discord_client_id = None;
     for entry in entries {
         match entry {
             Entry::Net(domains) => network = unique(domains),
             Entry::Exec(program) => exec = Some(program),
             Entry::System(programs) => system_programs = unique(programs),
+            Entry::Install(programs) => installs = programs,
             Entry::Discord(client) => discord_client_id = Some(client),
             Entry::Simple(_) => {}
         }
+    }
+    if installs.keys().any(|name| !system_programs.contains(name)) {
+        return fail("permissions", "exec.install programs need exec.system");
     }
 
     Ok(PluginManifest {
@@ -638,6 +714,7 @@ pub fn parse_manifest(value: Value) -> Result<PluginManifest> {
         network,
         exec,
         system_programs,
+        installs,
         discord_client_id,
     })
 }
@@ -657,6 +734,11 @@ pub fn permission_key(manifest: &PluginManifest, permission: Permission) -> Stri
             let mut programs = manifest.system_programs.clone();
             programs.sort();
             format!("exec.system[{}]", programs.join(","))
+        }
+        Permission::ExecInstall => {
+            let mut downloads: Vec<String> = manifest.installs.iter().flat_map(|(name, systems)| systems.iter().map(move |(system, d)| format!("{name}:{system}@{}", d.sha256))).collect();
+            downloads.sort();
+            format!("exec.install[{}]", downloads.join(","))
         }
         Permission::DiscordRpc => format!("discord.rpc[{}]", manifest.discord_client_id.clone().unwrap_or_default()),
         other => other.as_str().to_string(),

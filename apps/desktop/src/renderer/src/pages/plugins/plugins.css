@@ -20,7 +20,24 @@
 
 .tessera-plugins-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.tessera-plugins-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-plugins-busy[hidden] {
+  display: none;
+}
+
+.tessera-plugins-busy .tessera-plugin-spinner {
+  width: 14px;
+  height: 14px;
 }
 
 .tessera-plugins-toolbar .atrium-btn {
@@ -375,4 +392,102 @@
   font-size: 12px;
   color: var(--atrium-text-secondary);
   word-break: break-all;
+}
+
+.tessera-plugins-body[hidden],
+.tessera-market[hidden] {
+  display: none;
+}
+
+.tessera-market {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 24px;
+}
+
+.tessera-market-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tessera-market-sources .atrium-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tessera-market-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.tessera-market-source.is-error {
+  color: var(--atrium-danger-color);
+}
+
+.tessera-market-source-remove {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.tessera-market-source-remove:hover {
+  opacity: 1;
+}
+
+.tessera-market-search {
+  max-width: 420px;
+}
+
+.tessera-market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.tessera-market-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 12px;
+}
+
+.tessera-market-card .tessera-plugin-desc {
+  flex: 1;
+  margin: 0;
+}
+
+.tessera-market-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tessera-market-actions .atrium-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tessera-market-from {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.6;
 }

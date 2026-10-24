@@ -39,6 +39,11 @@
 }
 
 
+.tessera-preview-plugin {
+  border: 0;
+  background: transparent;
+}
+
 .tessera-preview[data-kind='audio'] .tessera-preview-content {
   height: auto;
   align-items: center;

@@ -2,11 +2,14 @@
   <header class="tessera-plugins-toolbar">
     <h1 data-i18n="plugins.title"></h1>
     <div class="tessera-plugins-actions">
+      <span class="tessera-plugins-busy" role="status" aria-live="polite" data-busy hidden><span class="tessera-plugin-spinner"></span><span data-busy-label></span></span>
+      <button type="button" class="atrium-btn atrium-btn-secondary" data-marketplace><i class="bi bi-shop"></i> <span data-marketplace-label></span></button>
       <button type="button" class="atrium-btn atrium-btn-secondary" data-load-local><i class="bi bi-folder-plus"></i> <span data-i18n="plugins.loadLocal"></span></button>
       <button type="button" class="atrium-btn atrium-btn-primary" data-load-package><i class="bi bi-box-seam"></i> <span data-i18n="plugins.loadPackage"></span></button>
     </div>
   </header>
-  <div class="tessera-plugins-body">
+  <div class="tessera-market" data-market hidden></div>
+  <div class="tessera-plugins-body" data-installed>
     <div class="tessera-plugins-list" data-list></div>
     <div class="tessera-plugins-detail" data-detail></div>
   </div>

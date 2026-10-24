@@ -56,5 +56,15 @@
   "warn.blocks": "{{width}}×{{height}} is not a multiple of 4: block-compressed textures can look wrong in game",
   "warn.unreadable": "This texture cannot be read",
   "resize": "Resize the material panel",
-  "texture.choose": "Choose the texture for {{name}}"
+  "texture.choose": "Choose the texture for {{name}}",
+  "scanning": "Looking for models in the project…",
+  "shading": "Shading",
+  "shading.pbr": "SSBU shading",
+  "shading.light": "Light",
+  "shading.ambient": "Ambient",
+  "shading.specular": "Specular",
+  "shading.bump": "Normal maps",
+  "shading.rim": "Rim light",
+  "shading.exposure": "Exposure",
+  "shading.reset": "Reset"
 }

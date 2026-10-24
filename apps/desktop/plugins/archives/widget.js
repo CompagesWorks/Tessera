@@ -42,8 +42,18 @@ function row(path) {
   return tr;
 }
 
+async function scanning(run) {
+  const scan = document.getElementById('scan');
+  scan.hidden = false;
+  try {
+    return await run();
+  } finally {
+    scan.hidden = true;
+  }
+}
+
 async function refresh() {
-  const paths = (await walk('', [], ARCHIVE)).sort((a, b) => a.localeCompare(b));
+  const paths = (await scanning(() => walk('', [], ARCHIVE))).sort((a, b) => a.localeCompare(b));
   list.replaceChildren(...paths.map(row));
   empty.hidden = paths.length > 0;
 }

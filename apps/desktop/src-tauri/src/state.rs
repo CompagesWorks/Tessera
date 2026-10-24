@@ -28,7 +28,7 @@ use crate::startup::{StartupGuard, CRASHES_BEFORE_SAFE_MODE};
 pub struct PendingPackage {
     pub token: String,
     pub staging: PathBuf,
-    pub file: PathBuf,
+    pub origin: String,
 }
 
 pub struct AppState {
@@ -52,6 +52,7 @@ pub struct AppState {
     pub guard: StartupGuard,
     pub host: Arc<TauriHost>,
     pub pending_profile: Mutex<Option<(String, Profile)>>,
+    pub pending_link: Mutex<Option<crate::marketplace::Link>>,
     pub pending_package: Mutex<Option<PendingPackage>>,
     pub packages_dir: PathBuf,
 }
@@ -172,6 +173,7 @@ pub fn build(app: &AppHandle, args: &[String], arg_safe_reason: Option<SafeReaso
         guard,
         host,
         pending_profile: Mutex::new(None),
+        pending_link: Mutex::new(None),
         pending_package: Mutex::new(None),
         packages_dir,
     })

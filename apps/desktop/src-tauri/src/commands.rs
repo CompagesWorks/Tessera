@@ -60,6 +60,24 @@ fn project_scope(s: &AppState, id: &str) -> Result<Scope> {
     Ok(Scope { root, hidden: Some(TESSERA_DIR.into()), trash: Some(Arc::new(|path: &Path| trash::delete(path).map_err(|e| Error::new(e.to_string())))) })
 }
 
+fn stage_package(s: &AppState, file: &Path, origin: String) -> Value {
+    if let Some(previous) = s.pending_package.lock().unwrap().take() {
+        let _ = fs::remove_dir_all(&previous.staging);
+    }
+    let token = uuid::Uuid::new_v4().to_string();
+    let staging = s.packages_dir.join(&token);
+    match unpack(file, &staging) {
+        Ok(manifest) => {
+            *s.pending_package.lock().unwrap() = Some(PendingPackage { token: token.clone(), staging, origin: origin.clone() });
+            json!({ "token": token, "path": origin, "manifest": manifest })
+        }
+        Err(error) => {
+            let _ = fs::remove_dir_all(&staging);
+            json!({ "path": origin, "error": error.message })
+        }
+    }
+}
+
 fn reveal(path: &Path) {
     let _ = tauri_plugin_opener::reveal_item_in_dir(path);
 }
@@ -509,22 +527,35 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
                 None => s.host.files().add_filter("Tessera plugin", &[PACKAGE_EXTENSION]).blocking_pick_file().and_then(|p| p.into_path().ok()),
             };
             let Some(file) = file else { return Ok(Value::Null) };
-            if let Some(previous) = s.pending_package.lock().unwrap().take() {
-                let _ = fs::remove_dir_all(&previous.staging);
-            }
-            let token = uuid::Uuid::new_v4().to_string();
-            let staging = s.packages_dir.join(&token);
             let shown = file.to_string_lossy().into_owned();
-            match unpack(&file, &staging) {
-                Ok(manifest) => {
-                    *s.pending_package.lock().unwrap() = Some(PendingPackage { token: token.clone(), staging, file });
-                    Ok(json!({ "token": token, "path": shown, "manifest": manifest }))
-                }
-                Err(error) => {
-                    let _ = fs::remove_dir_all(&staging);
-                    Ok(json!({ "path": shown, "error": error.message }))
-                }
-            }
+            Ok(stage_package(s, &file, shown))
+        }
+        "marketplace:sources" => value(crate::marketplace::sources(&s.user_data.join(crate::marketplace::SOURCES_FILE))),
+        "marketplace:add-source" => {
+            let r: MarketplaceSource = parse(request)?;
+            check::text("url", &r.url, 1, 500)?;
+            value(crate::marketplace::add_source(&s.user_data.join(crate::marketplace::SOURCES_FILE), &r.url)?)
+        }
+        "marketplace:remove-source" => {
+            let r: MarketplaceSource = parse(request)?;
+            check::text("url", &r.url, 1, 500)?;
+            value(crate::marketplace::remove_source(&s.user_data.join(crate::marketplace::SOURCES_FILE), &r.url)?)
+        }
+        "marketplace:lookup" => {
+            let r: MarketplaceLookup = parse(request)?;
+            check::text("url", &r.url, 1, 500)?;
+            check::plugin_id("id", &r.id)?;
+            value(crate::marketplace::lookup(&r.url, &r.id)?)
+        }
+        "marketplace:take-link" => value(s.pending_link.lock().unwrap().take()),
+        "marketplace:fetch" => value(crate::marketplace::fetch(&s.user_data.join(crate::marketplace::SOURCES_FILE))),
+        "marketplace:download" => {
+            let r: MarketplaceDownload = parse(request)?;
+            fs::create_dir_all(&s.packages_dir)?;
+            let file = s.packages_dir.join(format!("{}.{PACKAGE_EXTENSION}", uuid::Uuid::new_v4()));
+            let result = crate::marketplace::download(&r.url, &r.sha256, &file).map(|_| stage_package(s, &file, r.url.clone()));
+            let _ = fs::remove_file(&file);
+            result
         }
         "plugins:install-package" => {
             let r: InstallPackage = parse(request)?;
@@ -542,7 +573,7 @@ pub fn dispatch(state: &Arc<AppState>, channel: &str, request: Option<Value>) ->
                     }
                 }
             };
-            let result = s.plugins.install_from(&pending.staging, &r.granted, crate::schema::plugins::PluginMode::Installed, Some(pending.file.to_string_lossy().into_owned()));
+            let result = s.plugins.install_from(&pending.staging, &r.granted, crate::schema::plugins::PluginMode::Installed, Some(pending.origin.clone()));
             let _ = fs::remove_dir_all(&pending.staging);
             let plugin = result?;
             revoke(s, &plugin.manifest.id);

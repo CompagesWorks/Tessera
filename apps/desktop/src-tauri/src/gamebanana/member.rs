@@ -200,6 +200,9 @@ pub fn parse_stamp_ids(value: &Value) -> Vec<u64> {
 }
 
 pub fn parse_analytics(value: &Value) -> Result<GbAnalytics> {
+    if value.is_null() {
+        return Err(Error::new("gamebanana: ANALYTICS_NOT_RECORDED"));
+    }
     if let Some(code) = value.get("_sErrorCode").and_then(Value::as_str) {
         return Err(Error::new(format!("gamebanana: {code}")));
     }
@@ -230,7 +233,23 @@ fn fetch(http: &reqwest::blocking::Client, session: Option<&str>, url: &str) -> 
     if let Some(cookies) = session {
         request = request.header(reqwest::header::COOKIE, cookies);
     }
-    request.send().and_then(|r| r.json()).map_err(|_| Error::new("gamebanana: unreachable"))
+    let response = request.send().map_err(|_| Error::new("gamebanana: unreachable"))?;
+    let status = response.status();
+    let body = response.text().map_err(|_| Error::new("gamebanana: unreachable"))?;
+    decode(status, &body).inspect_err(|_| eprintln!("[gamebanana] {url} answered {status}: {}", body.chars().take(300).collect::<String>()))
+}
+
+fn decode(status: reqwest::StatusCode, body: &str) -> Result<Value> {
+    if status.is_success() && body.trim().is_empty() {
+        return Ok(Value::Null);
+    }
+    serde_json::from_str(body).map_err(|_| {
+        if status.is_success() {
+            Error::new("gamebanana: invalid answer")
+        } else {
+            Error::new(format!("gamebanana-says: HTTP {}", status.as_u16()))
+        }
+    })
 }
 
 pub fn member(member_id: i64, session: Option<&str>) -> Result<GbMember> {
@@ -319,6 +338,14 @@ mod tests {
         assert_eq!(parse_stamp_ids(&json!(["2", 7])), vec![2, 7]);
         assert_eq!(parse_stamp_ids(&json!({ "_aStampIds": ["3"] })), vec![3]);
         assert_eq!(parse_stamp_ids(&json!([{ "_idRow": 4 }])), vec![4]);
+    }
+
+    #[test]
+    fn decodes_answers() {
+        assert_eq!(decode(reqwest::StatusCode::FORBIDDEN, r#"{"_sErrorCode":"ANALYTICS_DISABLED"}"#).unwrap(), json!({ "_sErrorCode": "ANALYTICS_DISABLED" }));
+        assert_eq!(decode(reqwest::StatusCode::BAD_GATEWAY, "<html>").unwrap_err().to_string(), "gamebanana-says: HTTP 502");
+        assert_eq!(decode(reqwest::StatusCode::OK, "<html>").unwrap_err().to_string(), "gamebanana: invalid answer");
+        assert_eq!(parse_analytics(&decode(reqwest::StatusCode::OK, "").unwrap()).unwrap_err().to_string(), "gamebanana: ANALYTICS_NOT_RECORDED");
     }
 
     #[test]

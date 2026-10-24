@@ -194,7 +194,9 @@ async function setWatching(frame: FrameInfo, watching: boolean) {
 const methods: Record<string, Method> = {
   'ui.toast': {
     schema: z.object({ kind: z.enum(['success', 'info', 'warning', 'error']), message: z.string().min(1).max(300) }).strict(),
-    run: (_frame, { kind, message }: { kind: 'success' | 'info' | 'warning' | 'error'; message: string }) => ui?.toast(kind, message),
+    run: (_frame, { kind, message }: { kind: 'success' | 'info' | 'warning' | 'error'; message: string }) => {
+      ui?.toast(kind, message);
+    },
   },
   'ui.form': {
     schema: FormSchema,
@@ -284,6 +286,7 @@ const methods: Record<string, Method> = {
   'exec.runSystem': forward('exec.runSystem', () => 'exec.system'),
   'exec.pickSystem': forward('exec.pickSystem', () => 'exec.system'),
   'exec.systemInfo': forward('exec.systemInfo', () => 'exec.system'),
+  'exec.installSystem': forward('exec.installSystem', () => 'exec.install'),
   'fs.readBytes': forward('fs.readBytes', fsRead),
   'fs.writeBytes': forward('fs.writeBytes', fsWrite),
   'discord.setActivity': forward('discord.setActivity', () => 'discord.rpc'),

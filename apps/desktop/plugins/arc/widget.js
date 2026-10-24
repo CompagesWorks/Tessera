@@ -36,9 +36,10 @@ function size(bytes) {
   return `${value.toFixed(unit ? 1 : 0)} ${units[unit]}`;
 }
 
-function say(message) {
+function say(message, loading = false) {
   status.textContent = message;
   status.hidden = !message;
+  status.classList.toggle('is-loading', loading);
 }
 
 function failed(error) {
@@ -50,7 +51,7 @@ function failed(error) {
 
 async function busy(message, action) {
   document.body.setAttribute('aria-busy', 'true');
-  say(message);
+  say(message, true);
   try {
     return await action();
   } finally {
@@ -133,6 +134,11 @@ function row(entry, depth, container) {
 }
 
 async function level(container, path, depth) {
+  const wait = document.createElement('div');
+  wait.className = 'empty is-loading';
+  wait.style.setProperty('--depth', String(depth));
+  wait.textContent = t('loading');
+  container.replaceChildren(wait);
   const entries = await tessera.arc.list(path);
   container.replaceChildren();
   if (entries.length === 0) {
@@ -148,9 +154,13 @@ async function level(container, path, depth) {
 let ticket = 0;
 async function find(query) {
   const mine = ++ticket;
-  if (!query) return level(tree, '', 0);
-  const entries = await tessera.arc.search(query);
+  if (!query) {
+    say('');
+    return level(tree, '', 0);
+  }
+  const entries = await busy(t('searching', { query }), () => tessera.arc.search(query));
   if (mine !== ticket) return;
+  say('');
   tree.replaceChildren();
   if (entries.length === 0) tree.append(Object.assign(document.createElement('div'), { className: 'empty', textContent: t('noResults') }));
   for (const entry of entries) row({ ...entry, name: entry.path }, 0, tree);
@@ -161,7 +171,7 @@ async function load() {
   if (!info.picked) return;
   where.textContent = info.name;
   search.value = '';
-  await busy(t('loading'), () => level(tree, '', 0));
+  await busy(t('opening'), () => level(tree, '', 0));
   search.disabled = false;
   say('');
 }

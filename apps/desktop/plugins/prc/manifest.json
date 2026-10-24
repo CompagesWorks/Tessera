@@ -1,0 +1,28 @@
+{
+  "id": "compagesworks.prc",
+  "name": "PRC",
+  "version": "1.0.0",
+  "author": "Tessera",
+  "description": "%description%",
+  "icon": "sliders",
+  "engines": {
+    "tessera": "^0.1.0"
+  },
+  "permissions": [
+    "fs.project.read",
+    "fs.project.write",
+    { "id": "net", "domains": ["raw.githubusercontent.com"] }
+  ],
+  "contributes": {
+    "widgets": [
+      {
+        "id": "prc",
+        "title": "PRC",
+        "description": "%widget.description%",
+        "icon": "sliders",
+        "category": "editing",
+        "entry": "widget.html"
+      }
+    ]
+  }
+}

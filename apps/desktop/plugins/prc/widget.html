@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="/__tessera/sdk.js"></script>
+    <link rel="stylesheet" href="widget.css" />
+  </head>
+  <body>
+    <header>
+      <select id="file" class="atrium-input" data-i18n-label="file.label"></select>
+      <input id="filter" class="atrium-input" type="search" data-i18n-placeholder="filter" data-i18n-label="filter.label" />
+      <button id="save" class="atrium-btn atrium-btn-primary" type="button" disabled data-i18n="save"></button>
+    </header>
+    <table>
+      <thead>
+        <tr>
+          <th data-i18n="column.param"></th>
+          <th data-i18n="column.value"></th>
+          <th data-i18n="column.type"></th>
+        </tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
+    <p id="more" class="hint" hidden></p>
+    <p id="scan" class="scan" role="status" aria-live="polite" hidden data-i18n="scanning"></p>
+    <p id="empty" class="atrium-empty" hidden data-i18n="empty"></p>
+    <p class="hint" data-i18n="hash.hint"></p>
+    <script src="prc.js"></script>
+    <script src="widget.js"></script>
+  </body>
+</html>

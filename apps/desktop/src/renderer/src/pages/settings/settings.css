@@ -377,9 +377,19 @@
   color: #fff;
 }
 
+.tessera-set-badge.is-github i,
+.tessera-set-badge.is-discord i {
+  font-size: 15px;
+}
+
 .tessera-set-badge.is-gamebanana {
-  background: #f5c542;
-  color: #1d1d1d;
+  background: #2b2b2b;
+}
+
+.tessera-set-badge.is-gamebanana img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
 }
 
 .tessera-set-badge.is-discord {
@@ -476,4 +486,8 @@
 
 .tessera-set-tabs {
   margin-bottom: 12px;
+}
+
+.is-unavailable {
+  opacity: 0.5;
 }

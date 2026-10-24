@@ -62,7 +62,6 @@ pub struct GameSettings {
     pub launch_after_deploy: bool,
     pub sd_mods: Option<String>,
     pub arc_version: String,
-    pub mosaic_mods: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -142,7 +141,7 @@ pub fn default_backups() -> BackupSettings {
     BackupSettings { auto: AutoBackup::Off, keep: 20, folder: None }
 }
 fn default_game() -> GameSettings {
-    GameSettings { ryujinx: None, launch_after_deploy: false, sd_mods: None, arc_version: "latest".into(), mosaic_mods: None }
+    GameSettings { ryujinx: None, launch_after_deploy: false, sd_mods: None, arc_version: "latest".into() }
 }
 fn default_updates() -> UpdateSettings {
     UpdateSettings { auto: true }
@@ -256,7 +255,6 @@ impl Settings {
         validate_backups(&self.backups)?;
         path_field("game.ryujinx", &self.game.ryujinx)?;
         path_field("game.sdMods", &self.game.sd_mods)?;
-        path_field("game.mosaicMods", &self.game.mosaic_mods)?;
         matches("game.arcVersion", &check::ARC_VERSION, &self.game.arc_version)?;
         if let Some(layout) = &mut self.layout_template {
             layout.validate()?;

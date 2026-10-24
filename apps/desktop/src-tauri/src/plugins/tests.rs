@@ -605,3 +605,82 @@ fn api_exec_checks_hash_and_asks() {
     assert_eq!(err(f.call("exec.run", Some(json!({ "args": ["a b"] })))), "refused by user");
     assert_eq!(*f.host.asked.lock().unwrap(), vec![format!("{program} \"a b\"")]);
 }
+
+fn install_manifest(url: &str, programs: Value) -> Value {
+    let sha = "a".repeat(64);
+    manifest(json!({ "permissions": [
+        { "id": "exec.system", "programs": programs },
+        { "id": "exec.install", "programs": { "tool": { "windows": { "url": url, "sha256": sha, "file": "bin/tool.exe" }, "linux": { "url": url, "sha256": sha, "file": "tool" } } } }
+    ] }))
+}
+
+#[test]
+fn exec_install_manifest_is_checked() {
+    use crate::schema::plugins::{parse_manifest, permission_key};
+    let parsed = parse_manifest(install_manifest("https://example.com/tool.zip", json!(["tool"]))).unwrap();
+    assert_eq!(parsed.installs["tool"]["windows"].file, "bin/tool.exe");
+    let sha = "a".repeat(64);
+    assert_eq!(permission_key(&parsed, Permission::ExecInstall), format!("exec.install[tool:linux@{sha},tool:windows@{sha}]"));
+    assert!(parse_manifest(install_manifest("http://example.com/tool.zip", json!(["tool"]))).is_err());
+    assert!(parse_manifest(install_manifest("https://example.com/tool.zip", json!(["other"]))).is_err());
+    let mut bad_system = install_manifest("https://example.com/tool.zip", json!(["tool"]));
+    bad_system["permissions"][1]["programs"]["tool"]["amiga"] = bad_system["permissions"][1]["programs"]["tool"]["linux"].clone();
+    assert!(parse_manifest(bad_system).is_err());
+}
+
+#[test]
+fn install_checks_hash_and_extracts_safely() {
+    use super::install::install;
+    use crate::schema::plugins::ProgramDownload;
+    use std::io::Write;
+    let dir = tempfile::tempdir().unwrap();
+    let target = dir.path().join("programs/test.plugin/tool");
+    let sha = |data: &[u8]| hex::encode(Sha256::digest(data));
+    let zip_of = |name: &str| {
+        let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        writer.start_file(name, zip::write::SimpleFileOptions::default()).unwrap();
+        writer.write_all(b"binary").unwrap();
+        writer.finish().unwrap().into_inner()
+    };
+
+    let plain = ProgramDownload { url: "https://example.com/tool.exe".into(), sha256: sha(b"exe"), file: "tool.exe".into() };
+    assert_eq!(fs::read(install(b"exe", &plain, &target).unwrap()).unwrap(), b"exe");
+    assert!(install(b"changed", &plain, &target).unwrap_err().0.contains("sha256"));
+
+    let archive = zip_of("bin/tool.exe");
+    let zipped = ProgramDownload { url: "https://example.com/tool.zip?x=1".into(), sha256: sha(&archive), file: "bin/tool.exe".into() };
+    let file = install(&archive, &zipped, &target).unwrap();
+    assert_eq!(fs::read(&file).unwrap(), b"binary");
+    assert!(!target.join("tool.exe").exists());
+
+    let evil = zip_of("../evil.exe");
+    let escaping = ProgramDownload { url: "https://example.com/tool.zip".into(), sha256: sha(&evil), file: "evil.exe".into() };
+    assert!(install(&evil, &escaping, &target).is_err());
+    assert!(!dir.path().join("programs/test.plugin/evil.exe").exists());
+}
+
+#[test]
+fn installed_program_is_dropped_when_its_download_changes() {
+    use crate::schema::plugins::SystemProgram;
+    let f = Fixture::new();
+    let sha = "b".repeat(64);
+    f.write(manifest(json!({ "permissions": [
+        { "id": "exec.system", "programs": ["tool"] },
+        { "id": "exec.install", "programs": { "tool": { std::env::consts::OS: { "url": "https://example.com/tool.zip", "sha256": sha, "file": "tool.exe" } } } }
+    ] })));
+    let s = f.service();
+    s.install(&f.plugin_dir, &[], PluginMode::Dev).unwrap();
+    let dir = s.programs_dir("test.plugin").join("tool");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("tool.exe"), "exe").unwrap();
+    let program = SystemProgram { path: dir.join("tool.exe").to_string_lossy().into_owned(), sha256: "c".repeat(64) };
+    s.set_program("test.plugin", "tool", Some(program)).unwrap();
+    assert!(s.program_of("test.plugin", "tool").is_none());
+    fs::write(dir.join(super::install::SOURCE_FILE), &sha).unwrap();
+    assert!(s.program_of("test.plugin", "tool").is_some());
+    fs::write(dir.join(super::install::SOURCE_FILE), "a".repeat(64)).unwrap();
+    assert!(s.program_of("test.plugin", "tool").is_none());
+    let picked = SystemProgram { path: f.dir.path().join("secret.txt").to_string_lossy().into_owned(), sha256: "c".repeat(64) };
+    s.set_program("test.plugin", "tool", Some(picked)).unwrap();
+    assert!(s.program_of("test.plugin", "tool").is_some());
+}

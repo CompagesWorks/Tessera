@@ -16,6 +16,7 @@ Without any permission, a widget can only: render a UI, show notifications, save
 | [`ui.provider`](#uiprovider) | **high** | replace Tessera's UI engine, **outside the sandbox** |
 | [`exec`](#exec) | **high** | run one specific program shipped with the plugin |
 | [`exec.system`](#execsystem) | **high** | run programs installed on the PC (git…), picked by the user |
+| [`exec.install`](#execinstall) | **high** | download `exec.system` programs from fixed URLs, checked by sha256 |
 | [`discord.rpc`](#discordrpc) | medium | set the user's Discord status |
 | [`clipboard.write`](#clipboardwrite) | low | put text in the clipboard |
 | [`notify.system`](#notifysystem) | low | show system notifications |
@@ -26,7 +27,7 @@ An unknown permission makes the manifest invalid, and the plugin is rejected.
 
 ## Declaring permissions
 
-Most permissions are a plain string. `net`, `exec`, `exec.system` and `discord.rpc` need extra data, so they are written as objects:
+Most permissions are a plain string. `net`, `exec`, `exec.system`, `exec.install` and `discord.rpc` need extra data, so they are written as objects:
 
 ```json
 "permissions": [
@@ -51,7 +52,7 @@ Most permissions are a plain string. `net`, `exec`, `exec.system` and `discord.r
 | SDK | [`tessera.files.list`, `readText`, `watch`](sdk.md#files) |
 
 - limited to the **project open** in the window where the widget runs
-- read only: text files up to 1 MB, binary files up to 20 MB
+- read only: text files up to 1 MB, binary files up to 64 MB
 - the `.tessera/` folder (layouts, notes, internal settings) is never readable
 - symbolic links are hidden and never followed outside the project
 - every access, allowed or denied, is written to the log
@@ -67,7 +68,7 @@ Typical uses: a file browser, a preview of config files, stats about the project
 | SDK | [`tessera.files.writeText`, `mkdir`, `remove`, `rename`](sdk.md#files), [`tessera.files.private.*`](sdk.md#private-folder) |
 
 - same limits as `fs.project.read`: the open project only, `.tessera/` is off limits, links never lead outside
-- text files up to 5 MB, binary files up to 20 MB per write
+- text files up to 5 MB, binary files up to 64 MB per write
 - **deleted files go to the system trash**, never deleted for good
 - the plugin also gets a private folder `.tessera/plugins/<plugin id>/` in the project, for caches and generated files. Only `tessera.files.private` reaches it.
 
@@ -192,6 +193,33 @@ For tools installed on the PC that a plugin can't ship: `git`, VGAudio, an emula
 - same rules as [`exec`](#exec) for the rest: hash checked before every run, `.exe`/`.com` only on Windows, no shell, system dialog with the exact command, minimal environment, timeout, runs in the project folder
 
 Adding a program name in an update counts as a new permission.
+
+## `exec.install`
+
+| | |
+| --- | --- |
+| Risk | **high** |
+| Asked | on install, **and** before each download (or once per session) |
+| Scope | programs already declared in [`exec.system`](#execsystem), one HTTPS URL and sha256 per system (`windows`, `macos`, `linux`) |
+| SDK | [`tessera.exec.installSystem`](sdk.md#programs-of-the-pc) |
+
+Lets the plugin set up an `exec.system` program for the user instead of asking them to pick it:
+
+```json
+{ "id": "exec.install", "programs": {
+  "vgmstream": {
+    "windows": { "url": "https://github.com/…/vgmstream-win64.zip", "sha256": "6c4a…", "file": "vgmstream-cli.exe" },
+    "linux": { "url": "https://github.com/…/vgmstream-linux.zip", "sha256": "2f98…", "file": "vgmstream-cli" }
+  }
+} }
+```
+
+- Tessera downloads the URL for the current system (HTTPS only, redirects stay on HTTPS, 200 MB max) and refuses it if its sha256 differs from the manifest
+- a `.zip` is extracted (entries leaving the folder are refused), anything else is saved as `file`. `file` is the program to run, inside the download
+- it goes to `programs/<plugin id>/<program>/` in Tessera's data folder, deleted with the plugin, and becomes the picked program: the [`exec.system`](#execsystem) rules then apply
+- a system missing from the manifest rejects with `no download for this system`: fall back to `pickSystem`
+
+Changing a URL's sha256 or adding a download in an update counts as a new permission.
 
 ## `discord.rpc`
 

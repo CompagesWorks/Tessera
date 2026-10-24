@@ -77,7 +77,7 @@ export const explorerWidget: WidgetDefinition = {
     const tree = document.createElement('div');
     tree.className = 'tessera-explorer-tree';
     let selected: string | null = null;
-    const preview = createPreview(project.id, ui, () => select(null));
+    const preview = createPreview(project, ui, () => select(null));
     element.append(bar, tree, preview.element);
 
     const showInline = () => void preview.show(hasPreviewWidget(project.id) ? null : selected);

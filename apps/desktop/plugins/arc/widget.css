@@ -122,3 +122,41 @@ body[aria-busy='true'] button {
   font-size: 12px;
   color: var(--atrium-text-muted);
 }
+
+.status.is-loading,
+.empty.is-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--atrium-text-secondary);
+}
+
+.status[hidden] {
+  display: none;
+}
+
+.status.is-loading::before,
+.empty.is-loading::before {
+  content: '';
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--atrium-border-hover, currentColor);
+  border-top-color: var(--atrium-accent-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status.is-loading::before,
+  .empty.is-loading::before {
+    animation: none;
+  }
+}
+

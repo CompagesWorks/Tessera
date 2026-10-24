@@ -481,15 +481,18 @@ async function applyTextures(index) {
   const run = loading;
   const byTexture = new Map();
   for (const i of index) {
-    const name = model.list[i].texture ?? '';
-    byTexture.set(name, [...(byTexture.get(name) ?? []), i]);
+    for (const slot of Object.keys(SLOTS)) {
+      const key = `${slot}\n${model.list[i][slot] ?? ''}`;
+      byTexture.set(key, [...(byTexture.get(key) ?? []), i]);
+    }
   }
   let done = 0;
   await Promise.all(
-    [...byTexture].map(async ([name, indices]) => {
+    [...byTexture].map(async ([key, indices]) => {
+      const [slot, name] = key.split('\n');
       const img = name ? await image(name) : null;
       if (run !== loading) return;
-      viewer.setTexture(indices, img);
+      viewer.setTexture(indices, img, slot);
       say(++done < byTexture.size ? 'textures' : '', { done, total: byTexture.size });
     }),
   );
@@ -518,7 +521,10 @@ async function open(next) {
   if (!path) return;
   const run = ++loading;
   try {
-    viewer ??= createViewer(document.getElementById('canvas'));
+    if (!viewer) {
+      viewer = createViewer(document.getElementById('canvas'));
+      applyShading();
+    }
     say('loading');
     const entries = await tessera.files.list(folderOf(path).slice(0, -1));
     const files = new Map(entries.map((e) => [e.name.toLowerCase(), e.path]));
@@ -549,8 +555,8 @@ async function open(next) {
     viewer.setSkeleton(skel ? skel.bones.map((b) => b.parent_index) : []);
     applyFrame();
     animOptions();
-    await tessera.widget.setState({ path, inspector: inspectorWidth });
-    await applyTextures(list.map((_, i) => i).filter((i) => list[i].texture));
+    await saveLayout();
+    await applyTextures(list.map((_, i) => i));
     if (run === loading) say('');
   } catch (error) {
     if (run === loading) say('');
@@ -559,7 +565,9 @@ async function open(next) {
 }
 
 async function refresh(wanted = path) {
-  const found = await walk('', { models: [], anims: [] });
+  const scan = document.getElementById('scan');
+  scan.hidden = false;
+  const found = await walk('', { models: [], anims: [] }).finally(() => (scan.hidden = true));
   const paths = found.models.sort((a, b) => a.localeCompare(b));
   anims = found.anims.sort((a, b) => a.localeCompare(b));
   picker.replaceChildren(...paths.map((p) => new Option(p, p)));
@@ -627,7 +635,31 @@ function resizeInspector(width) {
   inspectorWidth = Math.round(Math.max(220, Math.min(width, view.clientWidth * 0.7 || width)));
   inspector.style.width = `${inspectorWidth}px`;
 }
-const saveLayout = () => tessera.widget.setState({ path, inspector: inspectorWidth });
+const shadingForm = document.getElementById('shading');
+const shadingValues = () => Object.fromEntries([...shadingForm.elements].filter((e) => e.name).map((e) => [e.name, e.type === 'checkbox' ? Number(e.checked) : Number(e.value)]));
+function applyShading() {
+  const pbr = shadingForm.elements.namedItem('pbr').checked;
+  for (const output of shadingForm.querySelectorAll('output')) {
+    const input = output.previousElementSibling;
+    output.value = input.value;
+    input.disabled = !pbr && input.name !== 'exposure';
+  }
+  viewer?.setShading(shadingValues());
+}
+shadingForm.addEventListener('input', () => {
+  applyShading();
+  saveLayout();
+});
+shadingForm.addEventListener('reset', () => setTimeout(() => {
+  applyShading();
+  saveLayout();
+}));
+const shadingToggle = document.getElementById('shading-toggle');
+shadingToggle.addEventListener('click', () => {
+  shadingForm.hidden = !shadingForm.hidden;
+  shadingToggle.setAttribute('aria-expanded', String(!shadingForm.hidden));
+});
+const saveLayout = () => tessera.widget.setState({ path, inspector: inspectorWidth, shading: shadingValues() });
 splitter.addEventListener('pointerdown', (event) => {
   splitter.setPointerCapture(event.pointerId);
   const start = event.clientX;
@@ -672,6 +704,12 @@ tessera.ready
   .then(async () => {
     const state = await tessera.widget.getState();
     if (typeof state?.inspector === 'number') resizeInspector(state.inspector);
+    for (const [name, value] of Object.entries(state?.shading ?? {})) {
+      const input = shadingForm.elements.namedItem(name);
+      if (input?.type === 'checkbox') input.checked = Boolean(value);
+      else if (input && Number.isFinite(value)) input.value = String(value);
+    }
+    applyShading();
     await refresh(state?.path);
   })
   .catch(failed);

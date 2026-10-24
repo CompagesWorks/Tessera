@@ -1,37 +1,99 @@
 .tessera-info {
-  padding: 16px;
-  overflow: auto;
   height: 100%;
+  container-type: inline-size;
+}
+
+.tessera-info-scroll {
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  height: 100%;
+  padding: 14px;
+  overflow: auto;
+  font-size: 13px;
+  color: var(--atrium-text-primary);
 }
 
 .tessera-info-head {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 16px;
+  min-width: 0;
 }
 
-.tessera-info-head > i {
-  font-size: 26px;
+.tessera-info-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(var(--atrium-accent-rgb), 0.14);
   color: var(--atrium-accent-color);
+  font-size: 22px;
+}
+
+.tessera-info-title {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
 .tessera-info-name {
+  margin: 0;
+  overflow: hidden;
   font-size: 16px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tessera-info-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
   font-size: 12px;
   color: var(--atrium-text-muted);
 }
 
+.tessera-info-sub .atrium-badge {
+  padding: 1px 8px;
+  font-size: 11px;
+}
+
+.tessera-info-section {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--atrium-border-color);
+  border-radius: 10px;
+  background: var(--atrium-bg-secondary);
+}
+
+.tessera-info-heading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-info-heading > i {
+  color: var(--atrium-accent-color);
+}
+
 .tessera-info-list {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 8px 16px;
+  align-items: center;
   margin: 0;
-  font-size: 13px;
 }
 
 .tessera-info-list dt {
@@ -43,7 +105,191 @@
   color: var(--atrium-text-secondary);
 }
 
+.tessera-info-folder {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
 .tessera-info-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   font: 12px Consolas, monospace;
-  word-break: break-all;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tessera-info-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@container (min-width: 380px) {
+  .tessera-info-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tessera-info-field.is-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.tessera-info-fields[aria-busy='true'] .atrium-input {
+  color: transparent;
+}
+
+.tessera-info-field {
+  display: grid;
+  min-width: 0;
+}
+
+.tessera-info-field .atrium-label {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.tessera-info-field .atrium-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.tessera-info-field textarea {
+  min-height: 80px;
+  resize: vertical;
+  font: inherit;
+}
+
+.tessera-info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.tessera-info-actions .atrium-btn {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.tessera-info-actions .atrium-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tessera-info-state {
+  display: inline-flex;
+  flex: 1;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-info-state.is-dirty {
+  color: var(--atrium-warning-color);
+}
+
+.tessera-info-state.is-saved {
+  color: var(--atrium-success-color);
+}
+
+.tessera-info-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 12px;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-info-note[hidden] {
+  display: none;
+}
+
+.tessera-info-note.is-warning {
+  padding: 8px 10px;
+  border: 1px solid rgba(var(--atrium-warning-rgb), 0.35);
+  border-radius: 8px;
+  background: rgba(var(--atrium-warning-rgb), 0.1);
+  color: var(--atrium-warning-color);
+}
+
+.tessera-info-drop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  overflow: hidden;
+  border: 1px dashed var(--atrium-border-hover);
+  border-radius: 8px;
+  background: var(--atrium-bg-tertiary);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.tessera-info-drop.is-empty {
+  cursor: pointer;
+}
+
+.tessera-info-drop.is-empty:hover {
+  border-color: var(--atrium-accent-color);
+  background: rgba(var(--atrium-accent-rgb), 0.08);
+}
+
+.tessera-info-drop img {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+}
+
+.tessera-info-skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+.tessera-info-drop img[hidden],
+.tessera-info-skeleton[hidden],
+.tessera-info-empty[hidden] {
+  display: none;
+}
+
+.tessera-info-empty {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 20px;
+  text-align: center;
+  color: var(--atrium-text-muted);
+}
+
+.tessera-info-empty > i {
+  margin-bottom: 4px;
+  font-size: 28px;
+  opacity: 0.5;
+}
+
+.tessera-info-empty > strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--atrium-text-secondary);
+}
+
+.tessera-info-empty > span {
+  max-width: 34ch;
+  font-size: 12px;
 }

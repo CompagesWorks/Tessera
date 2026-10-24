@@ -67,6 +67,7 @@ interface Tessera {
     run(args?: string[], options?: { timeout?: number }): Promise<ExecResult>;
     runSystem(program: string, args?: string[], options?: { timeout?: number; detach?: boolean; onOutput?(line: string, kind: 'stdout' | 'stderr'): void }): Promise<ExecResult | null>;
     pickSystem(program: string): Promise<boolean>;
+    installSystem(program: string, options?: { onProgress?(done: number, total: number): void }): Promise<boolean>;
     systemInfo(): Promise<Record<string, boolean>>;
   };
   discord: {
@@ -413,7 +414,7 @@ Reads a file as UTF-8 text.
 
 ### `tessera.files.readBytes(path)` / `tessera.files.writeBytes(path, data)`
 
-Same as `readText` / `writeText` for binary files (`.nutexb`, `.nus3audio`, images…), with a `Uint8Array`. **20 MB** max each way, same permissions as the text versions.
+Same as `readText` / `writeText` for binary files (`.nutexb`, `.nus3audio`, images…), with a `Uint8Array`. **64 MB** max each way, same permissions as the text versions.
 
 ```js
 const bytes = await tessera.files.readBytes('fighter/mario/model/body/c00/def_mario_001_col.nutexb');
@@ -630,6 +631,7 @@ Needs [`exec.system`](permissions.md#execsystem). `program` is a name declared i
 | --- | --- |
 | `tessera.exec.pickSystem(program)` | opens the system file picker so the user chooses the file. `true` if picked |
 | `tessera.exec.systemInfo()` | `{ git: true, … }`: which programs are picked |
+| `tessera.exec.installSystem(program)` | downloads the program declared in [`exec.install`](permissions.md#execinstall), after the user confirms, and picks it. `true` once installed. `{ onProgress(done, total) }` receives the downloaded bytes (`total` is `0` when unknown) |
 | `tessera.exec.runSystem(program, args, options)` | like [`exec.run`](#tesseraexecrunargs---options), after the user approves the command |
 
 ```js
@@ -652,7 +654,7 @@ await tessera.exec.runSystem('ffmpeg', ['-progress', 'pipe:1', '-i', 'in.mp4', '
 }).finally(() => progress.close());
 ```
 
-`program not picked` and `program changed since it was picked, pick it again in Plugins` mean the user has to (re)pick the file.
+`no download for this system` means `exec.install` has no URL for this OS. `program not picked` and `program changed since it was picked, pick it again in Plugins` mean the user has to (re)pick the file.
 
 ## Discord
 
@@ -703,7 +705,7 @@ Needs [`projects.list`](permissions.md#projectslist). `tessera.projects.list()` 
 | `rate limited` | more than 40 calls in the last second |
 | `unknown method` | the method doesn't exist (modified SDK or raw `postMessage`) |
 | `outside scope` | the path leaves its scope or targets `.tessera/` |
-| `file too large` | text read over 1 MB, text write over 5 MB, binary over 20 MB, or the path is not a file |
+| `file too large` | text read over 1 MB, text write over 5 MB, binary over 64 MB, or the path is not a file |
 | `not a file` / `already exists` | `writeText` on a folder / `rename` onto an existing path |
 | `no project open` | a project method called without an open project |
 | `no folder picked` | `tessera.external` used before the user picked a folder |

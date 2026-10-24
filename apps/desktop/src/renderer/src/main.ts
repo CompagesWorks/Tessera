@@ -8,6 +8,7 @@ import { startAutoBackups } from './app/auto-backup';
 import { exportProject } from './app/export';
 import { startFileCommands } from './app/file-commands';
 import { checkUpdatesQuietly } from './app/updates';
+import { startWelcome } from './app/welcome';
 import type { AppContext } from './app/context';
 import { registerCoreCommands } from './commands/core';
 import { applyTranslations, getLanguage, isMessageKey, setLanguage, t } from './i18n';
@@ -20,6 +21,9 @@ import { startPluginConfirm } from './plugins/confirm';
 import { startPluginHosts } from './plugins/hosts';
 import { mountShell } from './shell/shell';
 import { startPluginNotice } from './pages/plugins/notice';
+import { startMarketplaceLinks } from './pages/plugins/links';
+import { installFromMarketplace, openMarketplace } from './pages/plugins';
+import { createProjectActions } from './pages/projects/actions';
 import { safeScreen } from './splash/safe-screen';
 import { createSplash } from './splash/splash';
 import { HomeStore } from './state/home-store';
@@ -167,11 +171,20 @@ async function boot() {
     splash.step(t('splash.ready'), 100);
     await splash.close();
   }
+  startWelcome(ctx, () => createProjectActions(ctx).newProject(), !info.safeMode);
 
   if (provider.error) ui.toast('error', t('plugins.providerFailed', { error: provider.error }));
   else if (provider.plugin) ui.toast('warning', t('plugins.providerActive', { name: provider.plugin.manifest.name }));
   if (settings.updates.auto && !info.safeMode) void checkUpdatesQuietly(ui);
   await window.tessera.invoke('app:started');
+  startMarketplaceLinks(ui, {
+    show: () => {
+      ctx.navigation.closeProject();
+      tabs.show('plugins');
+    },
+    browse: openMarketplace,
+    install: installFromMarketplace,
+  });
 }
 
 void boot().catch((error) => {

@@ -89,8 +89,18 @@ function show() {
   for (const item of rows.values()) item.tr.hidden = query !== '' && !item.path.toLowerCase().includes(query);
 }
 
+async function scanning(run) {
+  const scan = document.getElementById('scan');
+  scan.hidden = false;
+  try {
+    return await run();
+  } finally {
+    scan.hidden = true;
+  }
+}
+
 async function refresh() {
-  const paths = (await walk('', [])).sort((a, b) => a.localeCompare(b));
+  const paths = (await scanning(() => walk('', []))).sort((a, b) => a.localeCompare(b));
   for (const path of [...rows.keys()]) if (!paths.includes(path)) rows.delete(path);
   for (const path of paths) if (!rows.has(path)) rows.set(path, row(path));
   list.replaceChildren(...paths.map((path) => rows.get(path).tr));

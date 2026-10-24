@@ -9,6 +9,7 @@ uniform mat4 projection;
 uniform sampler2D boneMatrices;
 uniform vec2 outline;
 out vec3 vNormal;
+out vec3 vPosition;
 out vec2 vUv;
 mat4 bone(float index) {
   int i = int(index);
@@ -19,6 +20,7 @@ void main() {
   mat4 skin = total > 0.0 ? bone(bones.x) * weights.x + bone(bones.y) * weights.y + bone(bones.z) * weights.z + bone(bones.w) * weights.w : mat4(1.0);
   vNormal = mat3(view) * mat3(skin) * normal;
   vUv = uv;
+  vPosition = (view * skin * vec4(position, 1.0)).xyz;
   gl_Position = projection * view * skin * vec4(position, 1.0);
   vec2 push = (projection * view * skin * vec4(normal, 0.0)).xy;
   if (dot(push, push) > 0.0) gl_Position.xy += normalize(push) * outline * gl_Position.w;
@@ -42,20 +44,66 @@ void main() {
 }`;
 
 const FRAGMENT = `#version 300 es
-precision mediump float;
+precision highp float;
 in vec3 vNormal;
+in vec3 vPosition;
 in vec2 vUv;
+uniform mat4 view;
 uniform sampler2D color;
+uniform sampler2D normalMap;
+uniform sampler2D params;
 uniform vec4 tint;
+uniform float pbr;
+uniform float lightPower;
+uniform float ambientPower;
+uniform float specularPower;
+uniform float bumpPower;
+uniform float rimPower;
+uniform float exposure;
 out vec4 outColor;
+const float PI = 3.14159265;
+vec3 bump(vec3 n, vec4 nor) {
+  vec3 dp1 = dFdx(vPosition), dp2 = dFdy(vPosition);
+  vec2 duv1 = dFdx(vUv), duv2 = dFdy(vUv);
+  vec3 t = cross(dp2, n) * duv1.x + cross(n, dp1) * duv2.x;
+  vec3 b = cross(dp2, n) * duv1.y + cross(n, dp1) * duv2.y;
+  float scale = inversesqrt(max(max(dot(t, t), dot(b, b)), 1e-20));
+  vec2 xy = (nor.xy * 2.0 - 1.0) * bumpPower;
+  return normalize(t * scale * xy.x + b * scale * xy.y + n * sqrt(max(0.0, 1.0 - dot(xy, xy))));
+}
 void main() {
   if (tint.a > 0.0) {
     outColor = tint;
     return;
   }
   vec4 base = texture(color, vUv);
-  float light = 0.35 + 0.65 * abs(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0)));
-  outColor = vec4(base.rgb * light, 1.0);
+  if (pbr < 0.5) {
+    outColor = vec4(base.rgb * (0.35 + 0.65 * abs(normalize(vNormal).z)) * exposure, 1.0);
+    return;
+  }
+  vec3 albedo = pow(base.rgb, vec3(2.2));
+  vec4 prm = texture(params, vUv);
+  float metal = prm.r, rough = max(prm.g, 0.04), ao = prm.b;
+  vec3 n = normalize(gl_FrontFacing ? vNormal : -vNormal);
+  n = bump(n, texture(normalMap, vUv));
+  vec3 v = normalize(-vPosition);
+  vec3 l = normalize(mat3(view) * vec3(-0.4, 0.7, 0.6) + v * 0.6);
+  vec3 h = normalize(l + v);
+  float nl = max(dot(n, l), 0.0), nv = max(dot(n, v), 1e-4), nh = max(dot(n, h), 0.0);
+  float a2 = pow(rough, 4.0);
+  float d = a2 / (PI * pow(nh * nh * (a2 - 1.0) + 1.0, 2.0));
+  float k = rough * rough * 0.5;
+  float g = nl * nv / ((nl * (1.0 - k) + k) * (nv * (1.0 - k) + k));
+  vec3 f0 = mix(vec3(0.16 * prm.a * prm.a), albedo, metal);
+  vec3 f = f0 + (1.0 - f0) * pow(1.0 - max(dot(h, v), 0.0), 5.0);
+  vec3 fAmbient = f0 + (max(vec3(1.0 - rough), f0) - f0) * pow(1.0 - nv, 5.0);
+  float up = dot(n, mat3(view) * vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+  vec3 sky = mix(vec3(0.18, 0.17, 0.16), vec3(0.55, 0.58, 0.65), up) * ambientPower;
+  vec3 diffuse = albedo * (1.0 - metal) * (nl * lightPower * (1.0 - f) + sky * (1.0 - fAmbient));
+  vec3 specular = (d * g * f / (4.0 * nv + 1e-4) * lightPower + fAmbient * sky * (1.0 - rough * 0.6)) * specularPower;
+  vec3 rim = vec3(rimPower) * pow(1.0 - nv, 4.0) * (1.0 - metal) * up;
+  vec3 linear = ((diffuse + specular) * ao + rim) * exposure;
+  outColor = vec4(pow(linear / (linear + 0.8) * 1.8, vec3(1.0 / 2.2)), 1.0);
 }`;
 
 function perspective(fov, aspect, near, far) {
@@ -116,10 +164,17 @@ function createViewer(canvas) {
   let jointCount = 0;
   let showBones = false;
   let highlight = null;
+  const shading = {};
   const accent = (getComputedStyle(document.documentElement).getPropertyValue('--atrium-accent-rgb') || '88, 140, 255').split(',').map((v) => Number(v) / 255);
   const white = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, white);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([200, 200, 200, 255]));
+  const fallback = { texture: white };
+  for (const [slot, pixel] of [['normal', [128, 128, 255, 255]], ['params', [0, 255, 255, 58]]]) {
+    fallback[slot] = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, fallback[slot]);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(pixel));
+  }
 
   let draws = [];
   let camera = { yaw: 0.6, pitch: 0.25, distance: 30, target: [0, 0, 0], radius: 10 };
@@ -150,10 +205,13 @@ function createViewer(canvas) {
     gl.useProgram(program);
     gl.uniform1i(uniform('color'), 0);
     gl.uniform1i(uniform('boneMatrices'), 1);
+    gl.uniform1i(uniform('normalMap'), 2);
+    gl.uniform1i(uniform('params'), 3);
     gl.uniformMatrix4fv(uniform('view'), false, viewMatrix);
     gl.uniformMatrix4fv(uniform('projection'), false, projectionMatrix);
     gl.uniform2f(uniform('outline'), 0, 0);
     gl.uniform4f(uniform('tint'), 0, 0, 0, 0);
+    for (const [name, value] of Object.entries(shading)) gl.uniform1f(uniform(name), value);
     return { viewMatrix, projectionMatrix };
   }
 
@@ -166,7 +224,10 @@ function createViewer(canvas) {
     for (const draw of draws) {
       if (!draw.visible) continue;
       gl.bindVertexArray(draw.vao);
-      gl.bindTexture(gl.TEXTURE_2D, draw.texture ?? white);
+      for (const [unit, slot] of [[2, 'normal'], [3, 'params'], [0, 'texture']]) {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, draw[slot] ?? fallback[slot]);
+      }
       gl.drawElements(gl.TRIANGLES, draw.count, gl.UNSIGNED_INT, 0);
     }
     const marked = highlight === null ? null : draws[highlight];
@@ -216,7 +277,7 @@ function createViewer(canvas) {
       attribute('weights', object.weights, 4);
       buffer(gl.ELEMENT_ARRAY_BUFFER, object.indices);
       gl.bindVertexArray(null);
-      return { vao, count: object.indices.length, visible: object.visible !== false, texture: null };
+      return { vao, count: object.indices.length, visible: object.visible !== false };
     });
     fit(box);
   }
@@ -227,7 +288,7 @@ function createViewer(canvas) {
   }
 
   const uploaded = new WeakMap();
-  function setTexture(index, image) {
+  function setTexture(index, image, slot = 'texture') {
     if (image && !uploaded.has(image)) {
       const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -236,7 +297,7 @@ function createViewer(canvas) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       uploaded.set(image, texture);
     }
-    for (const i of index) draws[i].texture = image ? uploaded.get(image) : null;
+    for (const i of index) draws[i][slot] = image ? uploaded.get(image) : null;
     redraw();
   }
 
@@ -260,6 +321,11 @@ function createViewer(canvas) {
     data.set(joints, segments.length);
     gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    redraw();
+  }
+
+  function setShading(values) {
+    Object.assign(shading, values);
     redraw();
   }
 
@@ -340,5 +406,5 @@ function createViewer(canvas) {
   }, { passive: false });
   new ResizeObserver(redraw).observe(canvas);
 
-  return { setObjects, setTexture, setVisible, setHighlight, pick, setSkeleton, setPose, setBonesVisible, fit };
+  return { setObjects, setTexture, setVisible, setHighlight, pick, setSkeleton, setPose, setBonesVisible, setShading, fit };
 }

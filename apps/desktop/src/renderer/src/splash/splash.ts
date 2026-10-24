@@ -1,5 +1,6 @@
 import { fromTemplate, required } from '../components/dom';
 import { t } from '../i18n';
+import teamUrl from '../assets/compages.png';
 import { logoImage } from '../shell/shell';
 import './splash.css';
 import template from './splash.html?raw';
@@ -22,6 +23,7 @@ export function createSplash(version: string, visible: boolean): Splash {
   const bar = required<HTMLElement>(root, '[data-bar]');
   const stepText = required<HTMLElement>(root, '[data-step]');
   required(root, '[data-logo]').replaceWith(logoImage('tessera-splash-logo'));
+  required<HTMLImageElement>(root, '[data-team]').src = teamUrl;
   required(root, '[data-version]').textContent = t('splash.version', { version });
   required(root, '[data-loading]').textContent = t('splash.loading');
   required(root, '[data-hint]').innerHTML = t('splash.hint', { key: '<kbd class="atrium-kbd">Shift</kbd>' });
