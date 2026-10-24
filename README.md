@@ -29,7 +29,9 @@ Tests: `npm test` and `cargo test` in `apps/desktop/src-tauri`.
 
 ## Docs
 
+- [Wiki](https://github.com/CompagesWorks/Tessera/wiki): installing and using Tessera
 - [Writing a plugin](docs/plugins/README.md)
+- [Discord](https://discord.gg/2zT5Rg46bG)
 
 ## Credits
 
