@@ -53,4 +53,4 @@ Usual causes:
 - a long synchronous loop (parsing a big file, a heavy computation) blocking the page: split the work with `await new Promise((r) => setTimeout(r))` between chunks;
 - the SDK isn't loaded, or is loaded after a script that crashes.
 
-The widget runs in its own process: even when stuck, it doesn't freeze Tessera's UI.
+The widget runs in its own process, so a stuck widget does not freeze Tessera's UI.

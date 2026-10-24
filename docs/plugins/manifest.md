@@ -1,6 +1,6 @@
 # manifest.json
 
-`manifest.json` sits at the root of the plugin folder. It must be valid JSON and at most **64 KB**. Tessera validates all of it: on the first error, the plugin is rejected with the path of the faulty field (for example `contributes.widgets.0.entry: invalid path`).
+`manifest.json` sits at the root of the plugin folder. It must be valid JSON and at most 64 KB. Tessera validates all of it: on the first error, the plugin is rejected with the path of the faulty field (for example `contributes.widgets.0.entry: invalid path`).
 
 ## Full example
 
@@ -55,9 +55,9 @@ Unknown fields are ignored.
 
 ### Choosing the id
 
-The `id` is the plugin's identity: it keys its permissions, its install state and the names of its widgets inside layouts. **Never change it** after release: Tessera would see a different plugin, and widgets already placed in projects would no longer be recognized.
+The `id` is the plugin's identity: it keys its permissions, its install state and the names of its widgets inside layouts. Do not change it after release: Tessera would see a different plugin, and widgets already placed in projects would no longer be recognized.
 
-Installing a folder whose `id` already exists **replaces** the existing plugin. That is how updates work.
+Installing a folder whose `id` already exists replaces the existing plugin, which is how updates work.
 
 ## Widget fields
 

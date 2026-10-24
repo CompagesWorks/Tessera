@@ -46,7 +46,7 @@ The widget reloads on every layout change (tab switch, resize, drag…). Keep ev
 
 ## The plugin got disabled on its own
 
-It was installed as a **verified copy** and a file in the copy changed. The Plugins page shows the reason. Click "Reinstall from source". While developing, use a **development link** instead.
+It was installed as a verified copy and a file in the copy changed. The Plugins page shows the reason. Click "Reinstall from source". While developing, use a development link instead.
 
 ## SDK errors
 

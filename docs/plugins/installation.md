@@ -16,7 +16,7 @@ Two ways to install:
 ### Verified copy
 
 - Each file is checked against its hash when it is served, and the whole package is checked again on startup and when the plugin is re-enabled.
-- A modified, added or deleted file **disables the plugin** (status "Modified") and logs the reason (`Modified file: widget.js`, `Unexpected file: …`, `Missing file: …`). The Plugins page offers "Reinstall from source".
+- A modified, added or deleted file disables the plugin (status "Modified") and logs the reason (`Modified file: widget.js`, `Unexpected file: …`, `Missing file: …`). The Plugins page offers "Reinstall from source".
 - The original folder is remembered as the source, so reinstalling picks up a newer version from the same place.
 - A plugin cannot be installed from inside Tessera's own install folder.
 

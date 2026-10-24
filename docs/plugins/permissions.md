@@ -1,6 +1,6 @@
 # Permissions
 
-Without any permission, a widget can only: render a UI, show notifications, save its own state, and read the open project's name, kind and status. Everything else goes through a permission that is declared in the manifest **and** granted by the user.
+Without any permission, a widget can only: render a UI, show notifications, save its own state, and read the open project's name, kind and status. Everything else goes through a permission that is declared in the manifest and granted by the user.
 
 ## Overview
 
@@ -13,7 +13,7 @@ Without any permission, a widget can only: render a UI, show notifications, save
 | [`secrets`](#secrets) | medium | store the plugin's own secrets (tokens) encrypted |
 | [`ui.theme`](#uitheme) | low | provide Tessera themes |
 | [`ui.menus`](#uimenus) | low | add entries to the Explorer right-click menu and to other plugins' file menus |
-| [`ui.provider`](#uiprovider) | **high** | replace Tessera's UI engine, **outside the sandbox** |
+| [`ui.provider`](#uiprovider) | **high** | replace Tessera's UI engine, outside the sandbox |
 | [`exec`](#exec) | **high** | run one specific program shipped with the plugin |
 | [`exec.system`](#execsystem) | **high** | run programs installed on the PC (git…), picked by the user |
 | [`exec.install`](#execinstall) | **high** | download `exec.system` programs from fixed URLs, checked by sha256 |
@@ -51,7 +51,7 @@ Most permissions are a plain string. `net`, `exec`, `exec.system`, `exec.install
 | Asked | on install |
 | SDK | [`tessera.files.list`, `readText`, `watch`](sdk.md#files) |
 
-- limited to the **project open** in the window where the widget runs
+- limited to the project open in the window where the widget runs
 - read only: text files up to 1 MB, binary files up to 64 MB
 - the `.tessera/` folder (layouts, notes, internal settings) is never readable
 - symbolic links are hidden and never followed outside the project
@@ -69,7 +69,7 @@ Typical uses: a file browser, a preview of config files, stats about the project
 
 - same limits as `fs.project.read`: the open project only, `.tessera/` is off limits, links never lead outside
 - text files up to 5 MB, binary files up to 64 MB per write
-- **deleted files go to the system trash**, never deleted for good
+- deleted files go to the system trash, never deleted for good
 - the plugin also gets a private folder `.tessera/plugins/<plugin id>/` in the project, for caches and generated files. Only `tessera.files.private` reaches it.
 
 Writing does not include reading: to read the project's files, also ask for `fs.project.read`.
@@ -80,7 +80,7 @@ Writing does not include reading: to read the project's files, also ask for `fs.
 | --- | --- |
 | Risk | medium |
 | Asked | on install, then the user picks the folder |
-| Scope | **one** folder outside the project, chosen by the user (an emulator's mod folder, an SD card…) |
+| Scope | one folder outside the project, chosen by the user (an emulator's mod folder, an SD card…) |
 | SDK | [`tessera.external.*`](sdk.md#outside-folder) |
 
 The plugin never chooses the path: the user does, in the system folder picker, either when the plugin calls `tessera.external.pick()` or from Plugins → your plugin → Outside folder. They can change it or forget it at any time. The plugin never learns the full path, only the folder's name.
@@ -98,7 +98,7 @@ The plugin never chooses the path: the user does, in the system folder picker, e
 
 - HTTPS only, no IP address, no `user:password@` in the URL
 - a domain is matched exactly; `*.example.com` matches every subdomain of `example.com` but not `example.com` itself
-- **every redirect is checked again**: a redirect to an undeclared domain is refused
+- every redirect is checked again: a redirect to an undeclared domain is refused
 - cookies are never sent or kept; `Cookie`, `Host`, `Origin`, `Referer` and similar headers are dropped
 - responses up to 10 MB, 30 s timeout
 
@@ -142,7 +142,7 @@ Lets a plugin add entries to the Explorer right-click menu and to the file menus
 | | |
 | --- | --- |
 | Risk | **high** |
-| Asked | on install, **unticked**, behind a danger warning the user must accept |
+| Asked | on install, unticked, behind a danger warning the user must accept |
 | Scope | Tessera's whole UI engine |
 | Manifest | [`contributes.uiProvider`](manifest.md#ui-provider) |
 
@@ -152,7 +152,7 @@ Replaces the component library Tessera uses (Atrium-UI by default). Granting the
 
 Safety nets:
 
-- the module is only served while it is the selected engine **and** the permission is granted; revoking the permission or disabling the plugin takes effect at the next reload
+- the module is only served while it is the selected engine and the permission is granted; revoking the permission or disabling the plugin takes effect at the next reload
 - if the module fails to load, Tessera falls back to Atrium-UI and says so
 - starting Tessera with `--safe-mode` ignores the plugin engine
 - a toast reminds the user at each start that a plugin engine is active
@@ -162,15 +162,15 @@ Safety nets:
 | | |
 | --- | --- |
 | Risk | **high** |
-| Asked | on install, **and** before each run (the user can allow it for the rest of the session) |
+| Asked | on install, and before each run (the user can allow it for the rest of the session) |
 | Scope | one program shipped with the plugin, identified by path and sha256 hash |
 | SDK | [`tessera.exec.run`](sdk.md#programs) |
 
 Runs a converter or tool (for example a texture converter) shipped inside the plugin folder.
 
-- the program's sha256 is checked against the manifest **before every run**
+- the program's sha256 is checked against the manifest before every run
 - on Windows, only `.exe` and `.com` files (no `.bat`, `.cmd` or scripts)
-- **no shell**: arguments are passed as a list, so nothing in them is interpreted
+- no shell: arguments are passed as a list, so nothing in them is interpreted
 - the exact command is shown in a system dialog before the user approves it. The dialog comes from Tessera's main process: neither the plugin nor Tessera's UI can answer it
 - the program runs in the open project's folder, with a minimal environment, a timeout (60 s by default, 10 min max) and 1 MB of output kept per stream
 - "Always for this session" is forgotten when the app restarts, or when the plugin is updated, disabled or its permissions change
@@ -182,14 +182,14 @@ A new program or a new hash in an update counts as a new permission: the user ha
 | | |
 | --- | --- |
 | Risk | **high** |
-| Asked | on install, then the user picks each program, **and** before each run (or once per session) |
+| Asked | on install, then the user picks each program, and before each run (or once per session) |
 | Scope | the program names listed in the manifest (8 max), each one bound to a file the user picked |
 | SDK | [`tessera.exec.runSystem`, `pickSystem`, `systemInfo`](sdk.md#programs-of-the-pc) |
 
-For tools installed on the PC that a plugin can't ship: `git`, VGAudio, an emulator… The manifest only declares a **name** (`"git"`); the plugin never gives a path.
+For tools installed on the PC that a plugin can't ship: `git`, VGAudio, an emulator… The manifest only declares a name (`"git"`); the plugin never gives a path.
 
 - the user picks the file in the system picker, from the plugin (`tessera.exec.pickSystem('git')`) or in Plugins → your plugin → Programs
-- Tessera stores its path and sha256. **If the file changes** (an update of git…), runs are refused until the user picks it again
+- Tessera stores its path and sha256. If the file changes (an update of git…), runs are refused until the user picks it again
 - same rules as [`exec`](#exec) for the rest: hash checked before every run, `.exe`/`.com` only on Windows, no shell, system dialog with the exact command, minimal environment, timeout, runs in the project folder
 
 Adding a program name in an update counts as a new permission.
@@ -199,7 +199,7 @@ Adding a program name in an update counts as a new permission.
 | | |
 | --- | --- |
 | Risk | **high** |
-| Asked | on install, **and** before each download (or once per session) |
+| Asked | on install, and before each download (or once per session) |
 | Scope | programs already declared in [`exec.system`](#execsystem), one HTTPS URL and sha256 per system (`windows`, `macos`, `linux`) |
 | SDK | [`tessera.exec.installSystem`](sdk.md#programs-of-the-pc) |
 
@@ -240,7 +240,7 @@ Talks to the Discord app running on the PC (local IPC, no network) to show a sta
 | Asked | on install |
 | SDK | [`tessera.clipboard.writeText`](sdk.md#clipboard) |
 
-Puts text (100,000 characters max) in the clipboard. **Reading the clipboard is not possible**: it often holds passwords.
+Puts text (100,000 characters max) in the clipboard. Plugins cannot read the clipboard, because it often holds passwords.
 
 ## `notify.system`
 
@@ -271,19 +271,19 @@ Shows an operating system notification, useful when Tessera is in the background
 | Asked | on install |
 | SDK | [`tessera.projects.list`](sdk.md#all-projects) |
 
-Reads the list of **all** the user's projects: name, kind, status, tag names, collection name, favorite, last change, and whether the folder is missing. Never their paths, ids or files. For dashboards and stats.
+Reads the list of all the user's projects: name, kind, status, tag names, collection name, favorite, last change, and whether the folder is missing. Never their paths, ids or files. For dashboards and stats.
 
 ## What the user sees
 
-1. **On install**: the list of requested permissions with their risk level. They can untick any of them. High-risk permissions show an extra warning.
-2. **At any time**: Plugins page → your plugin → Permissions. Revoking a permission takes effect immediately, without reloading the widget.
-3. **After an update**: if the new manifest asks for an extra permission, or changes the domains of `net` or the program of `exec`, it is **not granted**. The plugin shows "Needs review" with Allow / Deny. Permissions already granted stay granted.
+1. On install, the user sees the requested permissions with their risk level and can untick any of them. High-risk permissions show an extra warning.
+2. At any time, the user can change them in Plugins page → your plugin → Permissions. Revoking a permission takes effect immediately, without reloading the widget.
+3. After an update, a new permission, or a change to the domains of `net` or the program of `exec`, is not granted. The plugin shows "Needs review" with Allow / Deny. Permissions already granted stay granted.
 
 Disabling the plugin revokes all its permissions.
 
-## Checked twice
+## Where permissions are checked
 
-Every permission is checked twice:
+Tessera checks every permission in two places:
 
 1. by Tessera's UI, before forwarding the call;
 2. by the main process, which reloads the plugin's state and has the final say.
@@ -292,12 +292,12 @@ A plugin can't work around a refusal by talking to another part of Tessera.
 
 ## Good practices
 
-- **Ask for the minimum.** Every permission is one more reason for a user to decline your plugin.
-- **Work without it.** If a permission is declined, show a clear message in the widget instead of an empty screen or a loop of errors.
-- **Explain why** in the plugin `description`: "Reads the project's `.prc` files to show…".
-- **Don't sneak a permission into a minor update**: the user will have to accept it before it does anything.
-- **Prefer `fs.project.write`'s private folder** over the project's sources for caches.
-- **Avoid `ui.provider`** unless replacing the UI is the whole point of your plugin.
+- Ask only for the permissions you use. Every permission is one more reason for a user to decline your plugin.
+- If a permission is declined, show a clear message in the widget instead of an empty screen or a loop of errors.
+- Explain in the plugin `description` why you need each permission: "Reads the project's `.prc` files to show…".
+- Don't slip a new permission into a minor update: the user has to accept it before it does anything.
+- Put caches in `fs.project.write`'s private folder, not in the project's sources.
+- Avoid `ui.provider` unless replacing the UI is the whole point of your plugin.
 
 ```js
 async function loadFiles() {
@@ -315,9 +315,9 @@ async function loadFiles() {
 
 ## Activity log
 
-Every file access, network request, secret access, program run, permission change, install and integrity failure is written to `permissions.log` and shown in Plugins → your plugin → Recent activity. Secret values and request bodies are never logged. Users can see exactly what your plugin did.
+Every file access, network request, secret access, program run, permission change, install and integrity failure is written to `permissions.log` and shown in Plugins → your plugin → Recent activity. Secret values and request bodies are never logged.
 
 ## Undo and the journal
 
 - Every call a plugin makes, allowed or refused, is written to the permission journal (**Settings > Journal**). The user can filter it, export it as JSON or CSV and clear it.
-- Writes made with `fs.project.write` on the **project** folder (`writeText`, `writeBytes`, `remove`, `rename`) are kept in the project's undo history while Tessera is open, so the user can undo what a plugin did (`Ctrl+Alt+Z`, or **Change history** in the command palette). Files over 2 MB, folders, the private folder and outside folders are not tracked. An undo is refused if the file changed since.
+- Writes made with `fs.project.write` on the project folder (`writeText`, `writeBytes`, `remove`, `rename`) are kept in the project's undo history while Tessera is open, so the user can undo what a plugin did (`Ctrl+Alt+Z`, or **Change history** in the command palette). Files over 2 MB, folders, the private folder and outside folders are not tracked. An undo is refused if the file changed since.

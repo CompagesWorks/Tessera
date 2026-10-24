@@ -1,6 +1,6 @@
 # Packaging and the tessera-plugin tool
 
-A plugin is shared as a single **`.tessera-plugin`** file. Users install it with Plugins → **Install a package**. The tool that creates it, `tessera-plugin`, also creates new plugins, builds the Rust ones and checks everything the way Tessera does.
+A plugin is shared as a single `.tessera-plugin` file. Users install it with Plugins → **Install a package**. The tool that creates it, `tessera-plugin`, also creates new plugins, builds the Rust ones and checks everything the way Tessera does.
 
 ## The tool
 
@@ -34,7 +34,7 @@ node path/to/Tessera/packages/plugin-cli/dist/cli.mjs <command> [options]
 
 ## Project layout
 
-A JavaScript plugin is just its folder:
+A JavaScript plugin is a single folder:
 
 ```
 my-plugin/

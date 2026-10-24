@@ -10,10 +10,10 @@ It creates the global `tessera` object (frozen), adds the Atrium and Bootstrap I
 
 ## Basics
 
-- Every method returns a **promise**.
+- Every method returns a promise.
 - A rejected promise holds an `Error` whose `message` explains the refusal. See [Errors](#errors).
-- Each widget can make at most **40 calls per second**; beyond that, calls fail with `rate limited`.
-- Each widget **instance** has its own state and its own call counter: two copies of the same widget in a layout share nothing.
+- Each widget can make at most 40 calls per second; beyond that, calls fail with `rate limited`.
+- Each widget instance has its own state and its own call counter: two copies of the same widget in a layout share nothing.
 
 ## Signatures
 
@@ -317,7 +317,7 @@ tessera.ui.toast('success', tessera.i18n.t('converted', { name: 'mario.nutexb' }
 
 ## Widget state
 
-The state is a JSON object saved **in the project's layout**, for this widget instance. It survives closing the project and restarting Tessera. It is the only persistent storage a plugin has.
+The state is a JSON object saved in the project's layout, for this widget instance. It survives closing the project and restarting Tessera. It is the only persistent storage a plugin has.
 
 ### `tessera.widget.getState()`
 
@@ -325,7 +325,7 @@ Returns the saved state, or `{}` for a fresh widget. Always check the type of ev
 
 ### `tessera.widget.setState(state)`
 
-**Replaces** the whole state (no merge).
+Replaces the whole state. Nothing is merged.
 
 - `state` must be an object (not an array, not a primitive)
 - 64 KB max once serialized to JSON, otherwise `invalid params`
@@ -338,7 +338,7 @@ await tessera.widget.setState({ ...state, zoom: 2 });
 
 For state that changes often (typing, dragging), batch writes with a delay instead of calling `setState` on every event.
 
-A good habit: put a version number in the state so you can migrate it.
+Put a version number in the state so you can migrate it later.
 
 ```js
 const state = await tessera.widget.getState();
@@ -372,7 +372,7 @@ tessera.settings.onChange(render);
 
 ## Files
 
-Every path is **relative to the root of its scope**, with `/` as separator. `''` is the root. A path containing `..` is refused.
+Every path is relative to the root of its scope, with `/` as separator. `''` is the root. A path containing `..` is refused.
 
 | Scope | Root | Reading needs | Writing needs |
 | --- | --- | --- | --- |
@@ -409,12 +409,12 @@ Mind the 40 calls per second: on a large tree, expand folders on demand rather t
 
 Reads a file as UTF-8 text.
 
-- **1 MB** max (1,048,576 bytes), otherwise `file too large`
+- 1 MB max (1,048,576 bytes), otherwise `file too large`
 - a binary file is decoded as UTF-8 anyway and gives garbage: use `readBytes` for those
 
 ### `tessera.files.readBytes(path)` / `tessera.files.writeBytes(path, data)`
 
-Same as `readText` / `writeText` for binary files (`.nutexb`, `.nus3audio`, images…), with a `Uint8Array`. **64 MB** max each way, same permissions as the text versions.
+Same as `readText` / `writeText` for binary files (`.nutexb`, `.nus3audio`, images…), with a `Uint8Array`. 64 MB max each way, same permissions as the text versions.
 
 ```js
 const bytes = await tessera.files.readBytes('fighter/mario/model/body/c00/def_mario_001_col.nutexb');
@@ -425,7 +425,7 @@ await tessera.files.private.writeBytes('backup/def_mario_001_col.nutexb', bytes)
 
 Creates or replaces a file with UTF-8 text. Missing parent folders are created.
 
-- **5 MB** max, otherwise `file too large`
+- 5 MB max, otherwise `file too large`
 - refused if `path` is a folder (`not a file`)
 
 ### `tessera.files.mkdir(path)`
@@ -434,7 +434,7 @@ Creates a folder and its missing parents. Does nothing if it already exists.
 
 ### `tessera.files.remove(path)`
 
-Moves a file or a folder (with its content) to the **system trash**. The root of the scope can't be removed.
+Moves a file or a folder (with its content) to the system trash. The root of the scope can't be removed.
 
 ### `tessera.files.rename(from, to)`
 
@@ -472,7 +472,7 @@ Opens the system folder picker. Resolves `true` if the user picked a folder, `fa
 
 #### `tessera.external.info()`
 
-Returns `{ picked, name }`: whether a folder is set, and its **name only** (never the full path).
+Returns `{ picked, name }`: whether a folder is set, and its name only (never the full path).
 
 ```js
 const { picked } = await tessera.external.info();
@@ -482,7 +482,7 @@ await tessera.external.writeText('mods/my-skin/config.json', config);
 
 #### `tessera.export.deploy()`
 
-Needs `fs.external` **and** `fs.project.read`. Exports the open project (like the Export button) and copies the mod folder into the picked folder, as `<picked folder>/<mod name>`. Resolves the mod folder name.
+Needs `fs.external` and `fs.project.read`. Exports the open project (like the Export button) and copies the mod folder into the picked folder, as `<picked folder>/<mod name>`. Resolves the mod folder name.
 
 A previous copy is replaced only if Tessera deployed it (it leaves a `.tessera-deploy` file inside). Any other folder with the same name is left alone and the call fails with `… already exists in the mods folder and was not deployed by Tessera`.
 
@@ -514,7 +514,7 @@ await tessera.textures.replace('sources/layout_arc/timg/__Combined.bntx', 'com_w
 
 #### `tessera.textures.convert(from, to, options?)`
 
-Needs `fs.project.write` **and** `fs.project.read`. Converts a texture inside the project, picked from the extensions of `from` and `to`. `from` can be `.nutexb`, `.bntx`, `.dds`, `.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tga` or `.tiff`; `to` can be `.nutexb`, `.dds` or `.png`. Works the same on Windows, macOS and Linux.
+Needs `fs.project.write` and `fs.project.read`. Converts a texture inside the project, picked from the extensions of `from` and `to`. `from` can be `.nutexb`, `.bntx`, `.dds`, `.png`, `.jpg`, `.webp`, `.gif`, `.bmp`, `.tga` or `.tiff`; `to` can be `.nutexb`, `.dds` or `.png`. Works the same on Windows, macOS and Linux.
 
 | Option | Values | Default |
 |---|---|---|
@@ -694,7 +694,7 @@ Needs [`open.external`](permissions.md#openexternal).
 
 ## All projects
 
-Needs [`projects.list`](permissions.md#projectslist). `tessera.projects.list()` returns every project as a `ProjectListItem`: tag and collection **names**, no path, no id.
+Needs [`projects.list`](permissions.md#projectslist). `tessera.projects.list()` returns every project as a `ProjectListItem`: tag and collection names, no path, no id.
 
 ## Errors
 
@@ -732,4 +732,4 @@ try {
 
 ## Low-level protocol
 
-The SDK is a thin layer over `postMessage`. There's no point reimplementing it: the parent page ignores any message that doesn't come from your iframe, and the same checks apply either way. The SDK also answers the [watchdog](sandbox.md#watchdog) pings automatically: a widget that doesn't load the SDK will be flagged as not responding.
+The SDK is a thin layer over `postMessage`. Reimplementing it gains nothing: the parent page ignores any message that doesn't come from your iframe, and the same checks apply either way. The SDK also answers the [watchdog](sandbox.md#watchdog) pings automatically: a widget that doesn't load the SDK will be flagged as not responding.

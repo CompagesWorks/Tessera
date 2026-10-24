@@ -54,7 +54,7 @@ Replace `yourname` with your author name. The `id` must be unique: it identifies
 </html>
 ```
 
-Load `/__tessera/sdk.js` **first**: it defines `window.tessera` and adds the Atrium styles and Bootstrap icons.
+Load `/__tessera/sdk.js` before anything else: it defines `window.tessera` and adds the Atrium styles and Bootstrap icons.
 
 ### widget.css
 

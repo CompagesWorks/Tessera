@@ -2,7 +2,7 @@
 
 ## Your page can reload at any time
 
-Treat a widget page as disposable. Tessera rebuilds the workspace whenever the layout changes, and every plugin iframe that gets rebuilt **reloads from scratch**: scripts run again, the DOM is fresh, in-memory variables are gone.
+Treat a widget page as disposable. Tessera rebuilds the workspace whenever the layout changes, and every plugin iframe that gets rebuilt reloads from scratch: scripts run again, the DOM is fresh, in-memory variables are gone.
 
 This happens when the user:
 
@@ -13,7 +13,7 @@ This happens when the user:
 - closes and reopens the project
 - clicks **Reload** on the "not responding" overlay
 
-What survives a reload: the widget state (`tessera.widget.setState`). Nothing else.
+Only the widget state (`tessera.widget.setState`) survives a reload.
 
 ### The pattern
 
@@ -51,7 +51,7 @@ What survives a reload: the widget state (`tessera.widget.setState`). Nothing el
 - Rebuild the whole UI from the state on every start.
 - Save anything the user would be annoyed to lose: selected tab, filters, scroll position, a draft being typed.
 - Don't save what you can recompute cheaply (file lists, parsed data): read it again on start.
-- Debounce saves. A `setState` call does **not** reload the widget.
+- Debounce saves. A `setState` call does not reload the widget.
 
 ### What not to rely on
 
@@ -62,11 +62,11 @@ What survives a reload: the widget state (`tessera.widget.setState`). Nothing el
 | `beforeunload` / `pagehide` to save at the last moment | the iframe can be removed without a reliable chance to run async code; save as you go |
 | the widget staying visible | a hidden tab is unloaded, not paused |
 
-Two instances of the same widget are two separate pages with two separate states. They don't see each other.
+Two instances of the same widget are separate pages with separate states, and neither can see the other.
 
 ## Size
 
-A widget fills its panel, and panels can be resized freely. Plan for anything from about **80 × 60 px** (the smallest panel, minus the tab bar) up to a full window.
+A widget fills its panel, and panels can be resized freely. Plan for anything from about 80 × 60 px (the smallest panel, minus the tab bar) up to a full window.
 
 - The page gets no resize event from the SDK. Use CSS (flex, grid, `min()`, `clamp()`) first, and `ResizeObserver` when you need to recompute something.
 - Make `html` and `body` fill the frame and avoid page-level scrollbars: scroll an inner container instead.

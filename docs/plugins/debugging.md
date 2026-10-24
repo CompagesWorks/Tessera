@@ -29,7 +29,7 @@ For quick checks you don't need the developer tools. Turn on **Settings > Advanc
 | --- | --- |
 | Console | everything your widget prints with `console.log/info/warn/error/debug`, plus uncaught errors |
 | Calls | each SDK call: method, result (ok, denied, error, rate limited), time in ms and the error text |
-| Permissions | switches that **simulate a refusal** of a permission you were granted, to test your "permission denied" path. Nothing changes on disk. |
+| Permissions | switches that simulate a refusal of a permission you were granted, to test your "permission denied" path. Nothing changes on disk. |
 | Plugin | manifest summary, integrity check and a **Reload** button that re-reads a development link and reloads its open widgets |
 
 The lab keeps the last 300 console lines and 300 calls per plugin while developer mode is on. Browsers hide the details of an uncaught error thrown by a sandboxed page (you only see "Script error."), so wrap risky code in `try/catch` and call `console.error(error)` to get the full message and stack.

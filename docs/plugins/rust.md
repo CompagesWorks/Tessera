@@ -1,12 +1,12 @@
 # Plugins in Rust
 
-You can write a plugin in Rust. It is compiled to **WebAssembly** and runs inside the widget's iframe, exactly like a JavaScript plugin:
+You can write a plugin in Rust. It is compiled to WebAssembly and runs inside the widget's iframe, exactly like a JavaScript plugin:
 
 - same sandbox (no disk, no network, no programs outside the SDK)
 - same [manifest](manifest.md), same [permissions](permissions.md), same audit log
 - same installation, integrity check and debugging tools
 
-The Rust code calls Tessera through the `tessera-plugin` crate, which wraps the JavaScript SDK (`window.tessera`). JavaScript plugins keep working as before: the two kinds can be installed side by side.
+The Rust code calls Tessera through the `tessera-plugin` crate, which wraps the JavaScript SDK (`window.tessera`). JavaScript and Rust plugins can be installed side by side.
 
 Full example: [`examples/rust/hello-rust`](../../examples/rust/hello-rust) (source) builds into [`examples/plugins/hello-rust`](../../examples/plugins/hello-rust) (the plugin folder).
 
@@ -42,7 +42,7 @@ my-plugin/
   rust/                 the crate (Cargo.toml, src/lib.rs)
 ```
 
-The crate stays **outside** the plugin folder: the plugin folder is copied and hashed at install time, and a `target/` folder would quickly pass the 50 MB limit.
+The crate stays outside the plugin folder: the plugin folder is copied and hashed at install time, and a `target/` folder would quickly pass the 50 MB limit.
 
 ## The crate
 
@@ -182,7 +182,7 @@ For the details of each call (limits, errors, return values), see [SDK](sdk.md):
 
 ## Good to know
 
-- The SDK script must be loaded **before** your module, or every call fails with "the Tessera SDK is not loaded".
+- The SDK script must be loaded before your module, or every call fails with "the Tessera SDK is not loaded".
 - Panics end up in the widget's console as `unreachable` errors. Return `Result` and show errors with `ui::toast` instead.
 - A release build of the example weighs about 140 KB. Keep `opt-level = "s"` and `lto = true`.
 - Heavy work still runs on the widget's thread: split long loops with `.await` points so the widget keeps answering Tessera's pings (see [Lifecycle](lifecycle.md)).

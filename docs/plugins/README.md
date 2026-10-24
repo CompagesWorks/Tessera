@@ -1,15 +1,15 @@
 # Tessera plugin documentation
 
-A plugin adds **widgets** to a project's workspace. Each widget is an HTML page running in an isolated iframe, and it talks to Tessera only through the `window.tessera` SDK. You write it in **JavaScript**, or in **Rust** compiled to WebAssembly ([Plugins in Rust](rust.md)): both run in the same sandbox with the same permissions.
+A plugin adds widgets to a project's workspace. Each widget is an HTML page running in an isolated iframe, and it talks to Tessera only through the `window.tessera` SDK. You write it in JavaScript, or in Rust compiled to WebAssembly ([Plugins in Rust](rust.md)): both run in the same sandbox with the same permissions.
 
-No Node, no direct network, no access to Tessera's own UI: a plugin only sees what the SDK gives it, and only with the permissions the user granted. The one exception is [`ui.provider`](permissions.md#uiprovider), which runs outside the sandbox behind a danger warning.
+A plugin has no Node, no direct network access and no access to Tessera's own UI. It only sees what the SDK gives it, with the permissions the user granted. The one exception is [`ui.provider`](permissions.md#uiprovider), which runs outside the sandbox behind a danger warning.
 
 ## What a plugin can add
 
 | Where | How |
 | --- | --- |
 | Widgets in the project workspace | [`contributes.widgets`](manifest.md) |
-| Entries in the **Explorer right-click menu** and in other plugins' file menus (for example "Convert…" on `.nutexb` files) | [`contributes.fileActions`](manifest.md#file-actions) + the `ui.menus` permission + the `fileAction` event |
+| Entries in the Explorer right-click menu and in other plugins' file menus (for example "Convert…" on `.nutexb` files) | [`contributes.fileActions`](manifest.md#file-actions) + the `ui.menus` permission + the `fileAction` event |
 | A right-click menu in your widget that also shows other plugins' actions | [`tessera.ui.contextMenu`](sdk.md#tesserauicontextmenuspec) |
 | Buttons in the project titlebar, next to Export | [`contributes.titlebar`](manifest.md#titlebar-buttons) + the `titlebar` event |
 | A modal that asks the user for options | [`tessera.ui.form`](sdk.md#tesserauiformspec) |
@@ -87,4 +87,4 @@ npm run plugin -- pack my-plugin
 
 ## Compatibility
 
-This documentation covers the API of **Tessera 0.1**. The SDK has a single version: everything listed in [SDK](sdk.md) is available as soon as `tessera.ready` resolves.
+This documentation covers the API of Tessera 0.1. The SDK has a single version: everything listed in [SDK](sdk.md) is available as soon as `tessera.ready` resolves.
