@@ -1,8 +1,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/logo.svg">
-    <img src="docs/logo-light.svg" alt="Tessera" width="420">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg">
+    <img src="assets/logo-light.svg" alt="Tessera" width="420">
   </picture>
 </p>
 
@@ -30,7 +30,7 @@ Tests: `npm test` and `cargo test` in `apps/desktop/src-tauri`.
 ## Docs
 
 - [Wiki](https://github.com/CompagesWorks/Tessera/wiki): installing and using Tessera
-- [Writing a plugin](docs/plugins/README.md)
+- [Writing a plugin](https://github.com/CompagesWorks/Tessera/wiki/Plugins)
 - [Discord](https://discord.gg/2zT5Rg46bG)
 
 ## Credits
