@@ -91,6 +91,41 @@ fn builtin_plugins_are_registered_and_cannot_be_removed() {
 }
 
 #[test]
+fn builtin_plugins_can_be_overridden_by_newer_installs() {
+    let f = Fixture::new();
+    let builtin = f.dir.path().join("builtin");
+    fs::create_dir_all(builtin.join("plugin")).unwrap();
+    fs::copy(f.plugin_dir.join("widget.html"), builtin.join("plugin/widget.html")).unwrap();
+    let bundle = |version: &str| fs::write(builtin.join("plugin/manifest.json"), serde_json::to_string(&manifest(json!({ "version": version }))).unwrap()).unwrap();
+    bundle("1.0.0");
+    let service = f.service();
+    service.sync_builtin(&builtin);
+    service.load();
+
+    f.write(manifest(json!({ "version": "1.1.0" })));
+    service.install_from(&f.plugin_dir, &[Permission::FsProjectRead], PluginMode::Installed, None).unwrap();
+    let installed = f.dir.path().join("installed/test.plugin");
+    assert!(!service.sync_builtin(&builtin));
+    service.load();
+    let plugin = service.get("test.plugin").unwrap();
+    assert_eq!((plugin.mode, plugin.manifest.version.as_str()), (PluginMode::Installed, "1.1.0"));
+
+    service.remove("test.plugin").unwrap();
+    let plugin = service.get("test.plugin").unwrap();
+    assert_eq!((plugin.mode, plugin.manifest.version.as_str()), (PluginMode::Builtin, "1.0.0"));
+    assert!(!installed.exists());
+
+    service.install_from(&f.plugin_dir, &[Permission::FsProjectRead], PluginMode::Installed, None).unwrap();
+    service.set_enabled("test.plugin", false).unwrap();
+    bundle("1.1.0");
+    assert!(service.sync_builtin(&builtin));
+    service.load();
+    let plugin = service.get("test.plugin").unwrap();
+    assert_eq!((plugin.mode, plugin.integrity, plugin.enabled), (PluginMode::Builtin, "builtin", false));
+    assert!(!installed.exists());
+}
+
+#[test]
 fn reads_valid_locales_only() {
     let f = Fixture::new();
     let locales = f.plugin_dir.join("locales");

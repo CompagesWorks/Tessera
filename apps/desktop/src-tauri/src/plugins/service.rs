@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::schema::check;
+use crate::updates::compare_versions;
 use crate::schema::plugins::{parse_manifest, permission_key, read_locales, InstalledPlugin, Permission, PluginManifest, PluginMode, SystemProgram};
 use crate::util::paths::{inside, inside_or_same, realpath, relative_slash, resolve};
 use crate::util::time::mtime_ms;
@@ -175,6 +176,7 @@ struct State {
 pub struct PluginService {
     registry_file: PathBuf,
     plugins_dir: PathBuf,
+    builtin_dir: Mutex<Option<PathBuf>>,
     suspended: AtomicBool,
     state: Mutex<State>,
     on_tamper: OnTamper,
@@ -185,6 +187,7 @@ impl PluginService {
         PluginService {
             registry_file,
             plugins_dir,
+            builtin_dir: Mutex::new(None),
             suspended: AtomicBool::new(false),
             state: Mutex::new(State { registry: Registry::empty(), loaded: HashMap::new(), verified: HashMap::new() }),
             on_tamper: Box::new(on_tamper),
@@ -217,10 +220,11 @@ impl PluginService {
         state.verified.clear();
     }
 
-    pub fn sync_builtin(&self, folder: &Path) {
+    pub fn sync_builtin(&self, folder: &Path) -> bool {
+        *self.builtin_dir.lock().unwrap() = Some(folder.to_path_buf());
         let existing = json::read(&self.registry_file, Registry::parse);
         if existing.is_none() && self.registry_file.exists() {
-            return;
+            return false;
         }
         let mut registry = existing.unwrap_or_else(Registry::empty);
         let mut changed = false;
@@ -228,7 +232,19 @@ impl PluginService {
             let Ok(manifest) = read_manifest(&item.path()) else { continue };
             let path = realpath(&item.path()).unwrap_or_else(|_| item.path()).to_string_lossy().into_owned();
             match registry.plugins.iter_mut().find(|p| p.id == manifest.id) {
-                Some(entry) if entry.mode == PluginMode::Builtin => {
+                Some(entry) => {
+                    if entry.mode == PluginMode::Installed && !read_manifest(Path::new(&entry.path)).is_ok_and(|m| compare_versions(&m.version, &manifest.version).is_gt()) {
+                        if inside(&self.plugins_dir, Path::new(&entry.path)) {
+                            let _ = fs::remove_dir_all(&entry.path);
+                        }
+                        entry.mode = PluginMode::Builtin;
+                        entry.source = None;
+                        entry.hashes.clear();
+                        changed = true;
+                    }
+                    if entry.mode != PluginMode::Builtin {
+                        continue;
+                    }
                     if entry.path != path {
                         entry.path = path;
                         changed = true;
@@ -244,7 +260,6 @@ impl PluginService {
                         }
                     }
                 }
-                Some(_) => {}
                 None => {
                     registry.plugins.push(Entry {
                         id: manifest.id.clone(),
@@ -265,6 +280,7 @@ impl PluginService {
         if changed {
             let _ = json::write(&self.registry_file, &registry);
         }
+        changed
     }
 
     pub fn list(&self) -> Vec<InstalledPlugin> {
@@ -442,6 +458,11 @@ impl PluginService {
         }
         let _ = fs::remove_dir_all(self.programs_dir(id));
         self.save(&state)?;
+        drop(state);
+        let builtin = self.builtin_dir.lock().unwrap().clone();
+        if builtin.is_some_and(|dir| self.sync_builtin(&dir)) {
+            self.load();
+        }
         Ok(())
     }
 
