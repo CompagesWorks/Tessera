@@ -414,5 +414,11 @@
     }),
   });
 
+  window.addEventListener('keydown', (event) => {
+    if (event.repeat || !(event.ctrlKey || event.metaKey || event.altKey || /^F\d{1,2}$/.test(event.key))) return;
+    const { key, code, ctrlKey, metaKey, altKey, shiftKey } = event;
+    window.parent.postMessage({ tessera: 1, shortcut: { key, code, ctrlKey, metaKey, altKey, shiftKey } }, '*');
+  });
+
   window.parent.postMessage({ tessera: 1, hello: true }, '*');
 })();

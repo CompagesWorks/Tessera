@@ -30,6 +30,14 @@ body > .atrium-titlebar {
   box-shadow: none;
 }
 
+html[data-platform='mac'] .atrium-titlebar-buttons {
+  display: none;
+}
+
+html[data-platform='mac'] .atrium-titlebar-left {
+  padding-left: 72px;
+}
+
 .atrium-titlebar .atrium-titlebar-title {
   text-shadow: none;
 }

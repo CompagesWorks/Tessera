@@ -380,10 +380,21 @@ function onMessage(event: MessageEvent) {
     if (lab.enabled && typeof level === 'string' && LOG_LEVELS.has(level) && typeof text === 'string') {
       pushLab(lab.logs, frame.pluginId, { time: Date.now(), level, text: text.slice(0, 2000) });
     }
+  } else if (data['shortcut'] && typeof data['shortcut'] === 'object') {
+    if (!NATIVE_SHORTCUTS && document.activeElement === frame.iframe) relayShortcut(data['shortcut'] as Record<string, unknown>);
   } else if ('pong' in data) {
     frame.lastPong = performance.now();
     setResponsive(frame, true);
   } else void onRequest(frame, data['id'], data['method'], data['params']);
+}
+
+const NATIVE_SHORTCUTS = /Windows/i.test(navigator.userAgent);
+
+function relayShortcut(input: Record<string, unknown>) {
+  const { key, code, ctrlKey, metaKey, altKey, shiftKey } = input;
+  if (typeof key !== 'string' || typeof code !== 'string' || key.length > 20 || code.length > 30) return;
+  if (![ctrlKey, metaKey, altKey, shiftKey].every((flag) => typeof flag === 'boolean')) return;
+  document.dispatchEvent(new KeyboardEvent('keydown', { key, code, ctrlKey, metaKey, altKey, shiftKey, bubbles: true } as KeyboardEventInit));
 }
 
 function setResponsive(frame: FrameInfo, responsive: boolean) {

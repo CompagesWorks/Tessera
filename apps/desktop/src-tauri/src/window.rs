@@ -76,6 +76,10 @@ pub fn create(app: &AppHandle, state: &AppState, data_dir: Option<PathBuf>) -> t
     {
         builder = builder.transparent(true);
     }
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.decorations(true).shadow(true).title_bar_style(tauri::TitleBarStyle::Overlay).hidden_title(true);
+    }
     if let Some(dir) = data_dir {
         builder = builder.data_directory(dir);
     }
@@ -114,12 +118,10 @@ fn wait_pid(pid: u32) {
 
 #[cfg(not(windows))]
 fn wait_pid(pid: u32) {
+    let alive = || std::process::Command::new("kill").args(["-0", &pid.to_string()]).stderr(std::process::Stdio::null()).status().is_ok_and(|s| s.success());
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
-    while Path::new(&format!("/proc/{pid}")).exists() && std::time::Instant::now() < deadline {
+    while alive() && std::time::Instant::now() < deadline {
         std::thread::sleep(std::time::Duration::from_millis(50));
-    }
-    if !Path::new("/proc").exists() {
-        std::thread::sleep(std::time::Duration::from_millis(800));
     }
 }
 
@@ -143,9 +145,15 @@ fn webview_data_dir(app: &AppHandle) -> PathBuf {
     }
 }
 
+#[cfg(windows)]
 pub fn cache_size(app: &AppHandle) -> u64 {
     let base = webview_data_dir(app).join("EBWebView").join("Default");
     ["Cache", "Code Cache", "GPUCache"].iter().map(|name| dir_size(&base.join(name))).sum()
+}
+
+#[cfg(not(windows))]
+pub fn cache_size(app: &AppHandle) -> u64 {
+    dir_size(&webview_data_dir(app).join("cache")) + app.path().app_cache_dir().map(|dir| dir_size(&dir)).unwrap_or(0)
 }
 
 pub fn clear_cache(app: &AppHandle) {

@@ -165,7 +165,7 @@ mod pipe {
 
 #[cfg(unix)]
 mod pipe {
-        use std::io::{Read, Write};
+    use std::io::{Read, Write};
     use std::os::unix::net::UnixStream;
     use std::path::PathBuf;
     use std::time::Instant;
@@ -175,7 +175,7 @@ mod pipe {
     pub fn connect() -> Option<Pipe> {
         let base = std::env::var("XDG_RUNTIME_DIR").or_else(|_| std::env::var("TMPDIR")).unwrap_or_else(|_| "/tmp".into());
         (0..10)
-            .flat_map(|i| [PathBuf::from(&base).join(format!("discord-ipc-{i}")), PathBuf::from(&base).join("app/com.discordapp.Discord").join(format!("discord-ipc-{i}"))])
+            .flat_map(|i| [PathBuf::from(&base).join(format!("discord-ipc-{i}")), PathBuf::from(&base).join("app/com.discordapp.Discord").join(format!("discord-ipc-{i}")), PathBuf::from(&base).join("snap.discord").join(format!("discord-ipc-{i}"))])
             .find_map(|path| UnixStream::connect(path).ok().map(Pipe))
     }
 

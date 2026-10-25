@@ -71,7 +71,7 @@ export function createPreview(project: ProjectSummary, ui: UiProvider, onClose?:
   head.className = 'tessera-preview-head';
   const name = document.createElement('span');
   name.className = 'tessera-preview-name';
-  const save = headButton('floppy', t('widget.preview.save'));
+  const save = headButton('floppy', t('widget.preview.save', { key: document.documentElement.dataset.platform === 'mac' ? '⌘S' : 'Ctrl+S' }));
   save.hidden = true;
   const toggle = headButton('code-slash', t('widget.preview.edit'));
   toggle.hidden = true;

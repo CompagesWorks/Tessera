@@ -34,7 +34,7 @@ export function newProjectDialog(ui: UiProvider, defaultLocation: string): Promi
     const refresh = () => {
       locationEl.textContent = location;
       locationEl.title = location;
-      hint.textContent = t('newProject.folderHint', { folder: `${location}\\${previewFolder(input.value)}` });
+      hint.textContent = t('newProject.folderHint', { folder: `${location}${location.includes('\\') ? '\\' : '/'}${previewFolder(input.value)}` });
     };
 
     for (const value of ProjectKindSchema.options) {

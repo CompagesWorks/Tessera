@@ -100,8 +100,21 @@ pub fn resolve_program(plugin_root: &Path, program: &ExecProgram) -> Result<Path
     Ok(real)
 }
 
+fn app_bundle_executable(bundle: &Path) -> Option<PathBuf> {
+    if !bundle.extension().is_some_and(|e| e.eq_ignore_ascii_case("app")) || !bundle.is_dir() {
+        return None;
+    }
+    let dir = bundle.join("Contents").join("MacOS");
+    let named = dir.join(bundle.file_stem()?);
+    if named.is_file() {
+        return Some(named);
+    }
+    std::fs::read_dir(&dir).ok()?.flatten().map(|entry| entry.path()).find(|path| path.is_file())
+}
+
 pub fn describe_program(file: &Path) -> Result<SystemProgram> {
-    let real = realpath(file).map_err(|_| exec_error("program not found"))?;
+    let file = app_bundle_executable(file).unwrap_or_else(|| file.to_path_buf());
+    let real = realpath(&file).map_err(|_| exec_error("program not found"))?;
     if !std::fs::metadata(&real).map(|m| m.is_file()).unwrap_or(false) {
         return Err(exec_error("program not found"));
     }

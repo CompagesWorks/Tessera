@@ -222,7 +222,7 @@ export const fr = {
   'widget.preview.lines': '{{count}} lignes',
   'widget.preview.edit': 'Éditer',
   'widget.preview.view': 'Revenir à l’aperçu',
-  'widget.preview.save': 'Enregistrer (Ctrl+S)',
+  'widget.preview.save': 'Enregistrer ({{key}})',
   'widget.preview.saved': '{{name}} enregistré',
   'widget.preview.unsaved': 'Non enregistré',
   'widget.preview.cursor': 'Ln {{line}}, Col {{col}}',

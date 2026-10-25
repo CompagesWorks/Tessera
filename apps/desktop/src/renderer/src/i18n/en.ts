@@ -224,7 +224,7 @@ export const en: Record<keyof typeof fr, string> = {
   'widget.preview.lines': '{{count}} lines',
   'widget.preview.edit': 'Edit',
   'widget.preview.view': 'Back to preview',
-  'widget.preview.save': 'Save (Ctrl+S)',
+  'widget.preview.save': 'Save ({{key}})',
   'widget.preview.saved': '{{name}} saved',
   'widget.preview.unsaved': 'Unsaved',
   'widget.preview.cursor': 'Ln {{line}}, Col {{col}}',
