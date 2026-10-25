@@ -561,7 +561,7 @@ fn api_system_program_project_file_stays_in_scope() {
     f.host.picks.lock().unwrap().insert("editor".into(), program);
     f.call("exec.pickSystem", Some(json!({ "program": "editor" }))).unwrap();
     assert_eq!(err(f.call("exec.runSystem", Some(json!({ "program": "editor", "projectFile": "image.png", "detach": true })))), "refused by user");
-    assert!(f.host.asked.lock().unwrap()[0].contains(&image.to_string_lossy().to_string()));
+    assert!(f.host.asked.lock().unwrap()[0].contains(&crate::util::paths::realpath(&image).unwrap().to_string_lossy().to_string()));
     assert!(err(f.call("exec.runSystem", Some(json!({ "program": "editor", "projectFile": "../outside.png" })))).starts_with("invalid params"));
     assert_eq!(err(f.call("exec.runSystem", Some(json!({ "program": "editor", "projectFile": ".tessera/secret" })))), "outside scope");
 }
