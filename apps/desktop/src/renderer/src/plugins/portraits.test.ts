@@ -4,7 +4,7 @@ const { estimate } = new Function(`${source}; return { estimate };`)();
 
 function texture(width: number, height: number) {
   const data = new Uint8ClampedArray(width * height * 4);
-  const blobs = Array.from({ length: 60 }, (_, i) => [(i * 97) % width, (i * 53 + i * i) % height, 6 + (i % 9), (i * 41) % 256]);
+  const blobs = Array.from({ length: 60 }, (_, i) => [(i * 97) % width, (i * 53 + i * i) % height, 6 + (i % 9), (i * 41) % 256] as const);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       let v = 40;
@@ -41,7 +41,7 @@ describe('portraits alignment', () => {
     const target = warp(reference, 240, 240, a, b, -150, -120);
     const t = estimate(reference, target);
     expect(t).not.toBeNull();
-    for (const [x, y] of [[95, 75], [245, 75], [95, 225], [245, 225]]) {
+    for (const [x, y] of [[95, 75], [245, 75], [95, 225], [245, 225]] as const) {
       const error = Math.hypot(t.a * x - t.b * y + t.tx - (a * x - b * y - 150), t.b * x + t.a * y + t.ty - (b * x + a * y - 120));
       expect(error).toBeLessThan(4);
     }
